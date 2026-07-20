@@ -1,0 +1,22 @@
+.page {
+  animation: cernoPageIn 0.26s var(--ease) both;
+}
+
+/* A short rise paired with the fade — enough to read as a transition without
+   pushing content around on slower devices. */
+@keyframes cernoPageIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}

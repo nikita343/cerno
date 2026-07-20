@@ -1,0 +1,180 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.monthLabel {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ stepper */
+
+.stepper {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
+  border-radius: 0.625rem;
+  padding: 0.1875rem;
+  flex: none;
+}
+
+.stepButton {
+  width: 1.75rem;
+  height: 1.625rem;
+  border-radius: 0.4375rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+
+.stepButton:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.stepLabel {
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--text);
+  padding: 0.25rem 0.375rem;
+  border-radius: 0.375rem;
+  transition:
+    color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+
+.stepLabel:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+/* Already on this week — the button is a no-op, so it reads as inert. */
+.stepLabel:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* --------------------------------------------------------------- week strip */
+
+.strip {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.day {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.625rem 0;
+  border-radius: var(--r-button-lg);
+  background: transparent;
+  border: var(--hairline) solid transparent;
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+
+.day:hover {
+  background: var(--surface);
+}
+
+.day[data-today] {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.day[data-selected]:not([data-today]) {
+  border-color: var(--border-strong);
+}
+
+.dayLetter {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dayNumber {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.84375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.dayNumber[data-today] {
+  color: var(--text);
+  background: var(--accent);
+}
+
+/* A dot under any day that has something planned, so the week reads at a
+   glance without opening each group. */
+.dayMarker {
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.dayMarker[data-has] {
+  background: var(--dot-neutral);
+}
+
+/* ------------------------------------------------------------------- groups */
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.375rem;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6875rem;
+  scroll-margin-top: 1rem;
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.groupTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+@media screen and (max-width: 479px) {
+  .strip {
+    gap: 0.25rem;
+  }
+
+  .dayNumber {
+    width: 1.625rem;
+    height: 1.625rem;
+    font-size: 0.8125rem;
+  }
+}

@@ -1,0 +1,75 @@
+/* Sits above the capture overlay (z-index 50) rather than replacing it — the
+   dump text stays visible behind, so nothing the user typed is lost. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--scrim-menu);
+  animation: cernoFadeIn 0.15s var(--ease);
+}
+
+.dialog {
+  width: 22rem;
+  max-width: 100%;
+  background: var(--surface);
+  border: var(--hairline) solid var(--border-menu);
+  border-radius: var(--r-card);
+  padding: 1.375rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.625rem;
+  animation: cernoRise 0.18s var(--ease);
+}
+
+.icon {
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: var(--r-tile);
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  margin-bottom: 0.125rem;
+}
+
+.title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.body {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.action {
+  align-self: flex-end;
+  margin-top: 0.25rem;
+  padding: 0.5625rem 1.125rem;
+  border-radius: var(--r-button);
+  background: var(--accent);
+  color: #f5f5f4;
+  font-size: 0.84375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: background 0.15s var(--ease);
+}
+
+.action:hover {
+  background: var(--accent-hover);
+}
+
+.action:active {
+  background: var(--accent-pressed);
+}

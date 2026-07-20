@@ -1,0 +1,34 @@
+.shell {
+  display: flex;
+  min-height: 100dvh;
+  height: 100dvh;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Below the sidebar breakpoint the tab bar sits under the scroll area, so the
+   content needs bottom room to clear it plus the home indicator. */
+@media screen and (max-width: 959px) {
+  .content {
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  }
+}

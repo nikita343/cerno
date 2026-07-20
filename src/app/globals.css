@@ -1,0 +1,323 @@
+/* ==========================================================================
+   Cerno — global tokens & base
+   All values converted from the design px to rem against a 16px base.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Theme tokens.
+
+   Light is the default (`:root`); dark is an override on `[data-theme="dark"]`.
+   The designs specify dark only — the light palette below is derived from them:
+   the same flat surfaces, hairline borders and single red accent, with the
+   neutral ramp inverted. The accent is unchanged in both themes, so brand
+   colour never shifts.
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces — inverted from dark: the page is the tint, cards are pure white */
+  --bg: #fafaf9;
+  --bg-sunken: #f5f5f4;
+  --surface: #ffffff;
+  --surface-hover: #f5f5f4;
+
+  /* Borders */
+  --border: #e7e5e4;
+  --border-menu: #d6d3d1;
+  --border-strong: #a8a29e;
+
+  /* Text */
+  --text: #1c1917;
+  --text-secondary: #44403c;
+  --text-muted: #78716c;
+  --text-faint: #a8a29e;
+  --dot-neutral: #b5afa9;
+
+  /* Accent — identical in both themes */
+  --accent: #ff003d;
+  --accent-hover: #ff2953;
+  --accent-pressed: #d60033;
+
+  /* Label taxonomy (fixed 5) — identical in both themes */
+  --label-work: #5b8def;
+  --label-home: #f2a93b;
+  --label-errand: #3fb98a;
+  --label-comms: #9b7bff;
+  --label-health: #e8618c;
+
+  /* Scrims — always darken, so they read as an overlay in either theme */
+  --scrim-capture-desktop: rgba(28, 25, 23, 0.45);
+  --scrim-capture-mobile: rgba(28, 25, 23, 0.5);
+  --scrim-menu: rgba(28, 25, 23, 0.32);
+
+  color-scheme: light;
+
+  /* Radii */
+  --r-chip: 0.875rem;
+  --r-card: 1rem;
+  --r-card-lg: 1.25rem;
+  --r-tile: 0.5625rem;
+  --r-tile-lg: 0.8125rem;
+  --r-pill: 62.5rem;
+  --r-button: 0.6875rem;
+  --r-button-lg: 0.75rem;
+  --r-fab: 1.0625rem;
+
+  --hairline: 0.0625rem;
+
+  /* Layout */
+  --content-max: 40rem;
+  --sidebar-w: 16.375rem;
+  --tabbar-h: 4.5rem;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The original designed palette. Exact hex values from the brief. */
+:root[data-theme="dark"] {
+  --bg: #0a0a0b;
+  --bg-sunken: #0f0f11;
+  --surface: #141416;
+  --surface-hover: #1d1d21;
+
+  --border: #26262a;
+  --border-menu: #2e2e33;
+  --border-strong: #3a3a40;
+
+  --text: #f5f5f4;
+  --text-secondary: #c9c9cc;
+  --text-muted: #9b9ba1;
+  --text-faint: #6e6e75;
+  --dot-neutral: #4b4b52;
+
+  --scrim-capture-desktop: rgba(9, 9, 11, 0.74);
+  --scrim-capture-mobile: rgba(9, 9, 11, 0.78);
+  --scrim-menu: rgba(9, 9, 11, 0.55);
+
+  color-scheme: dark;
+}
+
+/* Theme switches are instant on the tokens, but the large flat areas benefit
+   from a short cross-fade so the flip doesn't feel like a flash. */
+body {
+  transition:
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+/* --------------------------------------------------------------------------
+   Fluid responsiveness ladder (per README).
+
+   NOTE: the ladder in the brief has a discontinuity between 960px and 1200px
+   (the 1200 rule resolves to ~10.5px root at a 1000px viewport, then jumps
+   back to 16px at 960). That was authored for a fixed 1140px mockup frame
+   which scaled down wholesale. Since we render a real fluid layout, the root
+   size is clamped to a legible floor of 13px so mid-desktop widths stay
+   readable. Remove the clamp() wrappers to get the brief's raw curve.
+   -------------------------------------------------------------------------- */
+
+html {
+  font-size: clamp(0.8125rem, calc(0.25rem + 0.8333vw), 1.5rem);
+}
+
+@media screen and (max-width: 1920px) {
+  html {
+    font-size: clamp(0.8125rem, calc(0.625rem + 0.4167vw), 1.25rem);
+  }
+}
+
+@media screen and (max-width: 1440px) {
+  html {
+    font-size: clamp(0.8125rem, calc(-0.125rem + 1.25vw), 1.125rem);
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  html {
+    font-size: clamp(0.8125rem, calc(-0.125rem + 1.25vw), 1.125rem);
+  }
+}
+
+@media screen and (max-width: 960px) {
+  html {
+    font-size: clamp(0.8125rem, calc(0.7505rem + 0.4158vw), 1.0625rem);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  html {
+    font-size: clamp(0.8125rem, calc(0.625rem + 0.65vw), 1.0625rem);
+  }
+}
+
+@media screen and (max-width: 479px) {
+  html {
+    font-size: clamp(0.8125rem, calc(0.7495rem + 0.8368vw), 1rem);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Reset & base
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-funnel-sans), system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  font-size: inherit;
+}
+
+/* Visible focus for keyboard users only — the design has no focus ring, so
+   this is an accessibility addition using the accent already in the palette. */
+:focus-visible {
+  outline: 0.125rem solid var(--accent);
+  outline-offset: 0.125rem;
+  border-radius: 0.25rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Motion — the three keyframes named in the brief
+   -------------------------------------------------------------------------- */
+
+@keyframes cernoDot {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-0.1875rem);
+  }
+}
+
+@keyframes cernoBar {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes cernoPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.86);
+  }
+}
+
+@keyframes cernoFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cernoRise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cernoSheetUp {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Icons draw themselves in once on mount, echoing the line-md set the
+   brief referenced. */
+@keyframes cernoDraw {
+  from {
+    stroke-dashoffset: var(--dash, 48);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
