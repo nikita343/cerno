@@ -1,0 +1,73 @@
+.wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-chip);
+  /* The browser owns vertical panning; we only ever claim the horizontal axis.
+     Without this the swipe and the scroll container fight each other. */
+  touch-action: pan-y;
+}
+
+.tray {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  align-items: stretch;
+  gap: 0.375rem;
+  padding-right: 0.375rem;
+}
+
+.action {
+  width: 4.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: var(--r-chip);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: filter var(--dur-fast) var(--ease);
+}
+
+.action:active {
+  filter: brightness(0.92);
+}
+
+.actionLabel {
+  line-height: 1;
+}
+
+/* Both trays are solid colour fills, so their contents are white in either
+   theme — the same rule the accent surfaces follow. */
+.complete {
+  background: var(--label-errand);
+  color: var(--on-accent);
+}
+
+.delete {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.content {
+  position: relative;
+  will-change: transform;
+}
+
+/* While a finger is down the row tracks it 1:1; on release it springs. */
+.content:not([data-dragging]) {
+  transition: transform var(--dur-slow) var(--ease-spring);
+}
+
+/* Hover-capable pointers get the existing hover actions instead — there is no
+   swipe gesture to reveal this tray, so it would only ever be dead weight. */
+@media (hover: hover) and (pointer: fine) {
+  .tray {
+    display: none;
+  }
+
+  .content {
+    transform: none !important;
+  }
+}

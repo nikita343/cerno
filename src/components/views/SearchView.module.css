@@ -6,7 +6,7 @@
   background: var(--surface);
   border: var(--hairline) solid var(--border);
   border-radius: var(--r-chip);
-  transition: border-color 0.15s var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .field:focus-within {
@@ -66,7 +66,7 @@
   padding: 0.625rem 0.75rem;
   border-radius: 0.625rem;
   text-align: left;
-  transition: background 0.15s var(--ease);
+  transition: background var(--dur) var(--ease);
 }
 
 .recentRow:hover {
@@ -112,7 +112,7 @@
   border-radius: 0.625rem;
   font-size: 0.875rem;
   color: var(--text);
-  transition: border-color 0.15s var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .jumpPill:hover {

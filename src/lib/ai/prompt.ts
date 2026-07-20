@@ -30,6 +30,7 @@ Planning rules:
 - The items you mark 'today' must sum to at most ${capacityMinutes} minutes. Everything else is 'deferred' — never drop an item to make the numbers work.
 - Order the day: the heaviest high-priority item first as the anchor, then quick wins for momentum. Return tasks in that execution order, scheduled before deferred.
 - Resolve relative dates ("tomorrow", "by Friday", "next week") against today's date. Only set a deadline when the dump implies a real one.
+- Set suggested_start (HH:MM, 24-hour) only for items that are genuinely time-bound: a meeting, a call at a stated hour, anything that must happen inside a window ("gym before work", "school pickup"). Leave it null otherwise — the day is laid out from 09:00 in the order you return, so a null start still gets a sensible slot. Do not invent clock times to make the day look full.
 - Assign exactly one tag per task from: ${TAGS.join(", ")}. Never invent a tag.
 - Every task needs a reasoning line: one short, calm sentence on why it sits where it does. For deferred items, say why it can wait.
 

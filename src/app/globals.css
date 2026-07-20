@@ -37,6 +37,17 @@
   --accent-hover: #ff2953;
   --accent-pressed: #d60033;
 
+  /* Foreground for anything sitting ON the accent. The accent is a saturated
+     red in both themes, so its contents are white in both themes — never
+     --text, which inverts and would go black-on-red in light mode. */
+  --on-accent: #ffffff;
+
+  /* Priority ramp. High borrows the accent so the loudest state in the app is
+     one colour, not two competing reds. */
+  --prio-high: #ff003d;
+  --prio-medium: #d98218;
+  --prio-low: #78716c;
+
   /* Label taxonomy (fixed 5) — identical in both themes */
   --label-work: #5b8def;
   --label-home: #f2a93b;
@@ -69,7 +80,15 @@
   --sidebar-w: 16.375rem;
   --tabbar-h: 4.5rem;
 
+  /* Motion. One scale, so a hover, a panel and a list entrance all move at
+     related speeds instead of each component inventing its own timing. */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --dur-fast: 0.14s;
+  --dur: 0.22s;
+  --dur-slow: 0.34s;
 }
 
 /* The original designed palette. Exact hex values from the brief. */
@@ -89,11 +108,36 @@
   --text-faint: #6e6e75;
   --dot-neutral: #4b4b52;
 
+  /* Medium/low need to lift off a dark surface; high stays the accent. */
+  --prio-medium: #f2a93b;
+  --prio-low: #9b9ba1;
+
   --scrim-capture-desktop: rgba(9, 9, 11, 0.74);
   --scrim-capture-mobile: rgba(9, 9, 11, 0.78);
   --scrim-menu: rgba(9, 9, 11, 0.55);
 
   color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   Content width.
+
+   The 40rem column is right for a phone and wasteful on a desktop, where task
+   rows carry a time, a priority badge, a duration, a deadline and a tag — at
+   40rem those pills start colliding with the title. The column widens in two
+   steps so the row has room instead of squeezing.
+   -------------------------------------------------------------------------- */
+
+@media screen and (min-width: 960px) {
+  :root {
+    --content-max: 52rem;
+  }
+}
+
+@media screen and (min-width: 1440px) {
+  :root {
+    --content-max: 60rem;
+  }
 }
 
 /* Theme switches are instant on the tokens, but the large flat areas benefit
@@ -298,6 +342,35 @@ h4 {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Rows entering a list. Paired with a per-index delay so a replanned day
+   resolves top-down instead of appearing all at once. */
+@keyframes cernoRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Rows leaving a list. Height and vertical padding collapse together so the
+   rows beneath slide up rather than snapping into the gap. */
+@keyframes cernoRowOut {
+  from {
+    opacity: 1;
+    max-height: 8rem;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateX(1.5rem);
+    margin-bottom: -0.625rem;
   }
 }
 

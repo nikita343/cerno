@@ -40,7 +40,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--accent);
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur) var(--ease);
 }
 
 .action:hover {

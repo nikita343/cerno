@@ -34,8 +34,8 @@
   align-items: center;
   justify-content: center;
   transition:
-    color 0.15s var(--ease),
-    background 0.15s var(--ease);
+    color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
 }
 
 .stepButton:hover {
@@ -50,8 +50,8 @@
   padding: 0.25rem 0.375rem;
   border-radius: 0.375rem;
   transition:
-    color 0.15s var(--ease),
-    background 0.15s var(--ease);
+    color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
 }
 
 .stepLabel:hover:not(:disabled) {
@@ -83,8 +83,8 @@
   background: transparent;
   border: var(--hairline) solid transparent;
   transition:
-    background 0.15s var(--ease),
-    border-color 0.15s var(--ease);
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
 }
 
 .day:hover {
@@ -121,7 +121,7 @@
 }
 
 .dayNumber[data-today] {
-  color: var(--text);
+  color: var(--on-accent);
   background: var(--accent);
 }
 
@@ -177,4 +177,73 @@
     height: 1.625rem;
     font-size: 0.8125rem;
   }
+}
+
+/* ----------------------------------------------------------- time division */
+
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Quieter than Today's block header — here the day title is the primary
+   heading, so the part-of-day sits below it rather than competing. */
+.blockHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.blockLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.blockTotal {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.blockRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+}
+
+.timedRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rowTime {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  width: 2.625rem;
+  text-align: right;
+  flex: none;
+}
+
+.rowTime[data-fixed] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rowChip {
+  flex: 1;
+  min-width: 0;
 }

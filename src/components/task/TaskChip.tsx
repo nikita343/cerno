@@ -15,9 +15,17 @@ export interface TaskChipProps {
   showTag?: boolean;
   /** Renders the completed treatment: gray dot, muted strikethrough title. */
   done?: boolean;
+  /** Hides the priority badge where the surrounding UI already conveys it. */
+  showPriority?: boolean;
   /** Makes the whole chip a button — used where tapping reveals reasoning. */
   onClick?: () => void;
 }
+
+const PRIORITY_LABEL: Record<Task["priority"], string> = {
+  high: "High",
+  medium: "Med",
+  low: "Low",
+};
 
 /**
  * The atomic task row. Everything else composes this.
@@ -30,6 +38,7 @@ export function TaskChip({
   today,
   showReasoning = false,
   showTag = true,
+  showPriority = true,
   done,
   onClick,
 }: TaskChipProps) {
@@ -44,12 +53,23 @@ export function TaskChip({
         <span
           className={styles.dot}
           data-high={isHigh || undefined}
-          style={{ background: isHigh ? "var(--accent)" : "var(--dot-neutral)" }}
+          data-priority={isDone ? "done" : task.priority}
         />
         <span className={styles.title} data-done={isDone || undefined}>
           {task.title}
         </span>
         <span className={styles.spacer} />
+
+        {showPriority && (
+          <span
+            className={styles.priority}
+            data-priority={task.priority}
+            data-done={isDone || undefined}
+          >
+            {PRIORITY_LABEL[task.priority]}
+          </span>
+        )}
+
         <span className={styles.time}>{taskDuration(task.estimated_minutes)}</span>
 
         {task.deadline && (

@@ -78,7 +78,23 @@ accent, neutral ramp inverted).
 
 Theme lives in its own `localStorage` key so the inline script in
 `app/layout.tsx` can apply it before first paint without parsing the store —
-otherwise a dark-mode user gets a light flash on every navigation.
+otherwise a dark-mode user gets a light flash on every navigation. `<html>`
+carries `suppressHydrationWarning` because that script deliberately makes the
+DOM disagree with the server-rendered attribute.
+
+**`--on-accent` is the foreground for anything sitting on the accent.** The
+accent is a saturated red in both themes, so its contents are white in both —
+never `--text`, which inverts and would render near-black on red in light mode.
+
+## Time
+
+The Today and Upcoming timelines are **derived**, not stored. `lib/schedule.ts`
+lays tasks end-to-end from 09:00 in plan order; a task with a planner-assigned
+`suggested_start` keeps its own time. So the timeline reshapes on reorder or
+completion with no extra state and no migration.
+
+Derived times render muted, planner-assigned times render in full weight — one
+is a projection, the other a commitment, and the UI distinguishes them.
 
 ## Voice
 

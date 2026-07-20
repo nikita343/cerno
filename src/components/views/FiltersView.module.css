@@ -8,7 +8,7 @@
   border: var(--hairline) solid var(--border);
   border-radius: var(--r-chip);
   text-align: left;
-  transition: border-color 0.15s var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .filterCard:hover {
@@ -30,7 +30,7 @@
   justify-content: center;
   color: var(--text-muted);
   flex: none;
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur) var(--ease);
 }
 
 .filterCard[data-active] .filterIcon {
@@ -80,7 +80,7 @@
   background: var(--surface);
   border: var(--hairline) solid var(--border);
   border-radius: var(--r-pill);
-  transition: border-color 0.15s var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .labelPill:hover {

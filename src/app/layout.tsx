@@ -68,7 +68,17 @@ export default function RootLayout({
   const initialData = buildInitialData(todayISO());
 
   return (
-    <html lang="en" data-theme={DEFAULT_THEME} className={funnelSans.variable}>
+    /* The no-flash script below rewrites data-theme before React hydrates, so a
+       dark-theme user's DOM deliberately disagrees with this server-rendered
+       attribute. That is the whole point of the script — suppress the warning
+       here rather than give up the pre-paint theme. Scoped to this element:
+       nothing inside it is exempted. */
+    <html
+      lang="en"
+      data-theme={DEFAULT_THEME}
+      className={funnelSans.variable}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>

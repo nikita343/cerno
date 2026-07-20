@@ -33,7 +33,7 @@
   font-size: 0.65625rem;
   font-weight: 500;
   color: var(--text-faint);
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur) var(--ease);
   min-width: 0;
 }
 

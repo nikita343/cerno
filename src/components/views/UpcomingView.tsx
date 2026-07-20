@@ -12,6 +12,8 @@ import {
   relativeDayTitle,
   weekDates,
 } from "@/lib/date";
+import { totalDuration } from "@/lib/format";
+import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
 import { tasksOn } from "@/store/createAppStore";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -127,10 +129,34 @@ export function UpcomingView() {
             </div>
 
             {dayTasks.length > 0 ? (
-              <div className={view.listTight}>
-                {dayTasks.map((task) => (
-                  <TaskChip key={task.id} task={task} today={today} />
-                ))}
+              <div className={styles.blocks}>
+                {groupIntoBlocks(withStartTimes(dayTasks)).map(
+                  ({ block, items, minutes }) => (
+                    <div key={block.key} className={styles.block}>
+                      <div className={styles.blockHead}>
+                        <span className={styles.blockLabel}>{block.label}</span>
+                        <span className={styles.blockTotal}>
+                          {totalDuration(minutes)}
+                        </span>
+                      </div>
+                      <div className={styles.blockRows}>
+                        {items.map(({ task, start, fixed }) => (
+                          <div key={task.id} className={styles.timedRow}>
+                            <span
+                              className={styles.rowTime}
+                              data-fixed={fixed || undefined}
+                            >
+                              {formatClock(start)}
+                            </span>
+                            <div className={styles.rowChip}>
+                              <TaskChip task={task} today={today} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )}
               </div>
             ) : (
               <p className={view.emptyDashed}>Nothing planned yet.</p>

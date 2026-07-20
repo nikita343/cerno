@@ -11,12 +11,12 @@ import Anthropic from "@anthropic-ai/sdk";
  * Default model. Overridable with `CERNO_MODEL` for cost/latency tuning without
  * a code change.
  *
- * Note: DEVELOPMENT.md §4 specified "claude-sonnet (latest)"; this defaults to
- * Opus instead because the planner's job is judgement — effort estimation and
- * deciding what to cut — which is exactly where the stronger model earns its
- * keep. Set CERNO_MODEL=claude-sonnet-5 to follow the original spec.
+ * Sonnet, as DEVELOPMENT.md §4 originally specified: roughly a third of Opus's
+ * input cost and noticeably faster, which matters on a route the user waits on.
+ * Set CERNO_MODEL=claude-opus-4-8 if planning judgement — effort estimates and
+ * what to cut — turns out to need the stronger model.
  */
-export const DEFAULT_MODEL = process.env.CERNO_MODEL ?? "claude-opus-4-8";
+export const DEFAULT_MODEL = process.env.CERNO_MODEL ?? "claude-sonnet-5";
 
 export function hasApiKey(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);

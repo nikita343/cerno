@@ -1,5 +1,5 @@
 .page {
-  animation: cernoPageIn 0.26s var(--ease) both;
+  animation: cernoPageIn var(--dur-slow) var(--ease-out) both;
 }
 
 /* A short rise paired with the fade — enough to read as a transition without

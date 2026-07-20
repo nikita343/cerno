@@ -25,3 +25,13 @@ information.
 - All date maths goes through `src/lib/date.ts`, which builds Dates with the
   local-time constructor. Never `new Date("2026-07-20")` — that parses as UTC
   and shifts the day for anyone west of Greenwich.
+
+## Time division
+
+Each day group is further split into Morning / Afternoon / Evening via
+`src/lib/schedule.ts`, the same derivation Today uses — laid end-to-end from
+09:00 in plan order, with any planner-assigned `suggested_start` honoured.
+
+The block headers here are deliberately quieter than Today's (smaller, faint,
+no rule). On this screen the *day* is the primary heading; the part-of-day is a
+subdivision under it, not a competing one.

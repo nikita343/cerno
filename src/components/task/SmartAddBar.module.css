@@ -6,7 +6,7 @@
   background: var(--surface);
   border: var(--hairline) solid var(--border);
   border-radius: var(--r-chip);
-  transition: border-color 0.15s var(--ease);
+  transition: border-color var(--dur) var(--ease);
 }
 
 .bar:focus-within {
@@ -17,7 +17,7 @@
   color: var(--text-faint);
   flex: none;
   display: flex;
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur) var(--ease);
 }
 
 .bar:focus-within .icon {
@@ -55,9 +55,9 @@
   justify-content: center;
   flex: none;
   transition:
-    background 0.15s var(--ease),
-    border-color 0.15s var(--ease),
-    color 0.15s var(--ease);
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease),
+    color var(--dur) var(--ease);
 }
 
 .submit:not(:disabled):hover {
@@ -70,7 +70,7 @@
 .bar:focus-within .submit:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
-  color: #f5f5f4;
+  color: var(--on-accent);
 }
 
 .submit:disabled {

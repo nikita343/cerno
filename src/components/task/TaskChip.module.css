@@ -8,7 +8,11 @@
   border: var(--hairline) solid var(--border);
   border-radius: var(--r-chip);
   text-align: left;
-  transition: border-color 0.15s var(--ease);
+  transition:
+    border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease);
 }
 
 .chip[data-interactive] {
@@ -17,6 +21,13 @@
 
 .chip[data-interactive]:hover {
   border-color: var(--border-strong);
+  background: var(--surface-hover);
+  transform: translateY(-0.0625rem);
+}
+
+.chip[data-interactive]:active {
+  transform: translateY(0);
+  transition-duration: var(--dur-fast);
 }
 
 .row {
@@ -31,11 +42,74 @@
   height: 0.5625rem;
   border-radius: 50%;
   flex: none;
+  background: var(--dot-neutral);
+  transition: background var(--dur) var(--ease);
 }
 
-/* High priority pulses; everything else is a static neutral dot. */
+.dot[data-priority="high"] {
+  background: var(--prio-high);
+}
+
+.dot[data-priority="medium"] {
+  background: var(--prio-medium);
+}
+
+.dot[data-priority="low"] {
+  background: var(--prio-low);
+}
+
+.dot[data-priority="done"] {
+  background: var(--dot-neutral);
+}
+
+/* High priority pulses; everything else is a static dot. */
 .dot[data-high] {
   animation: cernoPulse 1.6s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------ priority badge */
+
+/* Tinted rather than solid: a row can carry a deadline pill and a tag pill
+   alongside this, and three solid fills in one row is noise. High is the only
+   one allowed to reach full accent strength. */
+.priority {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--r-pill);
+  padding: 0.1875rem 0.5rem;
+  white-space: nowrap;
+  flex: none;
+  border: var(--hairline) solid transparent;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+
+.priority[data-priority="high"] {
+  background: var(--prio-high);
+  color: var(--on-accent);
+}
+
+.priority[data-priority="medium"] {
+  background: color-mix(in srgb, var(--prio-medium) 16%, transparent);
+  border-color: color-mix(in srgb, var(--prio-medium) 34%, transparent);
+  color: var(--prio-medium);
+}
+
+.priority[data-priority="low"] {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+/* A finished task shouldn't still be shouting its priority. */
+.priority[data-done] {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-faint);
 }
 
 .title {
