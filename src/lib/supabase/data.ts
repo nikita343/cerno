@@ -46,7 +46,41 @@ export interface DashboardData {
  * Open work is always included regardless of date; completed work only for the
  * recent window above.
  */
+/**
+ * PostgREST's rejection when a JWT's `iat` is ahead of its clock.
+ *
+ * Hit on the very first request after signing in: the token is milliseconds
+ * old, and GoTrue and PostgREST are separate services whose clocks can differ
+ * by a fraction of a second. PostgREST allows no leeway, so a token minted
+ * "just now" can look like it comes from the future. A second later the same
+ * token validates fine — which is why a refresh always appears to fix it.
+ */
+const CLOCK_SKEW_CODE = "PGRST303";
+
+function isClockSkew(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: string }).code === CLOCK_SKEW_CODE
+  );
+}
+
 export async function loadDashboard(
+  supabase: SupabaseClient,
+  today: string,
+): Promise<DashboardData> {
+  try {
+    return await fetchDashboard(supabase, today);
+  } catch (error) {
+    if (!isClockSkew(error)) throw error;
+    // Wait out the skew rather than showing an error the user can only fix by
+    // pressing reload. One retry is enough: the window is sub-second.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    return fetchDashboard(supabase, today);
+  }
+}
+
+async function fetchDashboard(
   supabase: SupabaseClient,
   today: string,
 ): Promise<DashboardData> {

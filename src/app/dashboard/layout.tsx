@@ -40,8 +40,15 @@ export default async function DashboardLayout({
   let initialData: InitialData;
   if (user) {
     const supabase = await createClient();
-    const data = await loadDashboard(supabase, today);
-    initialData = { today, ...data };
+    try {
+      initialData = { today, ...(await loadDashboard(supabase, today)) };
+    } catch (error) {
+      // A failed read must not take down the whole app. The shell still
+      // renders and the user can capture a dump; the alternative is Next's
+      // generic error page, which offers nothing but a reload button.
+      console.error("[dashboard] initial load failed", error);
+      initialData = { today, tasks: [], dayPlans: {}, dumps: [] };
+    }
   } else {
     // No backend configured. Fixtures keep the shell explorable in a keyless
     // dev environment; nothing here is reachable once Supabase is set up,
