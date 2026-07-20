@@ -3,20 +3,31 @@ import { createStore } from "zustand/vanilla";
 
 import { addDays } from "@/lib/date";
 import { DAY_CAPACITY_MINUTES, seedDayPlan, seedDump, seedTasks } from "@/lib/fixtures";
+import { newId } from "@/lib/id";
 import { isPlannableDump, planDump, smartAddTask } from "@/lib/planner";
 import {
+  deleteLabelRow,
   deleteTaskRow,
+  insertLabel,
+  renameLabelRow,
+  saveSettings,
+  updateLabelColor,
   updateTaskRow,
+  uploadAvatar,
   type TaskPatch,
 } from "@/lib/supabase/data";
 import { applyTheme, DEFAULT_THEME } from "@/lib/theme";
-import type {
-  CaptureMode,
-  DayPlan,
-  Dump,
-  Priority,
-  Task,
-  Theme,
+import {
+  DEFAULT_LABELS,
+  DEFAULT_SETTINGS,
+  type CaptureMode,
+  type DayPlan,
+  type Dump,
+  type Label,
+  type Priority,
+  type Task,
+  type Theme,
+  type UserSettings,
 } from "@/lib/types";
 
 export interface AppState {
@@ -26,8 +37,24 @@ export interface AppState {
   tasks: Task[];
   dayPlans: Record<string, DayPlan>;
   dumps: Dump[];
+  labels: Label[];
+  settings: UserSettings;
+
+  /**
+   * Minutes from midnight, as the app currently believes them.
+   *
+   * Held in state rather than read from `Date.now()` during render, for two
+   * reasons: a component that computes "now" while rendering produces different
+   * server and client markup and breaks hydration, and a single ticking value
+   * means every overdue badge in the tree flips on the same frame instead of
+   * whenever each one happens to re-render.
+   */
+  nowMinutes: number;
 
   /* --- transient UI (never persisted) --- */
+  /** Ids the user has dismissed from the notification panel this session. */
+  dismissedReminders: string[];
+  notificationsOpen: boolean;
   captureOpen: boolean;
   captureMode: CaptureMode;
   dumpText: string;
@@ -69,6 +96,22 @@ export interface AppActions {
   /** Roll unfinished tasks from past days onto today. */
   carryOver: () => Promise<void>;
 
+  /* labels */
+  addLabel: (name: string, color: string) => Promise<void>;
+  renameLabel: (id: string, name: string) => Promise<void>;
+  recolorLabel: (id: string, color: string) => Promise<void>;
+  removeLabel: (id: string) => Promise<void>;
+
+  /* settings */
+  updateSettings: (patch: Partial<UserSettings>) => Promise<void>;
+  uploadAvatarFile: (file: File) => Promise<void>;
+
+  /* reminders */
+  setNowMinutes: (minutes: number) => void;
+  setNotificationsOpen: (open: boolean) => void;
+  dismissReminder: (id: string) => void;
+  clearDismissedReminders: () => void;
+
   /* ui */
   setMenuOpen: (open: boolean) => void;
   setUpcomingAnchor: (iso: string) => void;
@@ -84,6 +127,10 @@ export interface InitialData {
   tasks: Task[];
   dayPlans: Record<string, DayPlan>;
   dumps: Dump[];
+  labels: Label[];
+  settings: UserSettings;
+  /** The user id, for writes that must state it. Null when signed out. */
+  userId: string | null;
 }
 
 /**
@@ -99,6 +146,15 @@ export function buildInitialData(today: string): InitialData {
     tasks: seedTasks(today),
     dayPlans: { [plan.plan_date]: plan },
     dumps: [seedDump()],
+    labels: DEFAULT_LABELS.map((label, i) => ({
+      id: `seed-${label.name}`,
+      name: label.name,
+      color: label.color,
+      sort_order: i,
+      created_at: `${today}T00:00:00.000Z`,
+    })),
+    settings: DEFAULT_SETTINGS,
+    userId: null,
   };
 }
 
@@ -139,6 +195,42 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
       }
     };
 
+    /**
+     * The same optimistic-then-rollback contract, for labels.
+     *
+     * Kept separate from `writeThrough` rather than generalised over a key:
+     * a label rename also rewrites task tags, so some of these have to restore
+     * both slices on failure, and a single generic helper would either not
+     * support that or would need a parameter for every case.
+     */
+    const writeLabels = async (
+      optimistic: (labels: Label[]) => Label[],
+      persist: (db: SupabaseClient) => Promise<void>,
+      /** Applied alongside, for changes that also touch tasks. */
+      optimisticTasks?: (tasks: Task[]) => Task[],
+    ) => {
+      const previousLabels = get().labels;
+      const previousTasks = get().tasks;
+      set({
+        labels: optimistic(previousLabels),
+        ...(optimisticTasks ? { tasks: optimisticTasks(previousTasks) } : {}),
+        syncError: null,
+      });
+
+      const db = getDb();
+      if (!db) return;
+
+      try {
+        await persist(db);
+      } catch {
+        set({
+          labels: previousLabels,
+          tasks: previousTasks,
+          syncError: SYNC_FAILED,
+        });
+      }
+    };
+
     return {
       ...initial,
 
@@ -151,6 +243,12 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
       upcomingAnchor: initial.today,
       searchQuery: "",
       theme: DEFAULT_THEME,
+      // Zero until the client ticks it. The server has no meaningful "now" for
+      // the viewer's timezone, and guessing one would render an overdue badge
+      // on the server that the client immediately contradicts.
+      nowMinutes: 0,
+      dismissedReminders: [],
+      notificationsOpen: false,
 
       setToday: (iso) => set({ today: iso }),
 
@@ -209,6 +307,9 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             today,
             capacityMinutes: DAY_CAPACITY_MINUTES,
             carryIn,
+            // Only consulted if the route is unreachable and planning falls
+            // back to the local heuristic; the server reads labels itself.
+            labelNames: get().labels.map((l) => l.name),
           });
 
           set((state) => ({
@@ -317,7 +418,11 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         try {
           // Persisted server-side by /api/tasks/parse; the returned task
           // already has its database id.
-          const task = await smartAddTask(text, today);
+          const task = await smartAddTask(
+            text,
+            today,
+            get().labels.map((l) => l.name),
+          );
           set((state) => {
             // New quick-adds go to the end of today's list rather than
             // reshuffling a plan the user has already seen.
@@ -360,6 +465,147 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           // simply retries next time. Not worth interrupting the user.
         }
       },
+
+      /* ---------------------------------------------------------------- */
+      /* Labels                                                           */
+      /* ---------------------------------------------------------------- */
+
+      addLabel: async (name, color) => {
+        const userId = initial.userId;
+        const trimmed = name.trim();
+        const sortOrder = get().labels.length;
+
+        // The optimistic row carries a client id that the database will
+        // replace. It is swapped for the real row below rather than left in
+        // place, so a later rename targets an id the server recognises.
+        const optimisticId = newId();
+        const optimistic: Label = {
+          id: optimisticId,
+          name: trimmed,
+          color,
+          sort_order: sortOrder,
+          created_at: new Date().toISOString(),
+        };
+
+        const previous = get().labels;
+        set({ labels: [...previous, optimistic], syncError: null });
+
+        const db = getDb();
+        if (!db || !userId) return;
+
+        try {
+          const saved = await insertLabel(
+            db,
+            { name: trimmed, color, sort_order: sortOrder },
+            userId,
+          );
+          set((state) => ({
+            labels: state.labels.map((l) => (l.id === optimisticId ? saved : l)),
+          }));
+        } catch {
+          set({ labels: previous, syncError: SYNC_FAILED });
+        }
+      },
+
+      renameLabel: (id, name) => {
+        const trimmed = name.trim();
+        const previousName = get().labels.find((l) => l.id === id)?.name;
+        return writeLabels(
+          (labels) =>
+            labels.map((l) => (l.id === id ? { ...l, name: trimmed } : l)),
+          (db) => renameLabelRow(db, id, trimmed),
+          // Tasks store label names, so a rename has to move with them or every
+          // tagged task renders against a label that no longer exists.
+          (tasks) =>
+            previousName === undefined
+              ? tasks
+              : tasks.map((t) =>
+                  t.tags.includes(previousName)
+                    ? {
+                        ...t,
+                        tags: t.tags.map((tag) =>
+                          tag === previousName ? trimmed : tag,
+                        ),
+                      }
+                    : t,
+                ),
+        );
+      },
+
+      recolorLabel: (id, color) =>
+        writeLabels(
+          (labels) => labels.map((l) => (l.id === id ? { ...l, color } : l)),
+          (db) => updateLabelColor(db, id, color),
+        ),
+
+      removeLabel: (id) => {
+        const name = get().labels.find((l) => l.id === id)?.name;
+        return writeLabels(
+          (labels) => labels.filter((l) => l.id !== id),
+          (db) => deleteLabelRow(db, id),
+          (tasks) =>
+            name === undefined
+              ? tasks
+              : tasks.map((t) =>
+                  t.tags.includes(name)
+                    ? { ...t, tags: t.tags.filter((tag) => tag !== name) }
+                    : t,
+                ),
+        );
+      },
+
+      /* ---------------------------------------------------------------- */
+      /* Settings                                                         */
+      /* ---------------------------------------------------------------- */
+
+      updateSettings: async (patch) => {
+        const previous = get().settings;
+        set({ settings: { ...previous, ...patch }, syncError: null });
+
+        const db = getDb();
+        const userId = initial.userId;
+        if (!db || !userId) return;
+
+        try {
+          await saveSettings(db, patch, userId);
+        } catch {
+          set({ settings: previous, syncError: SYNC_FAILED });
+        }
+      },
+
+      uploadAvatarFile: async (file) => {
+        const db = getDb();
+        const userId = initial.userId;
+        if (!db || !userId) return;
+
+        // Not optimistic: there is nothing to show until the upload finishes,
+        // and a local object URL would be revoked on navigation and leave a
+        // broken image behind.
+        try {
+          const url = await uploadAvatar(db, file, userId);
+          set((state) => ({
+            settings: { ...state.settings, avatar_url: url },
+            syncError: null,
+          }));
+          await saveSettings(db, { avatar_url: url }, userId);
+        } catch {
+          set({ syncError: "That image didn't upload. Try a smaller one." });
+        }
+      },
+
+      /* ---------------------------------------------------------------- */
+      /* Reminders                                                        */
+      /* ---------------------------------------------------------------- */
+
+      setNowMinutes: (nowMinutes) => set({ nowMinutes }),
+      setNotificationsOpen: (notificationsOpen) => set({ notificationsOpen }),
+      dismissReminder: (id) =>
+        set((state) =>
+          state.dismissedReminders.includes(id)
+            ? state
+            : { dismissedReminders: [...state.dismissedReminders, id] },
+        ),
+      clearDismissedReminders: () => set({ dismissedReminders: [] }),
 
       /* ---------------------------------------------------------------- */
       /* UI                                                               */

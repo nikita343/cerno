@@ -3,7 +3,9 @@
 import type { ReactNode } from "react";
 
 import { CaptureOverlay } from "@/components/capture/CaptureOverlay";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { SettingsMenuOverlay } from "@/components/settings/SettingsMenuOverlay";
+import { useNowTicker } from "@/lib/useNow";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { Fab } from "./Fab";
@@ -22,6 +24,11 @@ import styles from "./AppShell.module.css";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const captureOpen = useAppStore((s) => s.captureOpen);
+  const setNowMinutes = useAppStore((s) => s.setNowMinutes);
+
+  // Mounted once here rather than per view, so navigating between Today and
+  // Upcoming doesn't restart the clock.
+  useNowTicker(setNowMinutes);
 
   return (
     <div className={styles.shell}>
@@ -38,6 +45,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <CaptureOverlay />
       <SettingsMenuOverlay />
+      {/* Rendered here, not beside each bell: the sidebar and the mobile top
+          bar are both always in the DOM, so a panel next to each trigger would
+          exist twice. */}
+      <NotificationCenter />
     </div>
   );
 }

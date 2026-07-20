@@ -6,18 +6,20 @@ import { usePathname } from "next/navigation";
 import {
   CalendarIcon,
   ChevronDown,
+  CogIcon,
   EditIcon,
   FilterIcon,
   ListIcon,
   MailIcon,
   SearchIcon,
 } from "@/components/icons";
+import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
-import { LABEL_COLORS } from "@/lib/labels";
-import { NAV_ITEMS } from "@/lib/nav";
-import { TAGS, type ScreenKey } from "@/lib/types";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { DASHBOARD_ROOT, NAV_ITEMS, screenFromPath } from "@/lib/nav";
+import type { ScreenKey } from "@/lib/types";
 import { inboxTasks } from "@/store/createAppStore";
-import { useAppStore } from "@/store/StoreProvider";
+import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import styles from "./Sidebar.module.css";
 
@@ -27,6 +29,7 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
   upcoming: ListIcon,
   inbox: MailIcon,
   filters: FilterIcon,
+  settings: CogIcon,
 };
 
 export function Sidebar() {
@@ -37,23 +40,31 @@ export function Sidebar() {
   const menuOpen = useAppStore((s) => s.menuOpen);
   const inboxCount = useAppStore((s) => inboxTasks(s.tasks).length);
   const setSearchQuery = useAppStore((s) => s.setSearchQuery);
+  const labels = useAppStoreShallow((s) => s.labels);
+  // See MobileTabBar: a per-item `startsWith` would mark Today active on every
+  // page, because every nav href is prefixed with the dashboard root.
+  const current = screenFromPath(pathname);
 
   return (
     <aside className={styles.sidebar}>
-      <button
-        type="button"
-        className={styles.profile}
-        onClick={() => setMenuOpen(!menuOpen)}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-      >
-        <span className={styles.avatar}>{user.initials}</span>
-        <span className={styles.profileText}>
-          <span className={styles.profileName}>{user.name}</span>
-          <span className={styles.profileEmail}>{user.email}</span>
-        </span>
-        <ChevronDown size="1rem" className={styles.profileChevron} />
-      </button>
+      <div className={styles.profileRow}>
+        <button
+          type="button"
+          className={styles.profile}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+        >
+          <Avatar profile={user} size="2.125rem" />
+          <span className={styles.profileText}>
+            <span className={styles.profileName}>{user.name}</span>
+            <span className={styles.profileEmail}>{user.email}</span>
+          </span>
+          <ChevronDown size="1rem" className={styles.profileChevron} />
+        </button>
+
+        <NotificationBell />
+      </div>
 
       <button type="button" className={styles.dumpButton} onClick={openCapture}>
         <EditIcon size="1.125rem" />
@@ -63,8 +74,7 @@ export function Sidebar() {
       <nav className={styles.nav} aria-label="Primary">
         {NAV_ITEMS.map((item) => {
           const Icon = NAV_ICONS[item.key];
-          const active =
-            item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const active = current === item.key;
           return (
             <Link
               key={item.key}
@@ -85,20 +95,25 @@ export function Sidebar() {
 
       <div className={styles.labels}>
         <span className={styles.labelsHeading}>Labels</span>
-        {TAGS.map((tag) => (
+        {labels.map((label) => (
           <Link
-            key={tag}
-            href={`/search?tag=${tag}`}
+            key={label.id}
+            href={`${DASHBOARD_ROOT}/search?tag=${encodeURIComponent(label.name)}`}
             className={styles.labelRow}
-            onClick={() => setSearchQuery(tag)}
+            onClick={() => setSearchQuery(label.name)}
           >
             <span
               className={styles.labelDot}
-              style={{ background: LABEL_COLORS[tag] }}
+              style={{ background: label.color }}
             />
-            <span>{tag}</span>
+            <span className={styles.labelName}>{label.name}</span>
           </Link>
         ))}
+        {labels.length === 0 && (
+          <Link href={`${DASHBOARD_ROOT}/filters`} className={styles.labelEmpty}>
+            Add a label
+          </Link>
+        )}
       </div>
     </aside>
   );

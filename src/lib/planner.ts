@@ -2,7 +2,15 @@ import { addDays, deadlineLabel, toISODate, todayISO } from "./date";
 import { totalDuration } from "./format";
 import { DAY_CAPACITY_MINUTES } from "./fixtures";
 import { newId } from "./id";
-import type { DayPlan, Dump, PlanResult, Priority, Tag, Task } from "./types";
+import {
+  DEFAULT_LABELS,
+  type DayPlan,
+  type Dump,
+  type PlanResult,
+  type Priority,
+  type Tag,
+  type Task,
+} from "./types";
 
 /**
  * Mock planner — phase 1 stand-in for `POST /api/plan`.
@@ -35,13 +43,28 @@ interface PlanInput {
    * disagree with the Deferred list it sits above.
    */
   carryIn?: Task[];
+  /**
+   * The user's label names. Defaults are used when absent — the client-side
+   * offline fallback has no way to fetch them.
+   */
+  labelNames?: string[];
 }
 
 /* -------------------------------------------------------------------------- */
 /* Keyword tables                                                             */
 /* -------------------------------------------------------------------------- */
 
-const TAG_KEYWORDS: Record<Tag, string[]> = {
+/**
+ * Keyed by the default label names.
+ *
+ * Labels are user-defined, so these keywords only help a user who kept the
+ * defaults. `detectTag` handles the rest: it matches the user's own names
+ * first, consults this table only for labels they actually have, and otherwise
+ * falls back to their first label. There is no useful way to guess keywords for
+ * a label named "gardening" — and the AI path, which is the one that matters,
+ * gets the real list.
+ */
+const TAG_KEYWORDS: Record<string, string[]> = {
   work: [
     "deck", "slide", "report", "email client", "meeting", "presentation",
     "deploy", "review", "ship", "spec", "invoice", "client", "standup",
@@ -136,18 +159,34 @@ function toTitle(fragment: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-function detectTag(fragment: string): Tag {
+function detectTag(fragment: string, labelNames: string[]): Tag {
+  const available =
+    labelNames.length > 0 ? labelNames : DEFAULT_LABELS.map((l) => l.name);
   const lower = fragment.toLowerCase();
-  let best: Tag = "work";
+
+  // A label the person named themselves, mentioned outright ("gardening: prune
+  // the roses"). Their own vocabulary beats any table we could ship.
+  const named = available.find((name) => {
+    const n = name.trim().toLowerCase();
+    return n.length > 2 && lower.includes(n);
+  });
+  if (named) return named;
+
+  // Keyword scoring, restricted to labels this user actually has — scoring a
+  // label they deleted would produce a tag nothing can render.
+  let best: string | null = null;
   let bestScore = 0;
-  for (const [tag, words] of Object.entries(TAG_KEYWORDS) as Array<[Tag, string[]]>) {
+  for (const name of available) {
+    const words = TAG_KEYWORDS[name.trim().toLowerCase()];
+    if (!words) continue;
     const score = words.reduce((n, w) => (lower.includes(w) ? n + 1 : n), 0);
     if (score > bestScore) {
       bestScore = score;
-      best = tag;
+      best = name;
     }
   }
-  return bestScore > 0 ? best : "work";
+
+  return best ?? available[0];
 }
 
 function detectMinutes(fragment: string): number {
@@ -296,6 +335,7 @@ export function buildPlan({
   today = todayISO(),
   capacityMinutes = DAY_CAPACITY_MINUTES,
   carryIn = [],
+  labelNames = [],
 }: PlanInput): PlanResult {
   const createdAt = new Date().toISOString();
   const dumpId = newId();
@@ -335,7 +375,7 @@ export function buildPlan({
       suggested_start: detectStartTime(fragment),
       status: "today",
       plan_date: planDate ?? today,
-      tags: [detectTag(fragment)],
+      tags: [detectTag(fragment, labelNames)],
       reasoning: buildReasoning(priority, minutes, deadline, today),
       sort_order: parsed.length,
       created_at: createdAt,
@@ -470,7 +510,11 @@ function buildCapacityNote({
  *
  * Used as the fallback when `/api/tasks/parse` has no API key behind it.
  */
-export function parseSingleTask(text: string, today = todayISO()): Task {
+export function parseSingleTask(
+  text: string,
+  today = todayISO(),
+  labelNames: string[] = [],
+): Task {
   const title = toTitle(text.trim()) || text.trim().slice(0, 60);
   const [planDate, deadline] = detectDates(text, today);
   const priority = detectPriority(text, deadline, today);
@@ -486,7 +530,7 @@ export function parseSingleTask(text: string, today = todayISO()): Task {
     suggested_start: detectStartTime(text),
     status: "today",
     plan_date: planDate ?? today,
-    tags: [detectTag(text)],
+    tags: [detectTag(text, labelNames)],
     reasoning: buildReasoning(priority, minutes, deadline, today),
     sort_order: 0,
     created_at: new Date().toISOString(),
@@ -567,6 +611,8 @@ function isNetworkError(error: Error): boolean {
 export async function smartAddTask(
   text: string,
   today = todayISO(),
+  /** Only used by the offline fallback — the route reads them server-side. */
+  labelNames: string[] = [],
 ): Promise<Task> {
   try {
     const response = await fetch("/api/tasks/parse", {
@@ -582,7 +628,7 @@ export async function smartAddTask(
     const body = (await response.json()) as { task: Task };
     return body.task;
   } catch {
-    return parseSingleTask(text, today);
+    return parseSingleTask(text, today, labelNames);
   }
 }
 

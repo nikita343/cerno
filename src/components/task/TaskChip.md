@@ -14,6 +14,7 @@ Inbox, Upcoming, Filters results, Search results.
 | `showPriority` | `boolean` | `true` | Hides the priority badge where the surrounding UI already conveys it |
 | `done` | `boolean` | `task.status === "done"` | Explicit override; otherwise derived |
 | `onClick` | `() => void` | — | When present the chip renders as a `<button>` instead of a `<div>` |
+| `overdue` | `boolean` | `false` | Past its scheduled finish. Supplied by the view from `useReminders()`, never computed here |
 
 ## Behaviour
 
@@ -27,15 +28,22 @@ Inbox, Upcoming, Filters results, Search results.
   shouldn't still be shouting its priority.
 - **Done state** — dot goes neutral, title becomes `--text-muted` with
   `line-through`.
+- **Overdue** — an `OVERDUE` badge left of the priority badge, plus a red left
+  edge on the chip. Marked with an edge rather than a full tint: the badge
+  already states it, and tinting the surface would fight the priority dot and
+  the label pill for the same attention. Never shown on a done task.
 - **Tags** — `task.tags` is an array to match the Supabase column, but the chip
-  only ever renders `tags[0]`; the design has room for one pill. Colour comes
-  from `labelColor()`, never from the database.
+  only ever renders `tags[0]`; the design has room for one pill. Labels are
+  user-defined, so the chip subscribes to `s.labels` and resolves the colour via
+  `labelColor(labels, tag)`. A tag whose label was deleted falls back to grey.
 - **Narrow screens** (≤479px) — the meta pills wrap to a second line rather
   than squeezing the title, which is the thing you scan.
 
 ## Gotchas
 
 - Don't pass `today` from `new Date()` inside this component. It must come from
-  the store so server and client render identical markup.
+  the store so server and client render identical markup. The same applies to
+  `overdue` — it derives from `nowMinutes`, which is 0 until the client ticks it,
+  precisely so no overdue state is ever server-rendered.
 - Adding a second tag pill means changing the layout, not just the map — the
   row is a single flex line by design.

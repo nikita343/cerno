@@ -243,6 +243,12 @@
   font-weight: 600;
 }
 
+/* After [data-fixed] so it wins when a task is both — see TodayView.module.css. */
+.rowTime[data-overdue] {
+  color: var(--overdue);
+  font-weight: 600;
+}
+
 .rowChip {
   flex: 1;
   min-width: 0;

@@ -4,14 +4,17 @@ import * as z from "zod";
 
 import { describeError, DEFAULT_MODEL, getClient } from "@/lib/ai/client";
 import { planSystemPrompt, planUserPrompt } from "@/lib/ai/prompt";
-import { planResponseSchema, type PlannedTask } from "@/lib/ai/schema";
+import { buildPlanResponseSchema, type PlannedTask } from "@/lib/ai/schema";
 import { addDays, todayISO } from "@/lib/date";
 import { DAY_CAPACITY_MINUTES } from "@/lib/fixtures";
 import { newId } from "@/lib/id";
 import { buildPlan } from "@/lib/planner";
 import { insertDump, upsertDayPlan, upsertTasks } from "@/lib/supabase/data";
-import { hasSupabaseConfig } from "@/lib/supabase/env";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import {
+  loadLabelNames,
+  resolveRequestUser,
+  type RequestUser,
+} from "@/lib/supabase/request";
 import type { DayPlan, Dump, PlanResult, Tag, Task } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -67,6 +70,11 @@ export async function POST(request: Request) {
 
   const client = getClient();
 
+  // Resolved once and reused for persistence below: verifying the session is a
+  // round trip to the auth server, and doing it twice per dump is wasteful.
+  const caller = await resolveRequestUser();
+  const labelNames = await loadLabelNames(caller);
+
   // No key configured — serve the heuristic planner rather than erroring.
   if (!client) {
     const result = buildPlan({
@@ -75,8 +83,9 @@ export async function POST(request: Request) {
       today,
       capacityMinutes,
       carryIn,
+      labelNames,
     });
-    await persistPlan(result);
+    await persistPlan(result, caller);
     return NextResponse.json({ ...result, planner: "heuristic" });
   }
 
@@ -89,12 +98,13 @@ export async function POST(request: Request) {
       thinking: { type: "adaptive" },
       output_config: {
         effort: "medium",
-        format: zodOutputFormat(planResponseSchema),
+        format: zodOutputFormat(buildPlanResponseSchema(labelNames)),
       },
       system: planSystemPrompt({
         now: today,
         timezone: body.timezone,
         capacityMinutes,
+        labelNames,
       }),
       messages: [
         {
@@ -119,7 +129,7 @@ export async function POST(request: Request) {
       dumpText: body.dumpText,
     });
 
-    await persistPlan(result);
+    await persistPlan(result, caller);
     return NextResponse.json({ ...result, planner: "ai" });
   } catch (error) {
     const { status, message } = describeError(error);
@@ -138,17 +148,16 @@ export async function POST(request: Request) {
  * visible failure — the user would keep working against a plan that only exists
  * in their tab.
  */
-async function persistPlan(result: PlanResult): Promise<void> {
-  if (!hasSupabaseConfig()) return;
-  const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
+async function persistPlan(
+  result: PlanResult,
+  caller: RequestUser | null,
+): Promise<void> {
+  if (!caller) return;
+  const { supabase, userId } = caller;
 
-  await insertDump(supabase, result.dump, user.id);
-  await upsertTasks(supabase, result.tasks, user.id);
-  await upsertDayPlan(supabase, result.dayPlan, user.id);
+  await insertDump(supabase, result.dump, userId);
+  await upsertTasks(supabase, result.tasks, userId);
+  await upsertDayPlan(supabase, result.dayPlan, userId);
 }
 
 /* -------------------------------------------------------------------------- */

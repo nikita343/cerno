@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-import { TAGS } from "@/lib/types";
+import { DEFAULT_LABELS } from "@/lib/types";
 
 /**
  * The contract Claude must satisfy.
@@ -10,11 +10,30 @@ import { TAGS } from "@/lib/types";
  * asked for it — which removes the whole class of "stray prose around the
  * JSON" failures the brief anticipated. They are still validated on the way
  * out, because a schema guarantees shape, not sense.
+ *
+ * The tag enum used to be a module constant. Labels are user-defined now, so
+ * the schemas are built per request from the caller's own label names — that
+ * enum is what makes an invented tag impossible rather than merely discouraged,
+ * so it has to be as specific as the user's list.
  */
 
 export const prioritySchema = z.enum(["high", "medium", "low"]);
 
-export const tagSchema = z.enum(TAGS as unknown as [string, ...string[]]);
+const FALLBACK_TAGS = DEFAULT_LABELS.map((l) => l.name);
+
+/**
+ * Constrains the tag to the user's labels.
+ *
+ * Falls back to the default taxonomy when the list is empty — a brand-new
+ * account mid-seed, or a label read that failed. An empty enum is not a valid
+ * schema, and rejecting the whole plan because the user has no labels would
+ * turn a cosmetic problem into a broken dump.
+ */
+export function buildTagSchema(labelNames: string[]) {
+  const names = labelNames.map((n) => n.trim()).filter(Boolean);
+  const values = names.length > 0 ? names : FALLBACK_TAGS;
+  return z.enum(values as [string, ...string[]]);
+}
 
 /**
  * One planned item.
@@ -23,7 +42,8 @@ export const tagSchema = z.enum(TAGS as unknown as [string, ...string[]]);
  * task with its id, and the model echoes that id for anything it is carrying
  * forward. `null` means the item was parsed fresh from this dump.
  */
-export const plannedTaskSchema = z.object({
+export function buildPlannedTaskSchema(labelNames: string[]) {
+  return z.object({
   id: z
     .string()
     .nullable()
@@ -54,57 +74,72 @@ export const plannedTaskSchema = z.object({
     .string()
     .nullable()
     .describe("HH:MM if the item is time-bound, otherwise null."),
-  tag: tagSchema.describe("Exactly one label from the fixed taxonomy."),
-  reasoning: z
-    .string()
-    .describe(
-      "One short, calm line explaining this priority/effort/placement. No exclamation marks.",
+    tag: buildTagSchema(labelNames).describe(
+      "Exactly one label, chosen from the caller's own label set.",
     ),
-  status: z
-    .enum(["today", "deferred"])
-    .describe("'today' if it fits the day's capacity, 'deferred' if parked."),
-});
+    reasoning: z
+      .string()
+      .describe(
+        "One short, calm line explaining this priority/effort/placement. No exclamation marks.",
+      ),
+    status: z
+      .enum(["today", "deferred"])
+      .describe("'today' if it fits the day's capacity, 'deferred' if parked."),
+  });
+}
 
-export const planResponseSchema = z.object({
-  tasks: z
-    .array(plannedTaskSchema)
-    .describe(
-      "Every outstanding item, new and carried over, in execution order. Scheduled items first.",
-    ),
-  summary: z
-    .string()
-    .describe("One calm sentence describing the shape of the day."),
-  capacity_note: z
-    .string()
-    .describe(
-      "One line reconciling what came in against what was planned and parked.",
-    ),
-});
+export function buildPlanResponseSchema(labelNames: string[]) {
+  return z.object({
+    tasks: z
+      .array(buildPlannedTaskSchema(labelNames))
+      .describe(
+        "Every outstanding item, new and carried over, in execution order. Scheduled items first.",
+      ),
+    summary: z
+      .string()
+      .describe("One calm sentence describing the shape of the day."),
+    capacity_note: z
+      .string()
+      .describe(
+        "One line reconciling what came in against what was planned and parked.",
+      ),
+  });
+}
 
-export type PlanResponse = z.infer<typeof planResponseSchema>;
-export type PlannedTask = z.infer<typeof plannedTaskSchema>;
+/**
+ * Types are derived from the default-label instance of each schema.
+ *
+ * The tag enum's *members* vary per user but its TypeScript type is `string`
+ * either way, so one representative instance describes every variant.
+ */
+export type PlanResponse = z.infer<ReturnType<typeof buildPlanResponseSchema>>;
+export type PlannedTask = z.infer<ReturnType<typeof buildPlannedTaskSchema>>;
 
 /** The narrower shape used by the smart single-task add. */
-export const smartTaskSchema = z.object({
-  title: z.string().describe("Imperative, at most 8 words."),
-  priority: prioritySchema,
-  estimated_minutes: z.number().int(),
-  deadline: z
-    .string()
-    .nullable()
-    .describe("YYYY-MM-DD the task must be finished BY, or null."),
-  plan_date: z
-    .string()
-    .nullable()
-    .describe(
-      "YYYY-MM-DD to actually DO this, when a specific day was named. Null means today.",
-    ),
-  suggested_start: z
-    .string()
-    .nullable()
-    .describe("HH:MM if a clock time was given, otherwise null."),
-  tag: tagSchema,
-  reasoning: z.string().describe("One short line on why this priority/effort."),
-});
+export function buildSmartTaskSchema(labelNames: string[]) {
+  return z.object({
+    title: z.string().describe("Imperative, at most 8 words."),
+    priority: prioritySchema,
+    estimated_minutes: z.number().int(),
+    deadline: z
+      .string()
+      .nullable()
+      .describe("YYYY-MM-DD the task must be finished BY, or null."),
+    plan_date: z
+      .string()
+      .nullable()
+      .describe(
+        "YYYY-MM-DD to actually DO this, when a specific day was named. Null means today.",
+      ),
+    suggested_start: z
+      .string()
+      .nullable()
+      .describe("HH:MM if a clock time was given, otherwise null."),
+    tag: buildTagSchema(labelNames),
+    reasoning: z
+      .string()
+      .describe("One short line on why this priority/effort."),
+  });
+}
 
-export type SmartTask = z.infer<typeof smartTaskSchema>;
+export type SmartTask = z.infer<ReturnType<typeof buildSmartTaskSchema>>;

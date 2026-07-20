@@ -146,6 +146,46 @@ export const BellIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const AlertIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.75v5" />
+    <path d="M12 16.25h.01" />
+  </Svg>
+);
+
+export const UploadIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 15.5V4" />
+    <path d="m7.5 8.5 4.5-4.5 4.5 4.5" />
+    <path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3" />
+  </Svg>
+);
+
+export const GlobeIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M3.5 12h17" />
+    <path d="M12 3.5c2.2 2.4 3.3 5.4 3.3 8.5S14.2 18.1 12 20.5c-2.2-2.4-3.3-5.4-3.3-8.5S9.8 5.9 12 3.5Z" />
+  </Svg>
+);
+
+export const SlidersIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 7h14" />
+    <path d="M5 17h14" />
+    <circle cx="10" cy="7" r="2.25" />
+    <circle cx="15" cy="17" r="2.25" />
+  </Svg>
+);
+
+export const UserIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="8.5" r="3.75" />
+    <path d="M5 20a7 7 0 0 1 14 0" />
+  </Svg>
+);
+
 /* --------------------------------------------------------- filters / meta */
 
 export const FlagIcon = (p: IconProps) => (

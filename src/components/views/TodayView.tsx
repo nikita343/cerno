@@ -9,6 +9,7 @@ import { TaskChip } from "@/components/task/TaskChip";
 import { eyebrowDate } from "@/lib/date";
 import { taskDuration, totalDuration, pluralize } from "@/lib/format";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
+import { useReminders } from "@/lib/useReminders";
 import { deferredFor, scheduledFor, totalMinutes } from "@/store/createAppStore";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
@@ -30,6 +31,10 @@ export function TodayView() {
   const deleteTask = useAppStore((s) => s.deleteTask);
   const moveToToday = useAppStore((s) => s.moveToToday);
   const openCapture = useAppStore((s) => s.openCapture);
+
+  // Same derivation the notification bell uses, so a row's badge and the panel
+  // can never disagree about what is late.
+  const { overdue } = useReminders();
 
   // Ids mid-exit. The task stays in the store until its animation finishes,
   // otherwise the row vanishes instantly and the rows below snap upward.
@@ -138,6 +143,7 @@ export function TodayView() {
                 <ol className={view.list}>
                   {items.map(({ task, start, fixed }, index) => {
                     const isDone = task.status === "done";
+                    const isOverdue = overdue.has(task.id);
                     const toggle = () =>
                       isDone ? uncompleteTask(task.id) : completeTask(task.id);
 
@@ -148,7 +154,11 @@ export function TodayView() {
                         data-removing={removing.has(task.id) || undefined}
                         style={{ "--i": index } as React.CSSProperties}
                       >
-                        <span className={styles.time} data-fixed={fixed || undefined}>
+                        <span
+                          className={styles.time}
+                          data-fixed={fixed || undefined}
+                          data-overdue={isOverdue || undefined}
+                        >
                           {formatClock(start)}
                         </span>
 
@@ -159,7 +169,11 @@ export function TodayView() {
                             onComplete={toggle}
                             onDelete={() => requestDelete(task.id)}
                           >
-                            <TaskChip task={task} today={today} />
+                            <TaskChip
+                              task={task}
+                              today={today}
+                              overdue={isOverdue}
+                            />
                           </SwipeRow>
                         </div>
 

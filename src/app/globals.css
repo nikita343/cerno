@@ -48,12 +48,22 @@
   --prio-medium: #d98218;
   --prio-low: #78716c;
 
-  /* Label taxonomy (fixed 5) — identical in both themes */
+  /* Seed label colours. Labels are user-defined and their colour is stored per
+     row, so these are only the defaults a new account starts with — they are
+     not a lookup table. See lib/types.ts DEFAULT_LABELS. */
   --label-work: #5b8def;
   --label-home: #f2a93b;
   --label-errand: #3fb98a;
   --label-comms: #9b7bff;
   --label-health: #e8618c;
+
+  /* Overdue reuses the priority ramp rather than introducing a third red: an
+     overdue task and a high-priority task are the same kind of urgent, and two
+     near-identical reds would read as a rendering bug. */
+  --overdue: var(--prio-high);
+  --overdue-soft: rgba(255, 0, 61, 0.09);
+  --warn: var(--prio-medium);
+  --warn-soft: rgba(217, 130, 24, 0.11);
 
   /* Scrims — always darken, so they read as an overlay in either theme */
   --scrim-capture-desktop: rgba(28, 25, 23, 0.45);
@@ -111,6 +121,11 @@
   /* Medium/low need to lift off a dark surface; high stays the accent. */
   --prio-medium: #f2a93b;
   --prio-low: #9b9ba1;
+
+  /* The soft fills carry more alpha on dark: the same wash that tints a white
+     surface is invisible against #141416. */
+  --overdue-soft: rgba(255, 0, 61, 0.16);
+  --warn-soft: rgba(242, 169, 59, 0.15);
 
   --scrim-capture-desktop: rgba(9, 9, 11, 0.74);
   --scrim-capture-mobile: rgba(9, 9, 11, 0.78);

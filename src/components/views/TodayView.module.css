@@ -110,6 +110,13 @@
   font-weight: 600;
 }
 
+/* Listed after [data-fixed] so it wins on a task that is both. A time that has
+   passed is more urgent information than where the time came from. */
+.time[data-overdue] {
+  color: var(--overdue);
+  font-weight: 600;
+}
+
 .chipWrap {
   flex: 1;
   min-width: 0;

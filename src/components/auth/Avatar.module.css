@@ -1,0 +1,30 @@
+.avatar {
+  border-radius: 50%;
+  background: var(--bg);
+  border: var(--hairline) solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: none;
+  overflow: hidden;
+  /* Initials are never selected on purpose, and a stray drag-select on an
+     avatar looks like a rendering fault. */
+  user-select: none;
+}
+
+/* A photo brings its own edges; the border is only there to give the initials
+   fallback a defined shape against a same-coloured surface. */
+.avatar[data-image] {
+  border-color: transparent;
+  background: var(--bg-sunken);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

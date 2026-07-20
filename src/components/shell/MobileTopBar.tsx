@@ -1,7 +1,9 @@
 "use client";
 
-import { BellIcon, ChevronDown } from "@/components/icons";
+import { ChevronDown } from "@/components/icons";
+import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./MobileTopBar.module.css";
@@ -24,14 +26,12 @@ export function MobileTopBar() {
         aria-haspopup="menu"
         aria-expanded={menuOpen}
       >
-        <span className={styles.avatar}>{user.initials}</span>
+        <Avatar profile={user} size="1.75rem" />
         <span className={styles.name}>{firstName}</span>
         <ChevronDown size="0.9375rem" className={styles.chevron} />
       </button>
 
-      <button type="button" className={styles.bell} aria-label="Notifications">
-        <BellIcon size="1.1875rem" />
-      </button>
+      <NotificationBell />
     </header>
   );
 }

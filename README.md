@@ -98,12 +98,60 @@ only thing in local storage is the theme.
   exception: they must state the `user_id` they're claiming, and it comes from
   the verified session — never from the request body.
 
+Migrations live in `supabase/migrations/`. Paste each whole file into the
+Supabase SQL editor in order; every one is safe to re-run.
+
 Ids are UUIDs generated in `lib/id.ts` rather than by the database default, so
 the planner can reference a task's id while assembling a response, before
 anything is written.
 
 Completed work older than 14 days is not loaded. Open work is always loaded
 regardless of age.
+
+## Labels
+
+Labels are **user-defined** — create, rename, recolour, delete in
+Filters & labels. A new account is seeded with the original five.
+
+`tasks.tags` stores label **names**, not foreign keys, because the planner
+speaks in names: Claude returns `"work"`, not a uuid. The cost is that renames
+and deletes must cascade into every tagged task, so both go through Postgres
+functions (`rename_label`, `delete_label`) that do it in one transaction. They
+run `SECURITY INVOKER`, so RLS makes another user's label simply *not found*.
+
+**A plain `UPDATE` on `labels.name` will orphan every task carrying it.**
+
+The model still can't invent a tag. That constraint moved rather than
+disappeared: `buildTagSchema()` builds the structured-output enum per request
+from the caller's own labels, and the prompt is given the same list. If those
+two ever disagree, the model is told to do something the schema then blocks.
+
+## Settings
+
+One `user_settings` row per user, created lazily on first save. Every control
+writes through optimistically and rolls back on failure — there is no Save
+button, because each control is an independent preference.
+
+Language and model choice are **stored but not yet applied**; both say so on
+screen. Timezone and the reminder settings are live.
+
+Avatars go to a public-read `avatars` bucket at `{user_id}/avatar.{ext}` — the
+first path segment is what the storage policy checks against `auth.uid()`, so
+that prefix is the ownership check, not just naming.
+
+## Reminders
+
+Derived from the same `withStartTimes` projection the timeline renders, so an
+overdue badge can never disagree with the clock printed beside it.
+
+- **Overdue** — the scheduled *finish* has passed. Not the start: flagging a
+  task the moment it comes up is technically true and useless.
+- **Soon** — starts within `reminder_lead_hours`, **high priority only**.
+
+"Now" lives in the store as `nowMinutes`, ticked by `useNowTicker` in `AppShell`
+and aligned to the wall-clock minute. It starts at 0 so the server never renders
+an overdue state the client immediately contradicts, and it re-reads on tab
+focus because background tabs throttle timers.
 
 ## Theme
 
@@ -166,7 +214,15 @@ to be recording when it isn't; a blocked mic gets an explanatory dialog. Where
 - Deferral rarely fires at the spec'd 480-minute capacity — it takes a genuinely
   overloaded dump. The seed fixture hard-codes the designed 4/2 split so a cold
   open shows the Deferred section.
-- Settings and Log out in the profile menu are presentational; auth is phase 2.
+- The heuristic planner's tag keywords only help a user who kept the default
+  label names. It matches the user's own names first and falls back to their
+  first label; there is no useful way to guess keywords for a label called
+  "gardening". The AI path gets the real list.
+- `env(safe-area-inset-bottom)` on the mobile notification sheet is untested —
+  it resolves to 0 in headless Chrome and needs a real device.
+- Notifications are in-app only. The reminder layer is pure and decoupled
+  (`lib/reminders.ts`), so an OS-notification layer can sit on top without
+  rework.
 
 ## Scripts
 

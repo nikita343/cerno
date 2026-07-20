@@ -1,16 +1,23 @@
 import type { User } from "@supabase/supabase-js";
 
 import { DEMO_USER } from "./fixtures";
-import type { UserProfile } from "./types";
+import type { UserProfile, UserSettings } from "./types";
 
 /**
- * Derives the display profile from a Supabase user.
+ * Derives the display profile from a Supabase user and their settings.
  *
  * Google gives us `full_name` and often `name`; an email signup gives us
  * neither, so the local part of the address stands in. Initials come from
  * whichever name we ended up with.
+ *
+ * Settings take precedence over both: a display name or avatar chosen in
+ * Settings is a deliberate override, and letting the provider's values win
+ * would make the Settings form appear to save and then do nothing.
  */
-export function toProfile(user: User | null): UserProfile {
+export function toProfile(
+  user: User | null,
+  settings?: Pick<UserSettings, "display_name" | "avatar_url">,
+): UserProfile {
   // Only reached when Supabase isn't configured — keeps the shell renderable
   // in a local dev environment with no backend.
   if (!user) return DEMO_USER;
@@ -18,6 +25,7 @@ export function toProfile(user: User | null): UserProfile {
   const meta = user.user_metadata ?? {};
   const email = user.email ?? "";
   const rawName =
+    settings?.display_name?.trim() ||
     (typeof meta.full_name === "string" && meta.full_name) ||
     (typeof meta.name === "string" && meta.name) ||
     email.split("@")[0] ||
@@ -26,10 +34,16 @@ export function toProfile(user: User | null): UserProfile {
   // Strip separators an email local part might carry ("ada.lovelace" -> "ada lovelace").
   const name = rawName.replace(/[._-]+/g, " ").trim();
 
+  const providerPhoto =
+    (typeof meta.avatar_url === "string" && meta.avatar_url) ||
+    (typeof meta.picture === "string" && meta.picture) ||
+    null;
+
   return {
     name: name.replace(/\b\w/g, (c) => c.toUpperCase()),
     email,
     initials: initialsFrom(name),
+    avatarUrl: settings?.avatar_url ?? providerPhoto,
   };
 }
 

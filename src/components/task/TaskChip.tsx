@@ -1,9 +1,11 @@
 "use client";
 
+import { AlertIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
 import { taskDuration } from "@/lib/format";
 import { labelColor } from "@/lib/labels";
 import type { Task } from "@/lib/types";
+import { useAppStoreShallow } from "@/store/StoreProvider";
 
 import styles from "./TaskChip.module.css";
 
@@ -19,6 +21,8 @@ export interface TaskChipProps {
   showPriority?: boolean;
   /** Makes the whole chip a button — used where tapping reveals reasoning. */
   onClick?: () => void;
+  /** Past its scheduled finish and still open. Set by the calling view. */
+  overdue?: boolean;
 }
 
 const PRIORITY_LABEL: Record<Task["priority"], string> = {
@@ -41,9 +45,16 @@ export function TaskChip({
   showPriority = true,
   done,
   onClick,
+  overdue = false,
 }: TaskChipProps) {
+  // Label colours are per-user data now, so the chip has to read them rather
+  // than look them up in a constant. Subscribed shallowly: a recolour should
+  // repaint the dot, but an unrelated store change should not.
+  const labels = useAppStoreShallow((s) => s.labels);
+
   const isDone = done ?? task.status === "done";
   const isHigh = task.priority === "high" && !isDone;
+  const isOverdue = overdue && !isDone;
   const tag = showTag ? task.tags[0] : undefined;
   const reasoning = showReasoning ? task.reasoning : null;
 
@@ -59,6 +70,13 @@ export function TaskChip({
           {task.title}
         </span>
         <span className={styles.spacer} />
+
+        {isOverdue && (
+          <span className={styles.overdue} title="Past its scheduled time">
+            <AlertIcon size="0.75rem" />
+            Overdue
+          </span>
+        )}
 
         {showPriority && (
           <span
@@ -82,7 +100,7 @@ export function TaskChip({
           <span className={styles.pill}>
             <span
               className={styles.tagDot}
-              style={{ background: labelColor(tag) }}
+              style={{ background: labelColor(labels, tag) }}
             />
             {tag}
           </span>
@@ -100,11 +118,21 @@ export function TaskChip({
 
   if (onClick) {
     return (
-      <button type="button" className={styles.chip} onClick={onClick} data-interactive>
+      <button
+        type="button"
+        className={styles.chip}
+        onClick={onClick}
+        data-interactive
+        data-overdue={isOverdue || undefined}
+      >
         {content}
       </button>
     );
   }
 
-  return <div className={styles.chip}>{content}</div>;
+  return (
+    <div className={styles.chip} data-overdue={isOverdue || undefined}>
+      {content}
+    </div>
+  );
 }

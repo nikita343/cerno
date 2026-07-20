@@ -14,6 +14,7 @@ import {
 } from "@/lib/date";
 import { totalDuration } from "@/lib/format";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
+import { useReminders } from "@/lib/useReminders";
 import { tasksOn } from "@/store/createAppStore";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -26,6 +27,7 @@ export function UpcomingView() {
   const tasks = useAppStore((s) => s.tasks);
   const stepWeek = useAppStore((s) => s.stepUpcomingWeek);
   const setAnchor = useAppStore((s) => s.setUpcomingAnchor);
+  const { overdue } = useReminders();
 
   // Selecting a day scrolls its group into view rather than filtering the
   // agenda down — the week stays readable as context.
@@ -145,11 +147,19 @@ export function UpcomingView() {
                             <span
                               className={styles.rowTime}
                               data-fixed={fixed || undefined}
+                              data-overdue={overdue.has(task.id) || undefined}
                             >
                               {formatClock(start)}
                             </span>
                             <div className={styles.rowChip}>
-                              <TaskChip task={task} today={today} />
+                              <TaskChip
+                                task={task}
+                                today={today}
+                                // Only today's rows can be overdue — the set is
+                                // built from today's schedule, so a future day
+                                // never matches.
+                                overdue={overdue.has(task.id)}
+                              />
                             </div>
                           </div>
                         ))}

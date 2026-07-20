@@ -1,4 +1,16 @@
-import type { DayPlan, Dump, Priority, Tag, Task, TaskStatus } from "@/lib/types";
+import {
+  DEFAULT_SETTINGS,
+  type AppLanguage,
+  type DayPlan,
+  type Dump,
+  type Label,
+  type ModelChoice,
+  type Priority,
+  type Tag,
+  type Task,
+  type TaskStatus,
+  type UserSettings,
+} from "@/lib/types";
 
 /**
  * Database row shapes and their mapping to domain types.
@@ -110,6 +122,62 @@ export function toDayPlan(row: DayPlanRow): DayPlan {
     summary: row.summary,
     capacity_note: row.capacity_note,
     created_at: row.created_at,
+  };
+}
+
+/* ---------------------------------------------------------------- labels */
+
+export interface LabelRow {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export function toLabel(row: LabelRow): Label {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    name: row.name,
+    color: row.color,
+    sort_order: row.sort_order,
+    created_at: row.created_at,
+  };
+}
+
+/* -------------------------------------------------------------- settings */
+
+export interface UserSettingsRow {
+  user_id: string;
+  language: AppLanguage;
+  timezone: string;
+  model: ModelChoice;
+  reminder_lead_hours: number;
+  reminders_enabled: boolean;
+  display_name: string | null;
+  avatar_url: string | null;
+  updated_at: string;
+}
+
+/**
+ * Each field falls back individually rather than the row falling back as a
+ * whole: a column added in a later migration reads as undefined on rows written
+ * before it, and one missing column shouldn't reset every other preference.
+ */
+export function toSettings(row: Partial<UserSettingsRow> | null): UserSettings {
+  if (!row) return DEFAULT_SETTINGS;
+  return {
+    language: row.language ?? DEFAULT_SETTINGS.language,
+    timezone: row.timezone ?? DEFAULT_SETTINGS.timezone,
+    model: row.model ?? DEFAULT_SETTINGS.model,
+    reminder_lead_hours:
+      row.reminder_lead_hours ?? DEFAULT_SETTINGS.reminder_lead_hours,
+    reminders_enabled:
+      row.reminders_enabled ?? DEFAULT_SETTINGS.reminders_enabled,
+    display_name: row.display_name ?? null,
+    avatar_url: row.avatar_url ?? null,
   };
 }
 

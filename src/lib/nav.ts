@@ -11,6 +11,15 @@ export interface NavItem {
 /** The authenticated app is mounted under here; everything above it is public. */
 export const DASHBOARD_ROOT = "/dashboard";
 
+/**
+ * Settings is reached from the profile menu, not the primary nav.
+ *
+ * Deliberately kept out of `NAV_ITEMS`: the tab bar renders one tab per entry
+ * and already carries five, which is the most that fits a small phone without
+ * the labels truncating.
+ */
+export const SETTINGS_HREF = `${DASHBOARD_ROOT}/settings`;
+
 /** Sidebar order puts Search first, the tab bar puts it last (per the designs). */
 export const NAV_ITEMS: NavItem[] = [
   { key: "search", href: `${DASHBOARD_ROOT}/search`, label: "Search" },
@@ -38,6 +47,9 @@ export function screenFromPath(pathname: string): ScreenKey {
   // matched by equality — checked first, before the startsWith scan.
   const trimmed = pathname.replace(/\/$/, "");
   if (trimmed === DASHBOARD_ROOT || trimmed === "") return "today";
+  // Not in NAV_ITEMS, so it needs its own check or it would fall through to
+  // the "today" default and light up the wrong tab.
+  if (trimmed.startsWith(SETTINGS_HREF)) return "settings";
   const match = NAV_ITEMS.find(
     (item) => item.href !== DASHBOARD_ROOT && trimmed.startsWith(item.href),
   );

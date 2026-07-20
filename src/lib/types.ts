@@ -8,15 +8,50 @@
 
 export type Priority = "high" | "medium" | "low";
 
-/** Fixed 5-label taxonomy. The AI is constrained to these — never free-form. */
-export type Tag = "work" | "home" | "errand" | "comms" | "health";
+/**
+ * A label name.
+ *
+ * Was a fixed 5-value union; labels are user-defined now, so the type can only
+ * be `string`. The constraint didn't disappear, it moved: the planner is
+ * constrained at request time to whatever labels the user actually has (see
+ * `buildTagSchema` in `lib/ai/schema.ts`), which is the only place that can
+ * know them.
+ */
+export type Tag = string;
 
-export const TAGS: readonly Tag[] = [
-  "work",
-  "home",
-  "errand",
-  "comms",
-  "health",
+export interface Label {
+  id: string;
+  user_id?: string;
+  name: string;
+  /** `#rrggbb`. Interpolated into a style attribute, so validated at the DB. */
+  color: string;
+  sort_order: number;
+  created_at: string;
+}
+
+/**
+ * Seeded for a user who has none — the original taxonomy, so an existing
+ * account's tasks keep their colours and a new account isn't handed a blank
+ * Labels list with nothing to click.
+ */
+export const DEFAULT_LABELS: ReadonlyArray<{ name: string; color: string }> = [
+  { name: "work", color: "#5B8DEF" },
+  { name: "home", color: "#F2A93B" },
+  { name: "errand", color: "#3FB98A" },
+  { name: "comms", color: "#9B7BFF" },
+  { name: "health", color: "#E8618C" },
+] as const;
+
+/** Offered when creating a label, so users don't need a colour picker. */
+export const LABEL_PALETTE: readonly string[] = [
+  "#5B8DEF",
+  "#F2A93B",
+  "#3FB98A",
+  "#9B7BFF",
+  "#E8618C",
+  "#E8553E",
+  "#3FB6C4",
+  "#B8863F",
 ] as const;
 
 /**
@@ -80,7 +115,81 @@ export type ScreenKey =
   | "upcoming"
   | "inbox"
   | "filters"
-  | "search";
+  | "search"
+  | "settings";
+
+/* ------------------------------------------------------------------ settings */
+
+export type AppLanguage = "en" | "uk";
+
+export const LANGUAGES: ReadonlyArray<{
+  value: AppLanguage;
+  label: string;
+  /** Endonym — a language list is easier to scan in its own language. */
+  native: string;
+}> = [
+  { value: "en", label: "English", native: "English" },
+  { value: "uk", label: "Ukrainian", native: "Українська" },
+] as const;
+
+/**
+ * Model choice is stored per user but nothing reads it yet — the planning
+ * routes still use the server default. Kept as a coarse tier name rather than
+ * an API model id so a model refresh doesn't invalidate every stored row.
+ */
+export type ModelChoice = "opus" | "sonnet" | "haiku";
+
+export const MODEL_CHOICES: ReadonlyArray<{
+  value: ModelChoice;
+  label: string;
+  note: string;
+}> = [
+  { value: "opus", label: "Opus", note: "Most capable. Slower, best judgement." },
+  { value: "sonnet", label: "Sonnet", note: "Balanced. The default." },
+  { value: "haiku", label: "Haiku", note: "Fastest. Best for short dumps." },
+] as const;
+
+export interface UserSettings {
+  language: AppLanguage;
+  /** IANA name, e.g. "Europe/Kyiv". */
+  timezone: string;
+  model: ModelChoice;
+  /** Hours ahead of a task's start to warn about it. */
+  reminder_lead_hours: number;
+  reminders_enabled: boolean;
+  /** Overrides the name derived from the auth profile. */
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  language: "en",
+  timezone: "UTC",
+  model: "sonnet",
+  reminder_lead_hours: 2,
+  reminders_enabled: true,
+  display_name: null,
+  avatar_url: null,
+};
+
+/* ------------------------------------------------------- notifications */
+
+/**
+ * `overdue` — start time has passed and it isn't done
+ * `soon`    — starts within the reminder window
+ */
+export type ReminderKind = "overdue" | "soon";
+
+export interface Reminder {
+  /** The task's id: one live reminder per task, so it doubles as the key. */
+  id: string;
+  kind: ReminderKind;
+  task: Task;
+  /** Minutes from midnight the task is scheduled to start. */
+  start: number;
+  /** Signed minutes until start — negative once overdue. */
+  minutesUntil: number;
+}
 
 export type CaptureMode = "ready" | "listening" | "thinking";
 
@@ -90,4 +199,6 @@ export interface UserProfile {
   name: string;
   email: string;
   initials: string;
+  /** Uploaded avatar, or the OAuth provider's photo. Null falls back to initials. */
+  avatarUrl: string | null;
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import {
@@ -8,9 +9,11 @@ import {
   LogOutIcon,
   ThemeIcon,
 } from "@/components/icons";
+import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
 import { signOut } from "@/lib/auth/actions";
 import { APP_VERSION } from "@/lib/fixtures";
+import { SETTINGS_HREF } from "@/lib/nav";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./SettingsMenuOverlay.module.css";
@@ -55,7 +58,7 @@ export function SettingsMenuOverlay() {
         aria-label="Profile and settings"
       >
         <div className={styles.header}>
-          <span className={styles.avatar}>{user.initials}</span>
+          <Avatar profile={user} size="2.375rem" />
           <span className={styles.headerText}>
             <span className={styles.name}>{user.name}</span>
             <span className={styles.email}>{user.email}</span>
@@ -64,11 +67,18 @@ export function SettingsMenuOverlay() {
 
         <div className={styles.divider} />
 
-        <button type="button" className={styles.row} role="menuitem">
+        <Link
+          href={SETTINGS_HREF}
+          className={styles.row}
+          role="menuitem"
+          // The menu is a fixed overlay; leaving it open across a navigation
+          // would cover the page it just navigated to.
+          onClick={() => setMenuOpen(false)}
+        >
           <CogIcon size="1.1875rem" className={styles.rowIcon} />
           <span className={styles.rowLabel}>Settings</span>
           <ChevronRight size="0.9375rem" className={styles.rowChevron} />
-        </button>
+        </Link>
 
         <div className={styles.themeRow}>
           <ThemeIcon size="1.1875rem" className={styles.rowIcon} />

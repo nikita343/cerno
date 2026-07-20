@@ -11,6 +11,7 @@ export const DEMO_USER: UserProfile = {
   name: "Mara Lindqvist",
   email: "mara@cerno.app",
   initials: "ML",
+  avatarUrl: null,
 };
 
 export const APP_VERSION = "1.0.0";

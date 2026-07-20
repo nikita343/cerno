@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { ClockIcon, SearchIcon } from "@/components/icons";
 import { TaskChip } from "@/components/task/TaskChip";
 import { relativeDayTitle, relativeDaySub } from "@/lib/date";
-import { NAV_ITEMS } from "@/lib/nav";
+import { DASHBOARD_ROOT, NAV_ITEMS } from "@/lib/nav";
 import { pluralize } from "@/lib/format";
 import type { Task } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
@@ -18,13 +18,20 @@ const JUMP_TARGETS = NAV_ITEMS.filter((n) =>
   ["today", "upcoming", "inbox"].includes(n.key),
 );
 
-export function SearchView() {
+export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
   const router = useRouter();
   const today = useAppStore((s) => s.today);
   const query = useAppStore((s) => s.searchQuery);
   const setQuery = useAppStore((s) => s.setSearchQuery);
   const tasks = useAppStore((s) => s.tasks);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Seeds the store from ?tag=. The sidebar also sets the query directly on
+  // click, but that only covers in-app navigation — a hard refresh or a shared
+  // link arrives with nothing in the store, and without this the tag is lost.
+  useEffect(() => {
+    if (initialQuery) setQuery(initialQuery);
+  }, [initialQuery, setQuery]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -61,7 +68,7 @@ export function SearchView() {
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
       if (query) setQuery("");
-      else router.push("/");
+      else router.push(DASHBOARD_ROOT);
     }
   };
 
@@ -122,14 +129,18 @@ export function SearchView() {
                 tasks.filter((t) => t.plan_date === today && t.status === "today").length,
                 "task",
               )}`}
-              href="/"
+              href={DASHBOARD_ROOT}
             />
             <RecentRow
               title="Inbox"
               meta={`${tasks.filter((t) => t.status !== "done").length} open`}
-              href="/inbox"
+              href={`${DASHBOARD_ROOT}/inbox`}
             />
-            <RecentRow title="Upcoming" meta="this week" href="/upcoming" />
+            <RecentRow
+              title="Upcoming"
+              meta="this week"
+              href={`${DASHBOARD_ROOT}/upcoming`}
+            />
           </div>
         </section>
       )}

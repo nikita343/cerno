@@ -4,30 +4,28 @@ import * as z from "zod";
 
 import { describeError, DEFAULT_MODEL, getClient } from "@/lib/ai/client";
 import { smartAddSystemPrompt } from "@/lib/ai/prompt";
-import { smartTaskSchema } from "@/lib/ai/schema";
+import { buildSmartTaskSchema } from "@/lib/ai/schema";
 import { todayISO } from "@/lib/date";
 import { newId } from "@/lib/id";
 import { parseSingleTask } from "@/lib/planner";
 import { upsertTasks } from "@/lib/supabase/data";
-import { hasSupabaseConfig } from "@/lib/supabase/env";
-import { createClient as createServerClient } from "@/lib/supabase/server";
+import {
+  loadLabelNames,
+  resolveRequestUser,
+  type RequestUser,
+} from "@/lib/supabase/request";
 import type { Tag, Task } from "@/lib/types";
 
 /**
  * Persists a task for the signed-in user, if there is one.
  *
- * Returns silently when Supabase isn't configured so a keyless dev environment
- * still gets a working parse. A *failed* write, by contrast, must not be
- * swallowed: the caller would show the user a task that does not exist.
+ * Returns silently when there is no session or no backend, so a keyless dev
+ * environment still gets a working parse. A *failed* write, by contrast, must
+ * not be swallowed: the caller would show the user a task that does not exist.
  */
-async function persist(task: Task): Promise<void> {
-  if (!hasSupabaseConfig()) return;
-  const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
-  await upsertTasks(supabase, [task], user.id);
+async function persist(task: Task, caller: RequestUser | null): Promise<void> {
+  if (!caller) return;
+  await upsertTasks(caller.supabase, [task], caller.userId);
 }
 
 export const runtime = "nodejs";
@@ -60,9 +58,12 @@ export async function POST(request: Request) {
   const today = body.today ?? todayISO();
   const client = getClient();
 
+  const caller = await resolveRequestUser();
+  const labelNames = await loadLabelNames(caller);
+
   if (!client) {
-    const task = parseSingleTask(body.text, today);
-    await persist(task);
+    const task = parseSingleTask(body.text, today, labelNames);
+    await persist(task, caller);
     return NextResponse.json({ task, planner: "heuristic" });
   }
 
@@ -73,8 +74,12 @@ export async function POST(request: Request) {
       // A single short phrase — no deliberation needed, and thinking here would
       // only add latency to what should feel instant.
       thinking: { type: "disabled" },
-      output_config: { format: zodOutputFormat(smartTaskSchema) },
-      system: smartAddSystemPrompt({ now: today, timezone: body.timezone }),
+      output_config: { format: zodOutputFormat(buildSmartTaskSchema(labelNames)) },
+      system: smartAddSystemPrompt({
+        now: today,
+        timezone: body.timezone,
+        labelNames,
+      }),
       messages: [{ role: "user", content: body.text }],
     });
 
@@ -103,7 +108,7 @@ export async function POST(request: Request) {
       created_at: createdAt,
     };
 
-    await persist(task);
+    await persist(task, caller);
     return NextResponse.json({ task, planner: "ai" });
   } catch (error) {
     const { status, message } = describeError(error);
