@@ -12,7 +12,7 @@ import {
   MailIcon,
   SearchIcon,
 } from "@/components/icons";
-import { DEMO_USER } from "@/lib/fixtures";
+import { useUser } from "@/components/auth/UserProvider";
 import { LABEL_COLORS } from "@/lib/labels";
 import { NAV_ITEMS } from "@/lib/nav";
 import { TAGS, type ScreenKey } from "@/lib/types";
@@ -30,6 +30,7 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
 };
 
 export function Sidebar() {
+  const user = useUser();
   const pathname = usePathname();
   const openCapture = useAppStore((s) => s.openCapture);
   const setMenuOpen = useAppStore((s) => s.setMenuOpen);
@@ -46,10 +47,10 @@ export function Sidebar() {
         aria-haspopup="menu"
         aria-expanded={menuOpen}
       >
-        <span className={styles.avatar}>{DEMO_USER.initials}</span>
+        <span className={styles.avatar}>{user.initials}</span>
         <span className={styles.profileText}>
-          <span className={styles.profileName}>{DEMO_USER.name}</span>
-          <span className={styles.profileEmail}>{DEMO_USER.email}</span>
+          <span className={styles.profileName}>{user.name}</span>
+          <span className={styles.profileEmail}>{user.email}</span>
         </span>
         <ChevronDown size="1rem" className={styles.profileChevron} />
       </button>

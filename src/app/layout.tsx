@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Funnel_Sans } from "next/font/google";
 
-import { AppShell } from "@/components/shell/AppShell";
-import { todayISO } from "@/lib/date";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme";
-import { buildInitialData } from "@/store/createAppStore";
-import { StoreProvider } from "@/store/StoreProvider";
 
 import "./globals.css";
 
@@ -58,15 +54,18 @@ const NO_FLASH_SCRIPT = `
 })();
 `;
 
+/**
+ * Root layout: document shell and theme only.
+ *
+ * The app chrome (store provider, sidebar, tab bar) lives in the /dashboard
+ * layout instead, so the landing and auth pages render without it — they have
+ * no store to read and no navigation to show.
+ */
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Server-rendered so the first paint already has a real plan in it — no
-  // spinner, no layout shift. The client re-anchors the date after mount.
-  const initialData = buildInitialData(todayISO());
-
   return (
     /* The no-flash script below rewrites data-theme before React hydrates, so a
        dark-theme user's DOM deliberately disagrees with this server-rendered
@@ -82,11 +81,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
-      <body>
-        <StoreProvider initialData={initialData}>
-          <AppShell>{children}</AppShell>
-        </StoreProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

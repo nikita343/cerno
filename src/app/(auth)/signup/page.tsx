@@ -1,0 +1,14 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { AuthForm } from "@/components/auth/AuthForm";
+
+export const metadata: Metadata = { title: "Create account · Cerno" };
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <AuthForm mode="signup" />
+    </Suspense>
+  );
+}

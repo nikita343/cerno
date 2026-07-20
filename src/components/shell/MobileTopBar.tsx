@@ -1,18 +1,19 @@
 "use client";
 
 import { BellIcon, ChevronDown } from "@/components/icons";
-import { DEMO_USER } from "@/lib/fixtures";
+import { useUser } from "@/components/auth/UserProvider";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./MobileTopBar.module.css";
 
 export function MobileTopBar() {
+  const user = useUser();
   const menuOpen = useAppStore((s) => s.menuOpen);
   const setMenuOpen = useAppStore((s) => s.setMenuOpen);
 
   // The designs show only the given name up here; the full name lives in the
   // settings popup.
-  const firstName = DEMO_USER.name.split(" ")[0];
+  const firstName = user.name.split(" ")[0];
 
   return (
     <header className={styles.bar}>
@@ -23,7 +24,7 @@ export function MobileTopBar() {
         aria-haspopup="menu"
         aria-expanded={menuOpen}
       >
-        <span className={styles.avatar}>{DEMO_USER.initials}</span>
+        <span className={styles.avatar}>{user.initials}</span>
         <span className={styles.name}>{firstName}</span>
         <ChevronDown size="0.9375rem" className={styles.chevron} />
       </button>
