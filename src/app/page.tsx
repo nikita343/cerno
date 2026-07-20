@@ -31,7 +31,24 @@ const STEPS = [
   },
 ];
 
-export default async function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+
+  // An OAuth code can land here rather than on /auth/callback: when Supabase
+  // is handed a redirectTo that isn't on its allowlist it silently discards it
+  // and falls back to the project's Site URL, which is a bare origin. Without
+  // this the code is dropped on the floor and sign-in appears to do nothing.
+  //
+  // Forward it to the real callback rather than duplicating the exchange.
+  const code = typeof params.code === "string" ? params.code : null;
+  if (code) {
+    redirect(`/auth/callback?code=${encodeURIComponent(code)}`);
+  }
+
   // Signed-in visitors have no use for the pitch.
   if (hasSupabaseConfig()) {
     const user = await getUser();
