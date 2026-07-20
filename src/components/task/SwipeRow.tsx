@@ -25,7 +25,7 @@ const FALLBACK_WIDTH = 140;
 type Axis = "undecided" | "horizontal" | "vertical";
 
 /**
- * Swipe-right-to-reveal actions, for touch only.
+ * Swipe-left-to-reveal actions, for touch only.
  *
  * The desktop row exposes complete/delete on hover, which touch devices have no
  * equivalent for — this is that affordance. Nothing here fires on a mouse, so
@@ -35,6 +35,9 @@ type Axis = "undecided" | "horizontal" | "vertical";
  * The axis lock is the important part. Without it, a mostly-vertical scroll
  * with a few pixels of horizontal drift would drag the row sideways and fight
  * the scroll container. We wait for the gesture to declare itself, then commit.
+ *
+ * `offset` is always a positive "how far open" value; the direction lives only
+ * in the sign of the transform. Keeps the clamping arithmetic readable.
  */
 export function SwipeRow({
   title,
@@ -75,7 +78,8 @@ export function SwipeRow({
     if (axis.current !== "horizontal") return;
 
     const max = trayWidth();
-    const next = origin.current.base + dx;
+    // Dragging left opens, so leftward travel (negative dx) increases offset.
+    const next = origin.current.base - dx;
     // Closed is a hard stop; past fully-open the row keeps moving but with
     // resistance, so overshoot feels elastic rather than broken.
     setOffset(next < 0 ? 0 : next > max ? max + (next - max) * 0.25 : next);
@@ -126,7 +130,7 @@ export function SwipeRow({
       <div
         className={styles.content}
         data-dragging={dragging || undefined}
-        style={{ transform: `translate3d(${offset}px, 0, 0)` }}
+        style={{ transform: `translate3d(${-offset}px, 0, 0)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

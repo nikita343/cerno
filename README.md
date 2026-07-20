@@ -96,6 +96,24 @@ completion with no extra state and no migration.
 Derived times render muted, planner-assigned times render in full weight — one
 is a projection, the other a commitment, and the UI distinguishes them.
 
+### `deadline` vs `plan_date`
+
+These are different questions and the planner is prompted to keep them apart:
+
+| Phrase | Field | Meaning |
+|---|---|---|
+| "finish the deck **by** Friday" | `deadline` | Must be done *by* then; schedule it whenever it fits |
+| "massage **on** Sunday at 11" | `plan_date` | Do it *on* that day |
+
+A task pinned to a future `plan_date` **bypasses the capacity guard entirely**.
+Letting it compete for today's budget meant it could overflow into "deferred",
+which rewrites `plan_date` to tomorrow — silently overriding the day the person
+actually asked for. Both `/api/plan` and the heuristic route these into a
+separate `later` bucket, and the capacity note gains a clause for them.
+
+A malformed or past `plan_date` falls back to normal scheduling rather than
+stranding the task on a day that has already gone.
+
 ## Voice
 
 Web Speech API, feature-detected. Click to start, click again to stop — the

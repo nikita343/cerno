@@ -54,7 +54,7 @@ guard runs. Never render a model-authored count directly.
 toggles done; trash deletes.
 
 **Touch** — the hover buttons are `display: none` and `SwipeRow` provides the
-same two actions on a right swipe instead. They'd otherwise sit there
+same two actions on a left swipe instead. They'd otherwise sit there
 permanently, stealing width from the title.
 
 ## Deletion is deferred by one animation

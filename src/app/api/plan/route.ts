@@ -162,6 +162,7 @@ function assemble({
   };
 
   const scheduled: Task[] = [];
+  const later: Task[] = [];
   const deferred: Task[] = [];
   let used = 0;
   let newCount = 0;
@@ -171,8 +172,15 @@ function assemble({
     if (!item.id) newCount += 1;
 
     const minutes = clampMinutes(item.estimated_minutes);
+
+    // A task the person pinned to a future day is scheduled work that simply
+    // isn't today's. It must bypass the capacity guard entirely — competing for
+    // today's budget would let it be "deferred" onto tomorrow, silently
+    // overriding the day they actually asked for.
+    const pinned = futureDate(item.plan_date, today);
+
     // A model-labelled 'today' only sticks if it actually fits.
-    const fits = item.status === "today" && used + minutes <= capacityMinutes;
+    const fits = !pinned && item.status === "today" && used + minutes <= capacityMinutes;
 
     const base: Task = {
       // Reuse the id when carrying a task forward so completion state and
@@ -184,15 +192,17 @@ function assemble({
       estimated_minutes: minutes,
       deadline: item.deadline,
       suggested_start: item.suggested_start,
-      status: fits ? "today" : "deferred",
-      plan_date: fits ? today : addDays(today, 1),
+      status: pinned || fits ? "today" : "deferred",
+      plan_date: pinned ?? (fits ? today : addDays(today, 1)),
       tags: [item.tag as Tag],
       reasoning: item.reasoning,
       sort_order: 0,
       created_at: prior?.created_at ?? createdAt,
     };
 
-    if (fits) {
+    if (pinned) {
+      later.push({ ...base, sort_order: later.length });
+    } else if (fits) {
       used += minutes;
       scheduled.push({ ...base, sort_order: scheduled.length });
     } else {
@@ -216,17 +226,29 @@ function assemble({
       carriedCount: carryIn.length,
       totalMinutes,
       scheduledCount: scheduled.length,
+      laterCount: later.length,
       deferredCount: deferred.length,
     }),
     created_at: createdAt,
   };
 
-  return { dump, tasks: [...scheduled, ...deferred], dayPlan };
+  return { dump, tasks: [...scheduled, ...later, ...deferred], dayPlan };
 }
 
 function clampMinutes(value: number): number {
   if (!Number.isFinite(value)) return 30;
   return Math.min(480, Math.max(5, Math.round(value)));
+}
+
+/**
+ * A model-supplied plan_date, but only when it is a well-formed date strictly
+ * after today. A malformed or past date falls back to normal scheduling rather
+ * than stranding the task on a day that has already gone.
+ */
+function futureDate(value: string | null, today: string): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  if (Number.isNaN(Date.parse(value))) return null;
+  return value > today ? value : null;
 }
 
 function formatTotal(minutes: number): string {
@@ -243,12 +265,14 @@ function capacityNote({
   carriedCount,
   totalMinutes,
   scheduledCount,
+  laterCount,
   deferredCount,
 }: {
   newCount: number;
   carriedCount: number;
   totalMinutes: number;
   scheduledCount: number;
+  laterCount: number;
   deferredCount: number;
 }): string {
   const things =
@@ -259,6 +283,19 @@ function capacityNote({
     carriedCount > 0
       ? `${things}, on top of ${carriedCount} already open.`
       : `${things}.`;
-  if (deferredCount === 0) return `${opener} All of it fits today.`;
-  return `${opener} I planned ${scheduledCount} that fit today and parked ${deferredCount} for tomorrow.`;
+
+  // Each clause is emitted only when it has a non-zero count behind it, so the
+  // note can never claim a bucket the sections below don't render.
+  const clauses: string[] = [];
+  if (deferredCount > 0 || laterCount > 0) {
+    clauses.push(`I planned ${scheduledCount} that fit today`);
+    if (laterCount > 0) clauses.push(`set ${laterCount} for the day you asked for`);
+    if (deferredCount > 0) clauses.push(`parked ${deferredCount} for tomorrow`);
+  }
+
+  if (clauses.length === 0) return `${opener} All of it fits today.`;
+  const last = clauses.pop();
+  return clauses.length > 0
+    ? `${opener} ${clauses.join(", ")} and ${last}.`
+    : `${opener} ${last}.`;
 }

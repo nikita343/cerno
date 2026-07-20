@@ -13,6 +13,10 @@
   animation: cernoFadeIn var(--dur) var(--ease);
 }
 
+.backdrop[data-leaving] {
+  animation: cernoFadeIn 0.18s var(--ease) reverse forwards;
+}
+
 .backdropDismiss {
   position: absolute;
   inset: 0;
@@ -30,7 +34,36 @@
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
-  animation: cernoRise var(--dur-slow) var(--ease-out);
+  /* Scale as well as rise. A 12px translate alone is too subtle to register as
+     a transition on a card this large — it just appears. */
+  animation: cernoCardIn var(--dur-slow) var(--ease-out);
+}
+
+.card[data-leaving] {
+  animation: cernoCardOut 0.18s var(--ease) forwards;
+}
+
+@keyframes cernoCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Exits are faster than entrances — a dismissal should get out of the way. */
+@keyframes cernoCardOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.975);
+  }
 }
 
 @media screen and (max-width: 767px) {
@@ -41,9 +74,15 @@
     background: var(--scrim-capture-mobile);
   }
 
+  /* A bottom sheet slides rather than scales — it should read as coming from
+     the edge of the screen, not growing out of the middle. */
   .card {
     width: 100%;
     animation: cernoSheetUp var(--dur-slow) var(--ease-out);
+  }
+
+  .card[data-leaving] {
+    animation: cernoSheetUp 0.18s var(--ease) reverse forwards;
   }
 }
 

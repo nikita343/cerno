@@ -39,3 +39,22 @@ opens `MicPermissionDialog` instead of failing silently. Where
   adding any early return.
 - `MicPermissionDialog` captures `Escape` on the capture phase so it doesn't
   also close the dump behind it.
+
+## Open/close animation
+
+The overlay renders on `captureOpen`, so closing it used to unmount on the same
+frame — the entrance animated and the exit was a hard cut. That asymmetry is
+what makes a panel feel abrupt no matter how long its open animation is.
+
+`usePresence(open, 180)` (`src/lib/usePresence.ts`) keeps the card mounted for
+180ms after `open` flips false and sets `data-leaving`, which swaps in the exit
+keyframes. Exits are deliberately faster than entrances — a dismissal should get
+out of the way.
+
+The card scales as well as rises on entry (`cernoCardIn`). A 12px translate
+alone is too subtle to register on a card this size; it just appears. The mobile
+bottom sheet slides instead of scaling, so it reads as coming from the edge of
+the screen rather than growing out of the middle.
+
+**`CAPTURE_EXIT_MS` in the .tsx must match the exit duration in the .css.** Too
+short truncates the animation; too long leaves an invisible element mounted.

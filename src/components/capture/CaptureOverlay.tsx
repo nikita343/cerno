@@ -10,6 +10,7 @@ import {
   type MicStatus,
   type SpeechSession,
 } from "@/lib/speech";
+import { usePresence } from "@/lib/usePresence";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { MicPermissionDialog } from "./MicPermissionDialog";
@@ -17,6 +18,9 @@ import styles from "./CaptureOverlay.module.css";
 
 const PLACEHOLDER =
   "Everything on your mind — one long sentence is fine.";
+
+/** Must match the exit animation duration in CaptureOverlay.module.css. */
+const CAPTURE_EXIT_MS = 180;
 
 export function CaptureOverlay() {
   const open = useAppStore((s) => s.captureOpen);
@@ -46,6 +50,9 @@ export function CaptureOverlay() {
 
   const isListening = mode === "listening";
   const isThinking = mode === "thinking";
+
+  // Keeps the card mounted through its exit animation — see CAPTURE_EXIT_MS.
+  const { present, leaving } = usePresence(open, CAPTURE_EXIT_MS);
 
   const stopListening = useCallback(() => {
     sessionRef.current?.stop();
@@ -134,10 +141,14 @@ export function CaptureOverlay() {
     void submitDump(dictatedRef.current ? "voice" : "text");
   };
 
-  if (!open) return null;
+  if (!present) return null;
 
   return (
-    <div className={styles.backdrop} role="presentation">
+    <div
+      className={styles.backdrop}
+      role="presentation"
+      data-leaving={leaving || undefined}
+    >
       <button
         type="button"
         className={styles.backdropDismiss}
@@ -147,6 +158,7 @@ export function CaptureOverlay() {
       />
 
       <div
+        data-leaving={leaving || undefined}
         className={styles.card}
         role="dialog"
         aria-modal="true"

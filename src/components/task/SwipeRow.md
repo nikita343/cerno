@@ -1,6 +1,6 @@
 # SwipeRow
 
-Swipe-right-to-reveal Done/Delete actions. Touch only.
+Swipe-left-to-reveal Done/Delete actions. Touch only.
 
 Wraps a task row (in practice a `TaskChip`) and exposes the same two actions
 the desktop row shows on hover. Touch devices have no hover, so without this
@@ -23,12 +23,14 @@ buttons stealing width from the title.
   horizontal or vertical for its whole lifetime. Without this, a mostly-vertical
   scroll with a few pixels of horizontal drift drags the row sideways and fights
   the scroll container. `touch-action: pan-y` tells the browser the same thing.
+- **Direction.** Dragging left opens; the tray is right-anchored and the row slides left off the top of it. `offset` is always a positive "how far open" value and the direction lives only in the sign of the transform, which keeps the clamping arithmetic readable.
 - **Snap.** On release the row opens if it passed 45% of the tray width,
   otherwise it springs shut (`--ease-spring`). While a finger is down the row
   tracks it 1:1 with no transition — the transition is applied only when not
   dragging, or the row would lag behind the thumb.
 - **Elastic overshoot.** Dragging past fully-open keeps moving at 25% rate.
-  Dragging left of closed is a hard stop at 0.
+  Dragging back past closed is a hard stop at 0, so a right-swipe on an already
+  closed row does nothing rather than opening a mirrored tray.
 - **Tray width is measured**, not assumed — `offsetWidth` of the tray element,
   since the buttons are sized in rem against a fluid root font size.
 - **Actions close the row before firing**, so a delete doesn't animate out of a

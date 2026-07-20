@@ -29,7 +29,9 @@ Planning rules:
 - Estimate effort realistically. A phone call is 10-15 minutes; a deck or a report is an hour or more. Do not round everything to 30.
 - The items you mark 'today' must sum to at most ${capacityMinutes} minutes. Everything else is 'deferred' — never drop an item to make the numbers work.
 - Order the day: the heaviest high-priority item first as the anchor, then quick wins for momentum. Return tasks in that execution order, scheduled before deferred.
-- Resolve relative dates ("tomorrow", "by Friday", "next week") against today's date. Only set a deadline when the dump implies a real one.
+- Resolve relative dates ("tomorrow", "by Friday", "next week") against today's date.
+- Distinguish a deadline from a chosen day. "finish the deck by Friday" is a deadline: set deadline, leave plan_date null, and schedule it whenever it fits. "massage on Sunday" or "dentist Tuesday at 11" is a chosen day: set plan_date to that date, and leave deadline null unless a separate due date was also stated. Getting this backwards puts the task on the wrong day, so read the preposition — "by"/"before" means deadline, "on"/"at"/a bare weekday means plan_date.
+- A task with a plan_date in the future does not compete for today's capacity and is not deferred. Mark it 'today' — it is scheduled work, just not for today.
 - Set suggested_start (HH:MM, 24-hour) only for items that are genuinely time-bound: a meeting, a call at a stated hour, anything that must happen inside a window ("gym before work", "school pickup"). Leave it null otherwise — the day is laid out from 09:00 in the order you return, so a null start still gets a sensible slot. Do not invent clock times to make the day look full.
 - Assign exactly one tag per task from: ${TAGS.join(", ")}. Never invent a tag.
 - Every task needs a reasoning line: one short, calm sentence on why it sits where it does. For deferred items, say why it can wait.
@@ -52,7 +54,8 @@ Today is ${now} in timezone ${timezone}.
 
 - Rewrite the phrase as an imperative title of at most 8 words, inferring the verb if it is missing.
 - Estimate effort realistically in minutes.
-- Set a deadline only if the phrase implies a real one; resolve relative dates against today.
+- Distinguish a deadline from a chosen day, resolving both against today. "by Friday" is a deadline — set deadline, leave plan_date null. "on Sunday", "Tuesday at 11" is a chosen day — set plan_date to that date and leave deadline null unless a due date was separately stated.
+- Set suggested_start (HH:MM, 24-hour) when a clock time is given, otherwise null.
 - Assign exactly one tag from: ${TAGS.join(", ")}.
 - Give one short, calm reasoning line. No exclamation marks.`;
 }

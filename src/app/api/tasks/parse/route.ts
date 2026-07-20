@@ -72,9 +72,11 @@ export async function POST(request: Request) {
         Math.max(5, Math.round(parsed.estimated_minutes)),
       ),
       deadline: parsed.deadline,
-      suggested_start: null,
+      suggested_start: parsed.suggested_start,
       status: "today",
-      plan_date: today,
+      // A named future day wins over "drop it on today" — otherwise "massage on
+      // Sunday" lands on today's plan and the day the person asked for is lost.
+      plan_date: futureDate(parsed.plan_date, today) ?? today,
       tags: [parsed.tag as Tag],
       reasoning: parsed.reasoning,
       sort_order: 0,
@@ -87,4 +89,11 @@ export async function POST(request: Request) {
     console.error("[/api/tasks/parse]", error);
     return NextResponse.json({ error: message }, { status });
   }
+}
+
+/** A well-formed plan_date strictly after today, else null. */
+function futureDate(value: string | null, today: string): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  if (Number.isNaN(Date.parse(value))) return null;
+  return value > today ? value : null;
 }

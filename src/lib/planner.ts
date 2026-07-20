@@ -184,6 +184,45 @@ function detectDeadline(fragment: string, today: string): string | null {
   return null;
 }
 
+/**
+ * Splits a detected date into "do it on this day" vs "finish it by this day".
+ *
+ * The preposition carries the whole distinction: "massage on Sunday" names the
+ * day to do it, "deck by Friday" names a limit. Treating both as a deadline is
+ * what puts a Sunday task on today's plan.
+ *
+ * Returns `[planDate, deadline]` — at most one is ever non-null.
+ */
+function detectDates(
+  fragment: string,
+  today: string,
+): [planDate: string | null, deadline: string | null] {
+  const date = detectDeadline(fragment, today);
+  if (!date) return [null, null];
+
+  // "by"/"before"/"due" mark a limit. A bare weekday or "on"/"at" is a choice
+  // of day, which is also the more common phrasing, so it's the default.
+  const isLimit = /\b(by|before|due|deadline)\b/i.test(fragment);
+  if (isLimit) return [null, date];
+  return [date > today ? date : null, null];
+}
+
+/** `HH:MM` from "at 11", "11:00", "2pm". Null when no clock time is stated. */
+function detectStartTime(fragment: string): string | null {
+  const match = /\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i.exec(fragment);
+  if (!match) return null;
+  // Bare small numbers are usually durations or counts, not clock times.
+  if (!match[2] && !match[3]) return null;
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2] ?? 0);
+  const suffix = match[3]?.toLowerCase();
+  if (hours > 23 || minutes > 59) return null;
+  if (suffix === "pm" && hours < 12) hours += 12;
+  if (suffix === "am" && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 function detectPriority(
   fragment: string,
   deadline: string | null,
@@ -281,7 +320,7 @@ export function buildPlan({
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const deadline = detectDeadline(fragment, today);
+    const [planDate, deadline] = detectDates(fragment, today);
     const priority = detectPriority(fragment, deadline, today);
     const minutes = detectMinutes(fragment);
 
@@ -292,9 +331,9 @@ export function buildPlan({
       priority,
       estimated_minutes: minutes,
       deadline,
-      suggested_start: null,
+      suggested_start: detectStartTime(fragment),
       status: "today",
-      plan_date: today,
+      plan_date: planDate ?? today,
       tags: [detectTag(fragment)],
       reasoning: buildReasoning(priority, minutes, deadline, today),
       sort_order: parsed.length,
@@ -304,7 +343,14 @@ export function buildPlan({
 
   // Fit what we can into the day; park the rest with a reason. Carried-over
   // work is planned on equal footing with the new items.
-  const ordered = orderForDay([...carryIn, ...parsed]);
+  const all = [...carryIn, ...parsed];
+
+  // Work pinned to a future day is scheduled, just not for today — it must not
+  // compete for today's capacity, or it could be "deferred" onto tomorrow and
+  // silently lose the day the person actually named.
+  const later = all.filter((t) => t.plan_date !== null && t.plan_date > today);
+  const ordered = orderForDay(all.filter((t) => !later.includes(t)));
+
   const scheduled: Task[] = [];
   const deferred: Task[] = [];
   let used = 0;
@@ -342,12 +388,21 @@ export function buildPlan({
       newMinutes,
       carriedCount: carryIn.length,
       scheduledCount: scheduled.length,
+      laterCount: later.length,
       deferredCount: deferred.length,
     }),
     created_at: createdAt,
   };
 
-  return { dump, tasks: [...scheduled, ...deferred], dayPlan };
+  return {
+    dump,
+    tasks: [
+      ...scheduled,
+      ...later.map((t, i) => ({ ...t, status: "today" as const, sort_order: i })),
+      ...deferred,
+    ],
+    dayPlan,
+  };
 }
 
 function buildSummary(scheduled: Task[]): string {
@@ -373,12 +428,14 @@ function buildCapacityNote({
   newMinutes,
   carriedCount,
   scheduledCount,
+  laterCount,
   deferredCount,
 }: {
   newCount: number;
   newMinutes: number;
   carriedCount: number;
   scheduledCount: number;
+  laterCount: number;
   deferredCount: number;
 }): string {
   const things =
@@ -391,10 +448,20 @@ function buildCapacityNote({
       ? `${things}, on top of ${carriedCount} already open.`
       : `${things}.`;
 
-  if (deferredCount === 0) {
-    return `${opener} All of it fits today.`;
+  // Mirrors the AI route's note: a clause only appears when its bucket is
+  // non-empty, so the header can never claim rows that aren't rendered.
+  const clauses: string[] = [];
+  if (deferredCount > 0 || laterCount > 0) {
+    clauses.push(`I planned ${scheduledCount} that fit today`);
+    if (laterCount > 0) clauses.push(`set ${laterCount} for the day you asked for`);
+    if (deferredCount > 0) clauses.push(`parked ${deferredCount} for tomorrow`);
   }
-  return `${opener} I planned ${scheduledCount} that fit today and parked ${deferredCount} for tomorrow.`;
+
+  if (clauses.length === 0) return `${opener} All of it fits today.`;
+  const last = clauses.pop();
+  return clauses.length > 0
+    ? `${opener} ${clauses.join(", ")} and ${last}.`
+    : `${opener} ${last}.`;
 }
 
 /**
@@ -404,7 +471,7 @@ function buildCapacityNote({
  */
 export function parseSingleTask(text: string, today = todayISO()): Task {
   const title = toTitle(text.trim()) || text.trim().slice(0, 60);
-  const deadline = detectDeadline(text, today);
+  const [planDate, deadline] = detectDates(text, today);
   const priority = detectPriority(text, deadline, today);
   const minutes = detectMinutes(text);
 
@@ -415,9 +482,9 @@ export function parseSingleTask(text: string, today = todayISO()): Task {
     priority,
     estimated_minutes: minutes,
     deadline,
-    suggested_start: null,
+    suggested_start: detectStartTime(text),
     status: "today",
-    plan_date: today,
+    plan_date: planDate ?? today,
     tags: [detectTag(text)],
     reasoning: buildReasoning(priority, minutes, deadline, today),
     sort_order: 0,

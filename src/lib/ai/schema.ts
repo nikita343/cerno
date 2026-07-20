@@ -41,7 +41,15 @@ export const plannedTaskSchema = z.object({
   deadline: z
     .string()
     .nullable()
-    .describe("Hard due date as YYYY-MM-DD, or null when there isn't one."),
+    .describe(
+      "Hard due date as YYYY-MM-DD — the day this must be finished BY. Null when there isn't one.",
+    ),
+  plan_date: z
+    .string()
+    .nullable()
+    .describe(
+      "The day to actually DO this, as YYYY-MM-DD, when the person named a specific day ('massage on Sunday'). Null means schedule it into today's plan normally.",
+    ),
   suggested_start: z
     .string()
     .nullable()
@@ -81,7 +89,20 @@ export const smartTaskSchema = z.object({
   title: z.string().describe("Imperative, at most 8 words."),
   priority: prioritySchema,
   estimated_minutes: z.number().int(),
-  deadline: z.string().nullable(),
+  deadline: z
+    .string()
+    .nullable()
+    .describe("YYYY-MM-DD the task must be finished BY, or null."),
+  plan_date: z
+    .string()
+    .nullable()
+    .describe(
+      "YYYY-MM-DD to actually DO this, when a specific day was named. Null means today.",
+    ),
+  suggested_start: z
+    .string()
+    .nullable()
+    .describe("HH:MM if a clock time was given, otherwise null."),
   tag: tagSchema,
   reasoning: z.string().describe("One short line on why this priority/effort."),
 });
