@@ -19,6 +19,32 @@ const NOT_CONFIGURED: AuthFormState = {
   notice: null,
 };
 
+/**
+ * Maps provider errors to copy written in our voice.
+ *
+ * Passing `error.message` straight through leaks the provider's wording into
+ * the product — "email rate limit exceeded" tells a user nothing about what
+ * they should do next, and reads like something broke rather than a limit that
+ * will clear.
+ */
+function describeAuthError(message: string): string {
+  const m = message.toLowerCase();
+
+  if (m.includes("rate limit") || m.includes("too many requests")) {
+    return "Too many sign-up emails just went out. Wait an hour and try again, or continue with Google.";
+  }
+  if (m.includes("already registered") || m.includes("already been registered")) {
+    return "There's already an account with that email. Try signing in.";
+  }
+  if (m.includes("password")) {
+    return "That password isn't strong enough. Use at least 8 characters.";
+  }
+  if (m.includes("invalid") && m.includes("email")) {
+    return "That doesn't look like a valid email address.";
+  }
+  return "That didn't work. Try again in a moment.";
+}
+
 function readCredentials(formData: FormData) {
   return {
     email: String(formData.get("email") ?? "").trim(),
@@ -71,7 +97,8 @@ export async function signUp(
   const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
-    return { error: error.message, notice: null };
+    console.error("[auth/signUp]", error);
+    return { error: describeAuthError(error.message), notice: null };
   }
 
   // With email confirmation on, signUp returns a user but no session.

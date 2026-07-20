@@ -6,8 +6,29 @@ import { describeError, DEFAULT_MODEL, getClient } from "@/lib/ai/client";
 import { smartAddSystemPrompt } from "@/lib/ai/prompt";
 import { smartTaskSchema } from "@/lib/ai/schema";
 import { todayISO } from "@/lib/date";
+import { newId } from "@/lib/id";
 import { parseSingleTask } from "@/lib/planner";
+import { upsertTasks } from "@/lib/supabase/data";
+import { hasSupabaseConfig } from "@/lib/supabase/env";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import type { Tag, Task } from "@/lib/types";
+
+/**
+ * Persists a task for the signed-in user, if there is one.
+ *
+ * Returns silently when Supabase isn't configured so a keyless dev environment
+ * still gets a working parse. A *failed* write, by contrast, must not be
+ * swallowed: the caller would show the user a task that does not exist.
+ */
+async function persist(task: Task): Promise<void> {
+  if (!hasSupabaseConfig()) return;
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  await upsertTasks(supabase, [task], user.id);
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,10 +61,9 @@ export async function POST(request: Request) {
   const client = getClient();
 
   if (!client) {
-    return NextResponse.json({
-      task: parseSingleTask(body.text, today),
-      planner: "heuristic",
-    });
+    const task = parseSingleTask(body.text, today);
+    await persist(task);
+    return NextResponse.json({ task, planner: "heuristic" });
   }
 
   try {
@@ -63,7 +83,7 @@ export async function POST(request: Request) {
 
     const createdAt = new Date().toISOString();
     const task: Task = {
-      id: `task-${Date.now().toString(36)}`,
+      id: newId(),
       dump_id: null,
       title: parsed.title,
       priority: parsed.priority,
@@ -83,6 +103,7 @@ export async function POST(request: Request) {
       created_at: createdAt,
     };
 
+    await persist(task);
     return NextResponse.json({ task, planner: "ai" });
   } catch (error) {
     const { status, message } = describeError(error);

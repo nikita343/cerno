@@ -1,6 +1,7 @@
 import { addDays, deadlineLabel, toISODate, todayISO } from "./date";
 import { totalDuration } from "./format";
 import { DAY_CAPACITY_MINUTES } from "./fixtures";
+import { newId } from "./id";
 import type { DayPlan, Dump, PlanResult, Priority, Tag, Task } from "./types";
 
 /**
@@ -297,7 +298,7 @@ export function buildPlan({
   carryIn = [],
 }: PlanInput): PlanResult {
   const createdAt = new Date().toISOString();
-  const dumpId = `dump-${Date.now().toString(36)}`;
+  const dumpId = newId();
 
   const dump: Dump = {
     id: dumpId,
@@ -325,7 +326,7 @@ export function buildPlan({
     const minutes = detectMinutes(fragment);
 
     parsed.push({
-      id: `task-${dumpId}-${parsed.length}`,
+      id: newId(),
       dump_id: dumpId,
       title,
       priority,
@@ -380,7 +381,7 @@ export function buildPlan({
   const newMinutes = parsed.reduce((n, t) => n + t.estimated_minutes, 0);
 
   const dayPlan: DayPlan = {
-    id: `plan-${dumpId}`,
+    id: newId(),
     plan_date: today,
     summary: buildSummary(scheduled),
     capacity_note: buildCapacityNote({
@@ -476,7 +477,7 @@ export function parseSingleTask(text: string, today = todayISO()): Task {
   const minutes = detectMinutes(text);
 
   return {
-    id: `task-${Date.now().toString(36)}`,
+    id: newId(),
     dump_id: null,
     title,
     priority,

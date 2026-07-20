@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 import { UserProvider } from "@/components/auth/UserProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { todayISO } from "@/lib/date";
+import { loadDashboard } from "@/lib/supabase/data";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
-import { getUser } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { toProfile } from "@/lib/user";
-import { buildInitialData } from "@/store/createAppStore";
+import { buildInitialData, type InitialData } from "@/store/createAppStore";
 import { StoreProvider } from "@/store/StoreProvider";
 
 /**
@@ -31,9 +32,22 @@ export default async function DashboardLayout({
   const user = hasSupabaseConfig() ? await getUser() : null;
   if (hasSupabaseConfig() && !user) redirect("/login");
 
-  // Server-rendered so the first paint already has a real plan in it — no
-  // spinner, no layout shift. The client re-anchors the date after mount.
-  const initialData = buildInitialData(todayISO());
+  const today = todayISO();
+
+  // Server-rendered so the first paint already has the real plan in it — no
+  // spinner, no loading flash, no layout shift. The client re-anchors the date
+  // after mount in case the tab was left open overnight.
+  let initialData: InitialData;
+  if (user) {
+    const supabase = await createClient();
+    const data = await loadDashboard(supabase, today);
+    initialData = { today, ...data };
+  } else {
+    // No backend configured. Fixtures keep the shell explorable in a keyless
+    // dev environment; nothing here is reachable once Supabase is set up,
+    // because the redirect above fires first.
+    initialData = buildInitialData(today);
+  }
 
   return (
     <UserProvider profile={toProfile(user)}>

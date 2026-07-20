@@ -5,6 +5,8 @@ import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
 import { todayISO } from "@/lib/date";
+import { createClient } from "@/lib/supabase/client";
+import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { readStoredTheme } from "@/lib/theme";
 import {
   createAppStore,
@@ -25,27 +27,27 @@ export function StoreProvider({
 }) {
   const storeRef = useRef<StoreApi | null>(null);
   if (storeRef.current === null) {
-    storeRef.current = createAppStore(initialData);
+    // State now arrives from the server already scoped to the signed-in user,
+    // so there is no localStorage blob and no rehydration step. The client
+    // supplied here is used for write-through on task mutations; when Supabase
+    // isn't configured it stays null and the store is in-memory only.
+    storeRef.current = createAppStore(initialData, () =>
+      hasSupabaseConfig() ? createClient() : null,
+    );
   }
 
   useEffect(() => {
     const store = storeRef.current;
     if (!store) return;
 
-    // Persistence is rehydrated only after mount: the server and the first
-    // client render both use `initialData`, so the markup matches exactly and
-    // React never reports a hydration mismatch.
-    void store.persist.rehydrate()?.then?.(() => {
-      // The server's date can be stale by the time a tab is reopened, and a
-      // persisted state can be days old. Re-anchor to the real local date,
-      // then roll anything unfinished onto it.
-      const actualToday = todayISO();
-      if (actualToday !== store.getState().today) {
-        store.getState().setToday(actualToday);
-        store.getState().setUpcomingAnchor(actualToday);
-      }
-      store.getState().carryOver();
-    });
+    // The server's date can be stale by the time a tab is reopened. Re-anchor
+    // to the real local date, then roll anything unfinished onto it.
+    const actualToday = todayISO();
+    if (actualToday !== store.getState().today) {
+      store.getState().setToday(actualToday);
+      store.getState().setUpcomingAnchor(actualToday);
+    }
+    void store.getState().carryOver();
 
     // The no-flash script already applied the stored theme to <html>; mirror it
     // into the store so components render the matching state. Setting it

@@ -70,6 +70,41 @@ The client adds a second layer: if the route itself is unreachable it plans
 locally. A 4xx is *not* retried locally — that means the request was rejected,
 and quietly producing a different answer would hide a real bug.
 
+## Data
+
+Supabase is the source of truth. There is no localStorage copy of tasks — the
+only thing in local storage is the theme.
+
+```
+/dashboard layout  --loadDashboard()-->  Supabase   (server, per request)
+       │                                    ▲
+   StoreProvider                            │
+       │                                    │
+   task mutations  --write-through----------┘        (browser, RLS-scoped)
+   dump / smart add --> /api/plan, /api/tasks/parse   (server, persists then returns)
+```
+
+- **Reads** happen once, on the server, in the dashboard layout. The first paint
+  already contains the real plan — no spinner, no loading flash.
+- **Task mutations** (complete, defer, delete, edit) apply optimistically and
+  write through from the browser. A failed write **rolls the store back** and
+  sets `syncError`; leaving the optimistic state would show a change that
+  doesn't exist on the server and the user would only find out on reload.
+- **Planning routes persist server-side before returning**, so the tasks the
+  client receives already carry their database ids. The client never re-writes
+  them.
+- **No query filters by `user_id`.** RLS does that. Duplicating the predicate in
+  application code creates a second place to get it wrong. Writes are the one
+  exception: they must state the `user_id` they're claiming, and it comes from
+  the verified session — never from the request body.
+
+Ids are UUIDs generated in `lib/id.ts` rather than by the database default, so
+the planner can reference a task's id while assembling a response, before
+anything is written.
+
+Completed work older than 14 days is not loaded. Open work is always loaded
+regardless of age.
+
 ## Theme
 
 Light is the default. Dark is the palette the designs actually specify;

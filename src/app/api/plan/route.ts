@@ -7,7 +7,11 @@ import { planSystemPrompt, planUserPrompt } from "@/lib/ai/prompt";
 import { planResponseSchema, type PlannedTask } from "@/lib/ai/schema";
 import { addDays, todayISO } from "@/lib/date";
 import { DAY_CAPACITY_MINUTES } from "@/lib/fixtures";
+import { newId } from "@/lib/id";
 import { buildPlan } from "@/lib/planner";
+import { insertDump, upsertDayPlan, upsertTasks } from "@/lib/supabase/data";
+import { hasSupabaseConfig } from "@/lib/supabase/env";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import type { DayPlan, Dump, PlanResult, Tag, Task } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -72,6 +76,7 @@ export async function POST(request: Request) {
       capacityMinutes,
       carryIn,
     });
+    await persistPlan(result);
     return NextResponse.json({ ...result, planner: "heuristic" });
   }
 
@@ -114,12 +119,36 @@ export async function POST(request: Request) {
       dumpText: body.dumpText,
     });
 
+    await persistPlan(result);
     return NextResponse.json({ ...result, planner: "ai" });
   } catch (error) {
     const { status, message } = describeError(error);
     console.error("[/api/plan]", error);
     return NextResponse.json({ error: message }, { status });
   }
+}
+
+/**
+ * Writes a whole planning result for the signed-in user.
+ *
+ * Order matters: the dump goes first because tasks carry `dump_id` as a foreign
+ * key, and inserting a task that references a missing dump would be rejected.
+ *
+ * Errors propagate. A replan that silently failed to save is worse than a
+ * visible failure — the user would keep working against a plan that only exists
+ * in their tab.
+ */
+async function persistPlan(result: PlanResult): Promise<void> {
+  if (!hasSupabaseConfig()) return;
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await insertDump(supabase, result.dump, user.id);
+  await upsertTasks(supabase, result.tasks, user.id);
+  await upsertDayPlan(supabase, result.dayPlan, user.id);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -151,7 +180,7 @@ function assemble({
   dumpText: string;
 }): PlanResult {
   const createdAt = new Date().toISOString();
-  const dumpId = `dump-${Date.now().toString(36)}`;
+  const dumpId = newId();
   const existing = new Map(carryIn.map((t) => [t.id, t]));
 
   const dump: Dump = {
@@ -185,7 +214,7 @@ function assemble({
     const base: Task = {
       // Reuse the id when carrying a task forward so completion state and
       // React keys survive the replan; mint one only for genuinely new work.
-      id: prior?.id ?? `task-${dumpId}-${index}`,
+      id: prior?.id ?? newId(),
       dump_id: prior?.dump_id ?? dumpId,
       title: item.title,
       priority: item.priority,
@@ -216,7 +245,7 @@ function assemble({
   );
 
   const dayPlan: DayPlan = {
-    id: `plan-${dumpId}`,
+    id: newId(),
     plan_date: today,
     summary: parsed.summary,
     // Regenerated locally: the model's own count can drift from the final split

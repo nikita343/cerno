@@ -1,9 +1,14 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createStore } from "zustand/vanilla";
-import { persist, createJSONStorage } from "zustand/middleware";
 
 import { addDays } from "@/lib/date";
 import { DAY_CAPACITY_MINUTES, seedDayPlan, seedDump, seedTasks } from "@/lib/fixtures";
 import { isPlannableDump, planDump, smartAddTask } from "@/lib/planner";
+import {
+  deleteTaskRow,
+  updateTaskRow,
+  type TaskPatch,
+} from "@/lib/supabase/data";
 import { applyTheme, DEFAULT_THEME } from "@/lib/theme";
 import type {
   CaptureMode,
@@ -27,6 +32,8 @@ export interface AppState {
   captureMode: CaptureMode;
   dumpText: string;
   planError: string | null;
+  /** Set when a write reached the server and failed. */
+  syncError: string | null;
   menuOpen: boolean;
   /** Anchor date for the Upcoming week strip. */
   upcomingAnchor: string;
@@ -45,21 +52,22 @@ export interface AppActions {
   setCaptureMode: (mode: CaptureMode) => void;
   submitDump: (source?: "text" | "voice") => Promise<void>;
   dismissPlanError: () => void;
+  dismissSyncError: () => void;
 
   /* tasks */
-  completeTask: (id: string) => void;
-  uncompleteTask: (id: string) => void;
-  moveToToday: (id: string) => void;
-  deferTask: (id: string) => void;
-  deleteTask: (id: string) => void;
+  completeTask: (id: string) => Promise<void>;
+  uncompleteTask: (id: string) => Promise<void>;
+  moveToToday: (id: string) => Promise<void>;
+  deferTask: (id: string) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
   updateTask: (
     id: string,
     patch: Partial<Pick<Task, "title" | "priority" | "estimated_minutes" | "deadline">>,
-  ) => void;
+  ) => Promise<void>;
   /** Parse one phrase into a structured task and drop it on today. */
   addTaskSmart: (text: string) => Promise<void>;
   /** Roll unfinished tasks from past days onto today. */
-  carryOver: () => void;
+  carryOver: () => Promise<void>;
 
   /* ui */
   setMenuOpen: (open: boolean) => void;
@@ -67,8 +75,6 @@ export interface AppActions {
   stepUpcomingWeek: (direction: -1 | 1) => void;
   setSearchQuery: (q: string) => void;
   setTheme: (theme: Theme) => void;
-
-  resetToSeed: () => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -81,8 +87,10 @@ export interface InitialData {
 }
 
 /**
- * Server-rendered starting point. Kept as a pure function of the date so the
- * server and the first client render produce byte-identical markup.
+ * Fallback data for when Supabase isn't configured.
+ *
+ * Kept as a pure function of the date so the server and the first client render
+ * produce byte-identical markup.
  */
 export function buildInitialData(today: string): InitialData {
   const plan = seedDayPlan(today);
@@ -94,160 +102,221 @@ export function buildInitialData(today: string): InitialData {
   };
 }
 
-const PERSIST_KEY = "cerno-store";
-const PERSIST_VERSION = 1;
+/**
+ * Supplies the browser Supabase client, or null when unconfigured.
+ *
+ * Injected rather than imported so the store stays testable and so a keyless
+ * dev environment degrades to in-memory state instead of throwing on every
+ * mutation.
+ */
+export type DbGetter = () => SupabaseClient | null;
 
-export function createAppStore(initial: InitialData) {
-  return createStore<AppStore>()(
-    persist(
-      (set, get) => ({
-        ...initial,
+const SYNC_FAILED = "That didn't save. Check your connection and try again.";
 
-        captureOpen: false,
-        captureMode: "ready",
-        dumpText: "",
-        planError: null,
-        menuOpen: false,
-        upcomingAnchor: initial.today,
-        searchQuery: "",
-        theme: DEFAULT_THEME,
+export function createAppStore(initial: InitialData, getDb: DbGetter = () => null) {
+  return createStore<AppStore>()((set, get) => {
+    /**
+     * Applies an optimistic change, then writes it.
+     *
+     * On failure the previous task list is restored. Leaving the optimistic
+     * state in place would show the user a change that does not exist on the
+     * server, and they'd only discover it on the next reload.
+     */
+    const writeThrough = async (
+      optimistic: (tasks: Task[]) => Task[],
+      persist: (db: SupabaseClient) => Promise<void>,
+    ) => {
+      const previous = get().tasks;
+      set({ tasks: optimistic(previous), syncError: null });
 
-        setToday: (iso) => set({ today: iso }),
+      const db = getDb();
+      if (!db) return; // No backend configured: in-memory only.
 
-        /* ---------------------------------------------------------------- */
-        /* Capture                                                          */
-        /* ---------------------------------------------------------------- */
+      try {
+        await persist(db);
+      } catch {
+        set({ tasks: previous, syncError: SYNC_FAILED });
+      }
+    };
 
-        openCapture: () =>
-          set({
-            captureOpen: true,
-            captureMode: "ready",
-            planError: null,
-            menuOpen: false,
-          }),
+    return {
+      ...initial,
 
-        closeCapture: () =>
-          set({
+      captureOpen: false,
+      captureMode: "ready",
+      dumpText: "",
+      planError: null,
+      syncError: null,
+      menuOpen: false,
+      upcomingAnchor: initial.today,
+      searchQuery: "",
+      theme: DEFAULT_THEME,
+
+      setToday: (iso) => set({ today: iso }),
+
+      /* ---------------------------------------------------------------- */
+      /* Capture                                                          */
+      /* ---------------------------------------------------------------- */
+
+      openCapture: () =>
+        set({
+          captureOpen: true,
+          captureMode: "ready",
+          planError: null,
+          menuOpen: false,
+        }),
+
+      closeCapture: () =>
+        set({
+          captureOpen: false,
+          captureMode: "ready",
+          dumpText: "",
+          planError: null,
+        }),
+
+      setDumpText: (dumpText) => set({ dumpText }),
+
+      setCaptureMode: (captureMode) => set({ captureMode }),
+
+      submitDump: async (source = "text") => {
+        const { dumpText, today } = get();
+
+        // Empty/junk dump: no API call, just surface the message inline.
+        if (!isPlannableDump(dumpText)) {
+          set({ planError: "Add a few words and I'll plan them." });
+          return;
+        }
+
+        set({ captureMode: "thinking", planError: null });
+
+        // Everything still outstanding is replanned together with the new
+        // dump: today's open items and anything previously parked. Done
+        // tasks and work dated further out are left alone.
+        const carryIn = get().tasks.filter(
+          (t) =>
+            (t.status === "today" && t.plan_date === today) ||
+            t.status === "deferred" ||
+            t.status === "inbox",
+        );
+        const carriedIds = new Set(carryIn.map((t) => t.id));
+
+        try {
+          // /api/plan persists the result server-side before returning, so the
+          // tasks below already carry their database ids. No write here.
+          const result = await planDump({
+            dumpText,
+            source,
+            today,
+            capacityMinutes: DAY_CAPACITY_MINUTES,
+            carryIn,
+          });
+
+          set((state) => ({
+            // The replanned tasks come back with the same ids, so this
+            // swaps them in place rather than duplicating them.
+            tasks: [
+              ...state.tasks.filter((t) => !carriedIds.has(t.id)),
+              ...result.tasks,
+            ],
+            dayPlans: {
+              ...state.dayPlans,
+              [result.dayPlan.plan_date]: result.dayPlan,
+            },
+            dumps: [result.dump, ...state.dumps],
             captureOpen: false,
             captureMode: "ready",
             dumpText: "",
-            planError: null,
-          }),
+          }));
+        } catch {
+          set({
+            captureMode: "ready",
+            planError: "That didn't go through. Try again.",
+          });
+        }
+      },
 
-        setDumpText: (dumpText) => set({ dumpText }),
+      dismissPlanError: () => set({ planError: null }),
+      dismissSyncError: () => set({ syncError: null }),
 
-        setCaptureMode: (captureMode) => set({ captureMode }),
+      /* ---------------------------------------------------------------- */
+      /* Tasks                                                            */
+      /* ---------------------------------------------------------------- */
 
-        submitDump: async (source = "text") => {
-          const { dumpText, today } = get();
+      completeTask: (id) =>
+        writeThrough(
+          (tasks) =>
+            tasks.map((t) => (t.id === id ? { ...t, status: "done" as const } : t)),
+          (db) => updateTaskRow(db, id, { status: "done" }),
+        ),
 
-          // Empty/junk dump: no API call, just surface the message inline.
-          if (!isPlannableDump(dumpText)) {
-            set({ planError: "Add a few words and I'll plan them." });
-            return;
-          }
-
-          set({ captureMode: "thinking", planError: null });
-
-          // Everything still outstanding is replanned together with the new
-          // dump: today's open items and anything previously parked. Done
-          // tasks and work dated further out are left alone.
-          const carryIn = get().tasks.filter(
-            (t) =>
-              (t.status === "today" && t.plan_date === today) ||
-              t.status === "deferred" ||
-              t.status === "inbox",
-          );
-          const carriedIds = new Set(carryIn.map((t) => t.id));
-
-          try {
-            const result = await planDump({
-              dumpText,
-              source,
-              today,
-              capacityMinutes: DAY_CAPACITY_MINUTES,
-              carryIn,
-            });
-
-            set((state) => ({
-              // The replanned tasks come back with the same ids, so this
-              // swaps them in place rather than duplicating them.
-              tasks: [
-                ...state.tasks.filter((t) => !carriedIds.has(t.id)),
-                ...result.tasks,
-              ],
-              dayPlans: {
-                ...state.dayPlans,
-                [result.dayPlan.plan_date]: result.dayPlan,
-              },
-              dumps: [result.dump, ...state.dumps],
-              captureOpen: false,
-              captureMode: "ready",
-              dumpText: "",
-            }));
-          } catch {
-            set({
-              captureMode: "ready",
-              planError: "That didn't go through. Try again.",
-            });
-          }
-        },
-
-        dismissPlanError: () => set({ planError: null }),
-
-        /* ---------------------------------------------------------------- */
-        /* Tasks                                                            */
-        /* ---------------------------------------------------------------- */
-
-        completeTask: (id) =>
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
-              t.id === id ? { ...t, status: "done" as const } : t,
-            ),
-          })),
-
-        uncompleteTask: (id) =>
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
+      uncompleteTask: (id) => {
+        const today = get().today;
+        return writeThrough(
+          (tasks) =>
+            tasks.map((t) =>
               t.id === id
-                ? { ...t, status: "today" as const, plan_date: state.today }
+                ? { ...t, status: "today" as const, plan_date: today }
                 : t,
             ),
-          })),
+          (db) => updateTaskRow(db, id, { status: "today", plan_date: today }),
+        );
+      },
 
-        moveToToday: (id) =>
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
+      moveToToday: (id) => {
+        const today = get().today;
+        return writeThrough(
+          (tasks) =>
+            tasks.map((t) =>
               t.id === id
-                ? { ...t, status: "today" as const, plan_date: state.today }
+                ? { ...t, status: "today" as const, plan_date: today }
                 : t,
             ),
-          })),
+          (db) => updateTaskRow(db, id, { status: "today", plan_date: today }),
+        );
+      },
 
-        deferTask: (id) =>
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
+      deferTask: (id) => {
+        const tomorrow = addDays(get().today, 1);
+        const existing = get().tasks.find((t) => t.id === id);
+        const reasoning = existing?.reasoning ?? "Parked for tomorrow.";
+        return writeThrough(
+          (tasks) =>
+            tasks.map((t) =>
               t.id === id
                 ? {
                     ...t,
                     status: "deferred" as const,
-                    plan_date: addDays(state.today, 1),
-                    reasoning: t.reasoning ?? "Parked for tomorrow.",
+                    plan_date: tomorrow,
+                    reasoning,
                   }
                 : t,
             ),
-          })),
+          (db) =>
+            updateTaskRow(db, id, {
+              status: "deferred",
+              plan_date: tomorrow,
+              reasoning,
+            }),
+        );
+      },
 
-        deleteTask: (id) =>
-          set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) })),
+      deleteTask: (id) =>
+        writeThrough(
+          (tasks) => tasks.filter((t) => t.id !== id),
+          (db) => deleteTaskRow(db, id),
+        ),
 
-        updateTask: (id, patch) =>
-          set((state) => ({
-            tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-          })),
+      updateTask: (id, patch) =>
+        writeThrough(
+          (tasks) => tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+          (db) => updateTaskRow(db, id, patch as TaskPatch),
+        ),
 
-        addTaskSmart: async (text) => {
-          const { today } = get();
+      addTaskSmart: async (text) => {
+        const { today } = get();
+        try {
+          // Persisted server-side by /api/tasks/parse; the returned task
+          // already has its database id.
           const task = await smartAddTask(text, today);
           set((state) => {
             // New quick-adds go to the end of today's list rather than
@@ -257,58 +326,60 @@ export function createAppStore(initial: InitialData) {
               .reduce((max, t) => Math.max(max, t.sort_order), -1);
             return {
               tasks: [...state.tasks, { ...task, sort_order: lastOrder + 1 }],
+              syncError: null,
             };
           });
-        },
-
-        carryOver: () =>
-          set((state) => ({
-            tasks: state.tasks.map((t) =>
-              t.status === "today" && t.plan_date && t.plan_date < state.today
-                ? { ...t, plan_date: state.today }
-                : t,
-            ),
-          })),
-
-        /* ---------------------------------------------------------------- */
-        /* UI                                                               */
-        /* ---------------------------------------------------------------- */
-
-        setMenuOpen: (menuOpen) => set({ menuOpen }),
-        setUpcomingAnchor: (upcomingAnchor) => set({ upcomingAnchor }),
-        stepUpcomingWeek: (direction) =>
-          set((state) => ({
-            upcomingAnchor: addDays(state.upcomingAnchor, direction * 7),
-          })),
-        setSearchQuery: (searchQuery) => set({ searchQuery }),
-        setTheme: (theme) => {
-          // The <html> attribute is the source of truth for the CSS; the store
-          // mirrors it so components can read the current theme in render.
-          applyTheme(theme);
-          set({ theme });
-        },
-
-        resetToSeed: () =>
-          set(() => ({ ...buildInitialData(get().today), upcomingAnchor: get().today })),
-      }),
-      {
-        name: PERSIST_KEY,
-        version: PERSIST_VERSION,
-        storage: createJSONStorage(() => localStorage),
-        // Rehydration is triggered manually after mount so server and client
-        // render the same markup — see StoreProvider.
-        skipHydration: true,
-        // Only durable data is persisted; transient UI always starts fresh.
-        // Theme is persisted separately under `cerno-theme` so the no-flash
-        // script can read it without parsing this blob.
-        partialize: (state) => ({
-          tasks: state.tasks,
-          dayPlans: state.dayPlans,
-          dumps: state.dumps,
-        }),
+        } catch {
+          set({ syncError: SYNC_FAILED });
+        }
       },
-    ),
-  );
+
+      carryOver: async () => {
+        const { tasks, today } = get();
+        const stale = tasks.filter(
+          (t) => t.status === "today" && t.plan_date && t.plan_date < today,
+        );
+        if (stale.length === 0) return;
+
+        set({
+          tasks: tasks.map((t) =>
+            stale.some((s) => s.id === t.id) ? { ...t, plan_date: today } : t,
+          ),
+        });
+
+        const db = getDb();
+        if (!db) return;
+        try {
+          // Sequential rather than parallel: this runs once on mount and a
+          // burst of writes is worse than a few extra milliseconds.
+          for (const task of stale) {
+            await updateTaskRow(db, task.id, { plan_date: today });
+          }
+        } catch {
+          // The rollover is recomputed on every mount, so a failure here
+          // simply retries next time. Not worth interrupting the user.
+        }
+      },
+
+      /* ---------------------------------------------------------------- */
+      /* UI                                                               */
+      /* ---------------------------------------------------------------- */
+
+      setMenuOpen: (menuOpen) => set({ menuOpen }),
+      setUpcomingAnchor: (upcomingAnchor) => set({ upcomingAnchor }),
+      stepUpcomingWeek: (direction) =>
+        set((state) => ({
+          upcomingAnchor: addDays(state.upcomingAnchor, direction * 7),
+        })),
+      setSearchQuery: (searchQuery) => set({ searchQuery }),
+      setTheme: (theme) => {
+        // The <html> attribute is the source of truth for the CSS; the store
+        // mirrors it so components can read the current theme in render.
+        applyTheme(theme);
+        set({ theme });
+      },
+    };
+  });
 }
 
 /* -------------------------------------------------------------------------- */
