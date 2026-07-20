@@ -160,6 +160,17 @@
   field-sizing: content;
 }
 
+/* The one documented exception to the global 16px input floor in globals.css.
+   The dump box is the app's primary input and is deliberately larger than body
+   text; the blanket rule would shrink it from ~18px to 16px on mobile.
+   `max()` rather than a bare value so it can never fall under the iOS
+   zoom-on-focus threshold, whatever the fluid root resolves to. */
+@media screen and (max-width: 959px), (pointer: coarse) {
+  .textarea {
+    font-size: max(16px, 1.1875rem) !important;
+  }
+}
+
 .textarea::placeholder {
   color: var(--text-faint);
 }

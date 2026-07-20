@@ -272,6 +272,42 @@ h4 {
   font-size: inherit;
 }
 
+/* --------------------------------------------------------------------------
+   Touch input sizing.
+
+   iOS Safari zooms the whole page when a text field under 16px receives focus,
+   and it does not zoom back out — the user is left scrolled sideways in a
+   layout that no longer fits. The threshold is exactly 16px, computed, and it
+   applies to every text-entry control including <select>.
+
+   This cannot be expressed in rem. The root size is a clamped fluid ladder
+   (see above) that resolves to roughly 15.25px at a 390px viewport, so even
+   `font-size: 1rem` on an input lands under the threshold. The value has to be
+   an absolute 16px.
+
+   `!important` is deliberate, and is the reason this lives here rather than in
+   six component stylesheets. A CSS Module class selector (0,1,0) outranks a
+   bare element selector (0,0,1), so the rule would silently lose to every
+   existing `.input`/`.select` rule. Overriding from one place also means a new
+   input added later is covered without anyone remembering this constraint.
+
+   The alternative fix — `maximum-scale=1` or `user-scalable=no` on the viewport
+   meta — is deliberately NOT used: it stops the zoom by disabling pinch-zoom
+   entirely, which breaks the page for anyone who needs to magnify it.
+
+   Scoped to touch pointers and to the mobile layout width: desktop browsers do
+   not zoom on focus, and forcing 16px there would override the design's type
+   scale for no benefit.
+   -------------------------------------------------------------------------- */
+
+@media screen and (max-width: 959px), (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Visible focus for keyboard users only — the design has no focus ring, so
    this is an accessibility addition using the accent already in the palette. */
 :focus-visible {
