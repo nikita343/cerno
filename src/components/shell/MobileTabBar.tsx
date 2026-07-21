@@ -10,6 +10,7 @@ import {
   ListIcon,
   MailIcon,
   SearchIcon,
+  UsersIcon,
 } from "@/components/icons";
 import { NAV_ITEMS, screenFromPath, TAB_ORDER } from "@/lib/nav";
 import type { ScreenKey } from "@/lib/types";
@@ -25,6 +26,7 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
   // Settings isn't in TAB_ORDER so this never renders here, but the map is
   // keyed by ScreenKey and an incomplete map is a type error waiting to happen
   // the next time a screen is added.
+  workspaces: UsersIcon,
   settings: CogIcon,
 };
 

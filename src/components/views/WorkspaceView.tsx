@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import Link from "next/link";
+
+import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
+import { DASHBOARD_ROOT } from "@/lib/nav";
 import { pluralize, totalDuration } from "@/lib/format";
 import { formatClock, withStartTimes } from "@/lib/schedule";
 import { createClient } from "@/lib/supabase/client";
@@ -17,7 +21,6 @@ import {
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import { EmptyState } from "./EmptyState";
-import { WorkspaceMembers } from "./WorkspaceMembers";
 import styles from "./WorkspaceView.module.css";
 import view from "./View.module.css";
 
@@ -103,7 +106,45 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         {workspace.description && (
           <p className={view.subline}>{workspace.description}</p>
         )}
+
+        {/* Faces plus one link, rather than the full roster. Who is in here is
+            worth seeing constantly; managing who is in here is not. */}
+        <div className={styles.peopleStrip}>
+          <span className={styles.faces}>
+            {members.slice(0, 5).map((member) => (
+              <span
+                key={member.user_id}
+                className={styles.face}
+                title={member.display_name ?? member.email ?? undefined}
+              >
+                {(member.display_name ?? member.email ?? "?")
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase()}
+              </span>
+            ))}
+            {members.length > 5 && (
+              <span className={styles.face} data-more>
+                +{members.length - 5}
+              </span>
+            )}
+          </span>
+          <Link
+            href={`${DASHBOARD_ROOT}/workspaces/${workspace.id}/settings`}
+            className={styles.manageLink}
+          >
+            {isAdmin ? "Manage & invite" : "People"}
+          </Link>
+        </div>
       </header>
+
+      {/* Adds to the workspace, not to you. Without this a new workspace was
+          a room with no door — nothing in the app could create a task with a
+          workspace_id, so it stayed permanently empty. */}
+      <SmartAddBar
+        workspaceId={workspaceId}
+        placeholder={`Add to ${workspace.name} — everyone here sees it`}
+      />
 
       {/* ------------------------------------------------------------ today */}
 
@@ -196,15 +237,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         </section>
       )}
 
-      {/* ---------------------------------------------------------- people */}
 
-      <WorkspaceMembers
-        workspace={workspace}
-        members={members}
-        isAdmin={isAdmin}
-        currentUserId={userId}
-        onChanged={loadRoster}
-      />
     </div>
   );
 }

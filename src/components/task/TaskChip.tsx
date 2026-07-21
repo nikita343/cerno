@@ -31,6 +31,14 @@ export interface TaskChipProps {
   overdue?: boolean;
   /** Renders the user's own note under the title. */
   showDescription?: boolean;
+  /**
+   * Name of the workspace this task belongs to, when worth showing.
+   *
+   * Passed in rather than looked up: the workspace screen already knows every
+   * row is its own and passes nothing, while Today passes the name so a shared
+   * task is distinguishable from a personal one.
+   */
+  workspaceName?: string | null;
 }
 
 const PRIORITY_LABEL: Record<Task["priority"], string> = {
@@ -55,6 +63,7 @@ export function TaskChip({
   onToggleComplete,
   overdue = false,
   showDescription = true,
+  workspaceName = null,
 }: TaskChipProps) {
   // Label colours are per-user data now, so the chip has to read them rather
   // than look them up in a constant. Subscribed shallowly: a recolour should
@@ -130,6 +139,16 @@ export function TaskChip({
         {task.deadline && (
           <span className={styles.pill}>
             due {deadlineLabel(task.deadline, today)}
+          </span>
+        )}
+
+        {/* Which workspace this belongs to, shown only when the surrounding
+            screen isn't already one workspace. On Today a shared task looks
+            identical to a personal one otherwise, which makes "is this mine or
+            the team's" unanswerable at a glance. */}
+        {workspaceName && (
+          <span className={styles.pill} data-workspace title={`In ${workspaceName}`}>
+            {workspaceName}
           </span>
         )}
 

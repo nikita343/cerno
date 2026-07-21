@@ -70,24 +70,25 @@
   transform: rotate(180deg);
 }
 
-.bell {
+/* Search and the bell sit together at the trailing edge. `margin-left: auto`
+   is on the first of them so the pair stays as one group rather than the two
+   drifting apart as the name length changes. */
+.iconLink {
   margin-left: auto;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: var(--r-button);
-  background: var(--surface);
-  border: var(--hairline) solid var(--border);
-  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--r-tile);
+  color: var(--text-muted);
   flex: none;
   transition:
-    color var(--dur) var(--ease),
-    border-color var(--dur) var(--ease);
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
-.bell:hover {
-  color: var(--text-secondary);
-  border-color: var(--border-strong);
+.iconLink:active {
+  background: var(--surface-hover);
+  color: var(--text);
 }

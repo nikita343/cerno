@@ -151,7 +151,12 @@ export interface AppActions {
    * adding from Thursday's row means Thursday, even if the text says nothing
    * about a date. Omit it to let the parser decide (the Today quick-add).
    */
-  addTaskSmart: (text: string, date?: string) => Promise<void>;
+  addTaskSmart: (
+    text: string,
+    date?: string,
+    /** Adds into a workspace's shared list rather than your own. */
+    workspaceId?: string | null,
+  ) => Promise<void>;
   /** Roll unfinished tasks from past days onto today. */
   carryOver: () => Promise<void>;
 
@@ -554,7 +559,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         );
       },
 
-      addTaskSmart: async (text, date) => {
+      addTaskSmart: async (text, date, workspaceId = null) => {
         const { today } = get();
         try {
           // Persisted server-side by /api/tasks/parse; the returned task
@@ -563,6 +568,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             text,
             today,
             get().labels.map((l) => l.name),
+            workspaceId,
           );
 
           // An explicit day wins over whatever the parser inferred. Added from

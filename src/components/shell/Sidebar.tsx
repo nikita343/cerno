@@ -12,6 +12,7 @@ import {
   ListIcon,
   MailIcon,
   SearchIcon,
+  UsersIcon,
 } from "@/components/icons";
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
@@ -29,6 +30,7 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
   upcoming: ListIcon,
   inbox: MailIcon,
   filters: FilterIcon,
+  workspaces: UsersIcon,
   settings: CogIcon,
 };
 

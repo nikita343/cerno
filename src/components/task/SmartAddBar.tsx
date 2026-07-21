@@ -17,8 +17,17 @@ import styles from "./SmartAddBar.module.css";
  */
 export function SmartAddBar({
   placeholder = "Add one thing — Cerno fills in the rest",
+  /**
+   * Adds into a workspace's shared list instead of your own.
+   *
+   * Passed rather than read from the route, so the same bar is unambiguous
+   * wherever it appears: the workspace page always adds to that workspace,
+   * Today always adds to you.
+   */
+  workspaceId = null,
 }: {
   placeholder?: string;
+  workspaceId?: string | null;
 }) {
   const [text, setText] = useState("");
   const addTaskSmart = useAppStore((s) => s.addTaskSmart);
@@ -32,7 +41,7 @@ export function SmartAddBar({
     // is in flight, and the task appears in the list when it resolves.
     setText("");
     try {
-      await addTaskSmart(trimmed);
+      await addTaskSmart(trimmed, undefined, workspaceId);
     } finally {
       setPending(false);
     }

@@ -30,6 +30,8 @@ export interface TaskRowProps {
   onDelete: (id: string) => void;
   menuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
+  /** Workspace name to badge the card with; omit inside a workspace screen. */
+  workspaceName?: string | null;
   /** Mid exit animation — the task outlives the click by one animation. */
   removing?: boolean;
   /**
@@ -64,6 +66,7 @@ export function TaskRow({
   onDelete,
   menuOpen,
   onMenuOpenChange,
+  workspaceName = null,
   removing = false,
   index,
 }: TaskRowProps) {
@@ -99,6 +102,7 @@ export function TaskRow({
             task={task}
             today={today}
             overdue={overdue}
+            workspaceName={workspaceName}
             onToggleComplete={onToggle}
           />
         </SwipeRow>

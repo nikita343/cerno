@@ -4,12 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CalendarIcon } from "@/components/icons";
 import { DatePicker } from "@/components/task/DatePicker";
+import { PickerModal } from "@/components/task/PickerModal";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
 import { taskDuration, totalDuration, pluralize } from "@/lib/format";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
+import { PHONE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { deferredFor, scheduledFor, totalMinutes } from "@/store/createAppStore";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
@@ -38,8 +40,15 @@ export function TodayView() {
   // can never disagree about what is late.
   const { overdue } = useReminders();
 
+  // id -> name, so a shared task on Today can say which team it came from.
+  const workspaceNames = useAppStoreShallow(
+    (s) => new Map(s.workspaces.map((w) => [w.id, w.name])),
+  );
+
   const [bulkOpen, setBulkOpen] = useState(false);
-  const bulkRef = useRef<HTMLDivElement>(null);
+  // The picker is a phone sheet below this width; it also decides whether the
+  // picker drops its own card (the sheet already supplies one).
+  const isPhone = useMediaQuery(PHONE_QUERY);
 
   // Lifted out of TaskMenu because the menu can be opened three ways here: the
   // ⋯ button, the swipe tray, and tapping the card on touch.
@@ -52,15 +61,6 @@ export function TodayView() {
     () => scheduled.filter((t) => overdue.has(t.id)).map((t) => t.id),
     [scheduled, overdue],
   );
-
-  useEffect(() => {
-    if (!bulkOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (!bulkRef.current?.contains(e.target as Node)) setBulkOpen(false);
-    };
-    document.addEventListener("pointerdown", onDown);
-    return () => document.removeEventListener("pointerdown", onDown);
-  }, [bulkOpen]);
 
   // The button disappears once nothing is overdue; leaving it open would
   // strand a picker that no longer has anything to act on.
@@ -155,7 +155,7 @@ export function TodayView() {
             </span>
 
             {overdueIdList.length > 0 && (
-              <div className={styles.bulk} ref={bulkRef}>
+              <>
                 <button
                   type="button"
                   className={styles.bulkButton}
@@ -168,22 +168,26 @@ export function TodayView() {
                 </button>
 
                 {bulkOpen && (
-                  <div className={styles.bulkPop}>
+                  <PickerModal
+                    label="Reschedule overdue tasks"
+                    onClose={() => setBulkOpen(false)}
+                  >
                     <DatePicker
                       today={today}
                       title={`Move ${overdueIdList.length} overdue ${pluralize(
                         overdueIdList.length,
                         "task",
                       )}`}
+                      flat={isPhone}
                       onClose={() => setBulkOpen(false)}
                       onPick={(date) => {
                         void rescheduleMany(overdueIdList, date);
                         setBulkOpen(false);
                       }}
                     />
-                  </div>
+                  </PickerModal>
                 )}
-              </div>
+              </>
             )}
 
             <span className={view.sectionMetaRight}>
@@ -229,6 +233,7 @@ export function TodayView() {
                         overdue={isOverdue}
                         onToggle={toggle}
                         onDelete={requestDelete}
+                        workspaceName={workspaceNames.get(task.workspace_id ?? "") ?? null}
                         removing={removing.has(task.id)}
                         index={index}
                         menuOpen={menuTaskId === task.id}

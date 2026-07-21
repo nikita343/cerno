@@ -20,7 +20,11 @@ export const DASHBOARD_ROOT = "/dashboard";
  */
 export const SETTINGS_HREF = `${DASHBOARD_ROOT}/settings`;
 
-/** Sidebar order puts Search first, the tab bar puts it last (per the designs). */
+/**
+ * `workspaces` is in the tab bar but not the sidebar: the sidebar already lists
+ * every workspace by name below Labels, so a generic entry there would be a
+ * second, worse route to the same place.
+ */
 export const NAV_ITEMS: NavItem[] = [
   { key: "search", href: `${DASHBOARD_ROOT}/search`, label: "Search" },
   { key: "today", href: DASHBOARD_ROOT, label: "Today" },
@@ -32,14 +36,29 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Filters & labels",
     shortLabel: "Filters",
   },
+  {
+    key: "workspaces",
+    href: `${DASHBOARD_ROOT}/workspaces`,
+    label: "Workspaces",
+    shortLabel: "Teams",
+  },
 ];
 
+/**
+ * The tab bar. Five is the ceiling before labels truncate on a small phone, so
+ * adding Workspaces meant removing something.
+ *
+ * Search lost its slot and moved into the top bar beside the notification bell.
+ * It is the one nav item with no state to show — you go there to type — so it
+ * survives being an icon, which the other four don't: "Inbox" without its count
+ * or "Today" without its label would be worse.
+ */
 export const TAB_ORDER: ScreenKey[] = [
   "today",
   "upcoming",
   "inbox",
+  "workspaces",
   "filters",
-  "search",
 ];
 
 export function screenFromPath(pathname: string): ScreenKey {
@@ -50,6 +69,9 @@ export function screenFromPath(pathname: string): ScreenKey {
   // Not in NAV_ITEMS, so it needs its own check or it would fall through to
   // the "today" default and light up the wrong tab.
   if (trimmed.startsWith(SETTINGS_HREF)) return "settings";
+  // Every workspace URL nests under this, including /workspaces/new and
+  // /workspaces/<id>/settings, so the tab stays lit throughout.
+  if (trimmed.startsWith(`${DASHBOARD_ROOT}/workspaces`)) return "workspaces";
   const match = NAV_ITEMS.find(
     (item) => item.href !== DASHBOARD_ROOT && trimmed.startsWith(item.href),
   );

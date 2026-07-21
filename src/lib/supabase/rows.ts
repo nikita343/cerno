@@ -39,6 +39,9 @@ export interface TaskRow {
   suggested_start: string | null;
   status: TaskStatus;
   plan_date: string | null;
+  /** Null for a personal task; set for one owned by a workspace. */
+  workspace_id?: string | null;
+  assignee_id?: string | null;
   tags: Tag[] | null;
   reasoning: string | null;
   sort_order: number;
@@ -84,6 +87,8 @@ export function toTask(row: TaskRow): Task {
     suggested_start: trimClock(row.suggested_start),
     status: row.status,
     plan_date: row.plan_date,
+    workspace_id: row.workspace_id ?? null,
+    assignee_id: row.assignee_id ?? null,
     tags: row.tags ?? [],
     reasoning: row.reasoning,
     sort_order: row.sort_order,
@@ -112,6 +117,11 @@ export function toTaskRow(task: Task, userId: string): TaskRow {
     suggested_start: task.suggested_start,
     status: task.status,
     plan_date: task.plan_date,
+    // Null for a personal task. The insert policy checks membership, so a
+    // workspace id the caller doesn't belong to is rejected by the database
+    // rather than trusted here.
+    workspace_id: task.workspace_id ?? null,
+    assignee_id: task.assignee_id ?? null,
     tags: task.tags,
     reasoning: task.reasoning,
     sort_order: task.sort_order,

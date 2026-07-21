@@ -208,6 +208,22 @@ export const UserIcon = (p: IconProps) => (
   </Svg>
 );
 
+/**
+ * Two people. Used for Workspaces.
+ *
+ * The second figure is drawn behind and clipped rather than fully outlined —
+ * at 22px two complete heads and shoulders turn into a smudge, and the
+ * silhouette of "more than one person" is what has to survive.
+ */
+export const UsersIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="9.5" cy="8.5" r="3.25" />
+    <path d="M3.5 20a6 6 0 0 1 12 0" />
+    <path d="M16 5.6a3.25 3.25 0 0 1 0 6.3" />
+    <path d="M17.5 14.4A6 6 0 0 1 20.5 20" />
+  </Svg>
+);
+
 /* --------------------------------------------------------- filters / meta */
 
 export const FlagIcon = (p: IconProps) => (

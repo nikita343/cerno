@@ -1,0 +1,47 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim-menu);
+  z-index: 60;
+  animation: cernoFadeIn var(--dur) var(--ease);
+}
+
+/* Desktop: centred. The picker supplies its own card, so this is only a
+   position — no surface of its own, or you get a panel inside a panel. */
+.panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 61;
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  animation: cernoCardIn var(--dur-slow) var(--ease-out);
+}
+
+/* Phone: a bottom sheet, so the calendar can't run off the bottom of the
+   screen or hide behind the tab bar. dvh so the keyboard shrinks it. */
+.panel[data-sheet] {
+  top: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: none;
+  max-height: 88dvh;
+  overscroll-behavior: contain;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: var(--hairline) solid var(--border-menu);
+  border-bottom: none;
+  border-radius: var(--r-card-lg) var(--r-card-lg) 0 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  animation: cernoSheetUp var(--dur-slow) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .scrim {
+    animation-duration: 0.01ms;
+  }
+}

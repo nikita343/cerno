@@ -132,6 +132,7 @@ export type ScreenKey =
   | "inbox"
   | "filters"
   | "search"
+  | "workspaces"
   | "settings";
 
 /* ------------------------------------------------------------------ settings */

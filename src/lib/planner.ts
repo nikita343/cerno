@@ -616,6 +616,8 @@ export async function smartAddTask(
   today = todayISO(),
   /** Only used by the offline fallback — the route reads them server-side. */
   labelNames: string[] = [],
+  /** Adds to a workspace rather than the caller's own list. */
+  workspaceId: string | null = null,
 ): Promise<Task> {
   try {
     const response = await fetch("/api/tasks/parse", {
@@ -625,13 +627,16 @@ export async function smartAddTask(
         text,
         today,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC",
+        workspaceId,
       }),
     });
     if (!response.ok) throw new ServerUnavailableError();
     const body = (await response.json()) as { task: Task };
     return body.task;
   } catch {
-    return parseSingleTask(text, today, labelNames);
+    // Offline fallback. The workspace is still carried so the task lands in
+    // the right list once it syncs.
+    return { ...parseSingleTask(text, today, labelNames), workspace_id: workspaceId };
   }
 }
 

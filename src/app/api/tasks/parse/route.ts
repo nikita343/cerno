@@ -37,6 +37,15 @@ const requestSchema = z.object({
   text: z.string().min(1).max(MAX_CHARS),
   today: z.string().optional(),
   timezone: z.string().default("UTC"),
+  /**
+   * Adds the task to a workspace instead of the caller's own list.
+   *
+   * Not verified here. The insert policy on `tasks` requires membership, so a
+   * workspace the caller doesn't belong to is refused by the database — which
+   * is the check that actually counts. Re-checking in the route would be a
+   * second place to get multi-tenant isolation wrong.
+   */
+  workspaceId: z.string().uuid().nullish(),
 });
 
 /**
@@ -62,7 +71,10 @@ export async function POST(request: Request) {
   const labelNames = await loadLabelNames(caller);
 
   if (!client) {
-    const task = parseSingleTask(body.text, today, labelNames);
+    const task: Task = {
+      ...parseSingleTask(body.text, today, labelNames),
+      workspace_id: body.workspaceId ?? null,
+    };
     await persist(task, caller);
     return NextResponse.json({ task, planner: "heuristic" });
   }
@@ -90,6 +102,9 @@ export async function POST(request: Request) {
     const task: Task = {
       id: newId(),
       dump_id: null,
+      // Set before persisting so the insert is checked against the workspace
+      // policy, not written as personal and moved afterwards.
+      workspace_id: body.workspaceId ?? null,
       title: parsed.title,
       // A quick-add has no note yet; the user writes one if they want it.
       description: null,

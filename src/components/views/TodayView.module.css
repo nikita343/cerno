@@ -205,3 +205,34 @@
     gap: 0.5rem;
   }
 }
+
+/* The bulk overdue action. The button only — the picker itself is a portalled
+   modal (PickerModal), because an anchored popover on this row ran off the
+   bottom of a phone and lost to the FAB. */
+.bulkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: var(--overdue-soft);
+  border: var(--hairline) solid transparent;
+  color: var(--overdue);
+  font-size: 0.78125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.bulkButton:hover {
+  border-color: var(--overdue);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .bulkButton {
+    padding: 0.375rem 0.6875rem;
+  }
+}
