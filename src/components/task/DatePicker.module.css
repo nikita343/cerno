@@ -14,6 +14,19 @@
   flex-direction: column;
 }
 
+/* Inside a sheet the surrounding surface is already glass, so the picker's own
+   card would read as a second panel floating on the first. It gives up its
+   chrome and fills the width instead. */
+.picker[data-flat] {
+  width: 100%;
+  max-width: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 .head {
   display: flex;
   align-items: center;

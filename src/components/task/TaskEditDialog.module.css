@@ -17,7 +17,11 @@
   transform: translate(-50%, -50%);
   width: 28rem;
   max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 4rem);
+  /* dvh, not vh. `vh` is the *largest* viewport — it ignores the browser
+     chrome and the on-screen keyboard — so a dialog sized in vh keeps its full
+     height while the usable area shrinks, and its footer (the Save button)
+     slides out of reach. */
+  max-height: calc(100dvh - 4rem);
   display: flex;
   flex-direction: column;
   /* Glass: translucent surface + blurred backdrop, so the page shows through
@@ -49,7 +53,7 @@
     max-width: none;
     border-radius: var(--r-card-lg) var(--r-card-lg) 0 0;
     border-bottom: none;
-    max-height: 92vh;
+    max-height: 92dvh;
     padding-bottom: env(safe-area-inset-bottom, 0);
     animation: cernoSheetUp var(--dur-slow) var(--ease-out);
   }

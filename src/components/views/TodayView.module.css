@@ -92,10 +92,13 @@
     "chip actions";
   align-items: center;
   gap: 0.25rem 0.5rem;
-  /* Staggered by position so a replanned day resolves top-down. Capped at 8
-     slots — beyond that the tail would feel like lag rather than rhythm. */
-  animation: cernoRowIn var(--dur-slow) var(--ease-out) backwards;
-  animation-delay: calc(min(var(--i, 0), 8) * 0.035s);
+  /* Staggered by position so a replanned day resolves top-down. Capped at 5
+     slots and tightened from the original 0.34s/0.035s: this animation also
+     plays every time you navigate to Today, where the old timing meant the
+     last visible row didn't settle for well over half a second and the whole
+     screen read as slow to load. The rhythm survives the trim. */
+  animation: cernoRowIn var(--dur) var(--ease-out) backwards;
+  animation-delay: calc(min(var(--i, 0), 5) * 0.02s);
 }
 
 /* A row that inherits the time above it belongs to the same moment, so it sits
@@ -229,6 +232,16 @@
 @media (hover: none) {
   .rowActions {
     display: none;
+  }
+
+  /* The track has to go, not just its contents: an empty `auto` column still
+     contributes its column gap, which showed as a strip of page wedged between
+     the swipe actions and the edge of the screen. */
+  .row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "time"
+      "chip";
   }
 }
 

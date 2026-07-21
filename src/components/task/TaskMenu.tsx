@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Drawer } from "vaul";
 
 import {
   CalendarIcon,
@@ -11,6 +12,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import type { Priority, Task } from "@/lib/types";
+import { PHONE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { DatePicker } from "./DatePicker";
@@ -28,7 +30,18 @@ type Panel = "menu" | "date" | "confirmDelete";
 /**
  * The per-task `⋯` menu: Edit, Date, Priority, Delete.
  *
- * Delete lives here rather than as an inline icon so it can't be hit by
+ * Two presentations of one set of panels. On a pointer device it is a centred
+ * modal; on a phone it is a drag-to-dismiss bottom sheet, because the panels
+ * open from a card you just tapped with your thumb and flicking one away is
+ * cheaper than reaching for a close button at the top of the screen.
+ *
+ * The sheet is `vaul` rather than hand-rolled. The gesture is not the hard part
+ * — the surrounding behaviour is: velocity-based dismiss, scroll inside the
+ * sheet not fighting the drag, focus trapping, restoring focus on close, inert
+ * background. That is a lot of subtle work to get wrong, and it is exactly what
+ * the library already does.
+ *
+ * Delete lives in here rather than as an inline icon so it can't be hit by
  * mistake while reaching for the complete button, and so it can carry a
  * confirmation step. The inline ✓ stays where it is — completing is the most
  * common action on a row and shouldn't cost two taps.
@@ -71,6 +84,8 @@ export function TaskMenu({
   const [editing, setEditing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const isPhone = useMediaQuery(PHONE_QUERY);
+
   const popRef = useRef<HTMLDivElement>(null);
 
   // Portals need a DOM target, which doesn't exist during the server render.
@@ -81,19 +96,132 @@ export function TaskMenu({
     setPanel("menu");
   };
 
+  // The sheet handles its own Escape and focus; only the modal needs these.
   useEffect(() => {
-    if (!open) return;
+    if (!open || isPhone) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, isPhone]);
 
-  // Focus moves into the dialog so keyboard users land inside it.
   useEffect(() => {
-    if (open) popRef.current?.focus();
-  }, [open]);
+    if (open && !isPhone) popRef.current?.focus();
+  }, [open, isPhone]);
+
+  const label = `Actions for "${task.title}"`;
+
+  // Shared by both presentations. Identical markup either way, so a change to
+  // an action can't land on one form factor and not the other.
+  const panels = (
+    <>
+      {panel === "menu" && (
+        <div className={styles.menu}>
+          <button
+            type="button"
+            className={styles.row}
+            role="menuitem"
+            onClick={() => {
+              setEditing(true);
+              close();
+            }}
+          >
+            <EditIcon size="1rem" className={styles.rowIcon} />
+            <span>Edit</span>
+          </button>
+
+          <button
+            type="button"
+            className={styles.row}
+            role="menuitem"
+            onClick={() => setPanel("date")}
+          >
+            <CalendarIcon size="1rem" className={styles.rowIcon} />
+            <span>Date</span>
+            <span className={styles.rowHint}>{task.plan_date ?? "None"}</span>
+          </button>
+
+          <div className={styles.divider} />
+
+          <span className={styles.groupLabel}>Priority</span>
+          <div className={styles.flags} role="group" aria-label="Priority">
+            {PRIORITIES.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                className={styles.flag}
+                data-priority={p.value}
+                data-active={task.priority === p.value || undefined}
+                onClick={() => {
+                  void updateTask(task.id, { priority: p.value });
+                  close();
+                }}
+                aria-label={`${p.label} priority`}
+                aria-pressed={task.priority === p.value}
+                title={p.label}
+              >
+                <FlagIcon size="1rem" />
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.divider} />
+
+          <button
+            type="button"
+            className={`${styles.row} ${styles.danger}`}
+            role="menuitem"
+            onClick={() => setPanel("confirmDelete")}
+          >
+            <TrashIcon size="1rem" className={styles.rowIcon} />
+            <span>Delete</span>
+          </button>
+        </div>
+      )}
+
+      {panel === "date" && (
+        <DatePicker
+          today={today}
+          selected={task.plan_date}
+          title="Reschedule"
+          flat={isPhone}
+          onClose={close}
+          onPick={(date) => {
+            void rescheduleTask(task.id, date);
+            close();
+          }}
+        />
+      )}
+
+      {panel === "confirmDelete" && (
+        <div className={styles.confirm}>
+          <p className={styles.confirmText}>
+            Delete &ldquo;{task.title}&rdquo;?
+          </p>
+          <div className={styles.confirmActions}>
+            <button
+              type="button"
+              className={styles.confirmDelete}
+              onClick={() => {
+                close();
+                onDelete(task.id);
+              }}
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              className={styles.confirmCancel}
+              onClick={() => setPanel("menu")}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className={styles.wrap}>
@@ -104,138 +232,55 @@ export function TaskMenu({
           onClick={() => (open ? close() : setOpen(true))}
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-label={`More actions for "${task.title}"`}
+          aria-label={label}
         >
           <MoreIcon size="1rem" />
         </button>
       )}
 
-      {/* Portalled to <body>: an ancestor `transform` (PageTransition has one)
-          makes `position: fixed` resolve against that element instead of the
-          viewport, and traps it in that element's stacking context. */}
-      {open && mounted && createPortal(
-        <>
-          <div
-            className={styles.scrim}
-            onClick={close}
-            aria-hidden="true"
-          />
-          <div
-            ref={popRef}
-            className={styles.pop}
-            data-wide={panel === "date" || undefined}
-            role="menu"
-            aria-label={`Actions for "${task.title}"`}
-            tabIndex={-1}
-          >
-          {panel === "menu" && (
-            <div className={styles.menu}>
-              <button
-                type="button"
-                className={styles.row}
-                role="menuitem"
-                onClick={() => {
-                  setEditing(true);
-                  close();
-                }}
-              >
-                <EditIcon size="1rem" className={styles.rowIcon} />
-                <span>Edit</span>
-              </button>
-
-              <button
-                type="button"
-                className={styles.row}
-                role="menuitem"
-                onClick={() => setPanel("date")}
-              >
-                <CalendarIcon size="1rem" className={styles.rowIcon} />
-                <span>Date</span>
-                <span className={styles.rowHint}>
-                  {task.plan_date ?? "None"}
-                </span>
-              </button>
-
-              <div className={styles.divider} />
-
-              <span className={styles.groupLabel}>Priority</span>
-              <div className={styles.flags} role="group" aria-label="Priority">
-                {PRIORITIES.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    className={styles.flag}
-                    data-priority={p.value}
-                    data-active={task.priority === p.value || undefined}
-                    onClick={() => {
-                      void updateTask(task.id, { priority: p.value });
-                      close();
-                    }}
-                    aria-label={`${p.label} priority`}
-                    aria-pressed={task.priority === p.value}
-                    title={p.label}
-                  >
-                    <FlagIcon size="1rem" />
-                  </button>
-                ))}
-              </div>
-
-              <div className={styles.divider} />
-
-              <button
-                type="button"
-                className={`${styles.row} ${styles.danger}`}
-                role="menuitem"
-                onClick={() => setPanel("confirmDelete")}
-              >
-                <TrashIcon size="1rem" className={styles.rowIcon} />
-                <span>Delete</span>
-              </button>
+      {isPhone ? (
+        <Drawer.Root
+          open={open}
+          onOpenChange={(next) => {
+            if (!next) close();
+          }}
+          // The app shell is `100dvh; overflow: hidden` and scrolls in an inner
+          // element, so the body never scrolls — vaul's body lock has nothing
+          // to fix here, and its iOS `position: fixed` variant would fight the
+          // shell's own layout. The overlay already swallows background touches.
+          noBodyStyles
+          repositionInputs={false}
+        >
+          <Drawer.Portal>
+            <Drawer.Overlay className={styles.sheetOverlay} />
+            <Drawer.Content className={styles.sheet} aria-describedby={undefined}>
+              {/* Radix requires a title on every dialog. It is visually
+                  redundant next to the task's own row, so it is read-only. */}
+              <Drawer.Title className="srOnly">{label}</Drawer.Title>
+              <Drawer.Handle className={styles.sheetHandle} />
+              <div className={styles.sheetBody}>{panels}</div>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
+      ) : (
+        open &&
+        mounted &&
+        createPortal(
+          <>
+            <div className={styles.scrim} onClick={close} aria-hidden="true" />
+            <div
+              ref={popRef}
+              className={styles.pop}
+              data-wide={panel === "date" || undefined}
+              role="menu"
+              aria-label={label}
+              tabIndex={-1}
+            >
+              {panels}
             </div>
-          )}
-
-          {panel === "date" && (
-            <DatePicker
-              today={today}
-              selected={task.plan_date}
-              title="Reschedule"
-              onClose={close}
-              onPick={(date) => {
-                void rescheduleTask(task.id, date);
-                close();
-              }}
-            />
-          )}
-
-          {panel === "confirmDelete" && (
-            <div className={styles.confirm}>
-              <p className={styles.confirmText}>
-                Delete &ldquo;{task.title}&rdquo;?
-              </p>
-              <div className={styles.confirmActions}>
-                <button
-                  type="button"
-                  className={styles.confirmDelete}
-                  onClick={() => {
-                    close();
-                    onDelete(task.id);
-                  }}
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  className={styles.confirmCancel}
-                  onClick={() => setPanel("menu")}
-                >
-                  Cancel
-                </button>
-              </div>
-              </div>
-            )}
-          </div>
-        </>,
-        document.body,
+          </>,
+          document.body,
+        )
       )}
 
       {editing && (

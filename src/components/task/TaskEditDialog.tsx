@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { CloseIcon } from "@/components/icons";
 import { usePresence } from "@/lib/usePresence";
@@ -46,6 +47,10 @@ export function TaskEditDialog({
 
   const titleRef = useRef<HTMLInputElement>(null);
 
+  // Portals need a DOM target, which doesn't exist during the server render.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     titleRef.current?.focus();
     titleRef.current?.select();
@@ -86,9 +91,23 @@ export function TaskEditDialog({
     onClose();
   };
 
-  if (!present) return null;
+  if (!present || !mounted) return null;
 
-  return (
+  /*
+   * Portalled to <body>.
+   *
+   * This dialog rendered inline, inside the task row — which put it under
+   * whatever ancestors that row happened to have. A transformed ancestor makes
+   * `position: fixed` resolve against *that element* rather than the viewport,
+   * so the sheet was being positioned against the page wrapper instead of the
+   * screen and its footer — the Save button — ended up below the fold with no
+   * way to scroll to it. The sibling menu was portalled for exactly this reason
+   * and this one was missed.
+   *
+   * The offending transform is gone now, but the portal stays: correctness here
+   * should not depend on no ancestor ever gaining a transform again.
+   */
+  return createPortal(
     <>
       <div
         className={styles.scrim}
@@ -201,6 +220,7 @@ export function TaskEditDialog({
           </button>
         </footer>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }

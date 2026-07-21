@@ -1,17 +1,27 @@
+/* Opacity only, and fast.
+ *
+ * This used to run for `--dur-slow` and pair the fade with a 0.5rem rise. Both
+ * were a mistake on a screen you navigate to constantly: the rise means content
+ * is still moving when you start reading, and any duration long enough to
+ * notice reads as the app being slow to load rather than as a transition —
+ * which is exactly backwards, because navigation here is instant.
+ *
+ * Dropping the transform matters for a second reason. A transformed element
+ * becomes the containing block for `position: fixed` descendants and traps them
+ * in its stacking context, which is what sent the date picker off-screen and
+ * hid the edit dialog's footer. The portals those fixes added are still there
+ * and still correct, but they're no longer papering over this.
+ */
 .page {
-  animation: cernoPageIn var(--dur-slow) var(--ease-out) both;
+  animation: cernoPageIn var(--dur-fast) var(--ease-out) both;
 }
 
-/* A short rise paired with the fade — enough to read as a transition without
-   pushing content around on slower devices. */
 @keyframes cernoPageIn {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 

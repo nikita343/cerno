@@ -33,6 +33,20 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  /*
+   * The on-screen keyboard shrinks the layout viewport instead of just sliding
+   * the visible area around. Without this, a bottom-anchored sheet keeps its
+   * full height when the keyboard opens and its footer — the Save button — sits
+   * behind the keyboard with nothing to scroll.
+   *
+   * This is also what makes the `dvh` heights on those sheets mean anything.
+   * Chromium honours it; Safari does not yet, so the sheets still cap their
+   * height rather than relying on it alone.
+   *
+   * Note this is *not* `maximum-scale`/`user-scalable=no`. Those would also
+   * stop iOS zooming on focus, by breaking pinch-zoom for everyone.
+   */
+  interactiveWidget: "resizes-content",
 };
 
 /**

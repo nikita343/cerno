@@ -87,9 +87,12 @@ export function SwipeRow({
     const max = trayWidth();
     // Dragging left opens, so leftward travel (negative dx) increases offset.
     const next = origin.current.base - dx;
-    // Closed is a hard stop; past fully-open the row keeps moving but with
-    // resistance, so overshoot feels elastic rather than broken.
-    setOffset(next < 0 ? 0 : next > max ? max + (next - max) * 0.25 : next);
+    // Hard stops at both ends. This used to let the row overshoot with elastic
+    // resistance, which felt nice but pulled the card further left than the
+    // tray is wide — opening a gap of bare page between the card and the first
+    // action. Since the tray can't stretch to follow, the honest fix is to stop
+    // the row where the actions end.
+    setOffset(Math.min(Math.max(next, 0), max));
   };
 
   const handleTouchEnd = () => {

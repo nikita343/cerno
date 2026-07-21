@@ -278,3 +278,21 @@
 .rowMenu {
   grid-area: actions;
 }
+
+/* Same rule as Today: on a phone the ⋯ lives in the swipe tray and on a tap of
+   the card, so an always-visible button beside every row is a third way in that
+   costs width the title needs. Collapsing the track as well as hiding the
+   button matters — a hidden item still leaves its column gap, which shows as a
+   strip of page between the swipe actions and the screen edge. */
+@media (hover: none) {
+  .rowMenu {
+    display: none;
+  }
+
+  .timedRow {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "time"
+      "chip";
+  }
+}

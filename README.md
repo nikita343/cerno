@@ -14,6 +14,12 @@ npm run dev
 
 Next.js 15 (App Router) · TypeScript · Zustand · CSS Modules · Anthropic SDK.
 
+One UI dependency: **`vaul`**, for the mobile task sheet only. The drag itself
+would be easy to hand-roll; the surrounding behaviour — velocity dismiss, inner
+scrolling not fighting the drag, focus trapping and restoration, inert
+background — is not, and that is what it's there for. It costs ~26kB on the two
+routes that mount it. See `components/task/TaskMenu.md`.
+
 Two deliberate deviations from `Cerno — Daily Planner Brief/DEVELOPMENT.md`:
 
 - **CSS Modules, not Chakra UI.** The design is bespoke — flat surfaces,

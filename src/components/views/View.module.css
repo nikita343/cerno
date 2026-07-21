@@ -3,7 +3,7 @@
 .view {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 1.625rem 1.375rem 2rem;
+  padding: 1.625rem var(--gutter) 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.375rem;

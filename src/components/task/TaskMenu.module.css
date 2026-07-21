@@ -237,6 +237,58 @@
   color: var(--text);
 }
 
+/* --------------------------------------------------------------- sheet
+   The phone presentation: a vaul drawer you can flick away.
+
+   Only phones get it — see PHONE_QUERY. A narrow *desktop* window still uses
+   `.pop` below, because drag-to-dismiss has no gesture behind it on a mouse.
+   -------------------------------------------------------------------------- */
+
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim-menu);
+  z-index: 60;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  /* dvh, not vh: with the keyboard open `vh` still reports the full screen, so
+     the sheet keeps its full height and pushes its own bottom out of reach. */
+  max-height: 88dvh;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: var(--hairline) solid var(--border-menu);
+  border-bottom: none;
+  border-radius: var(--r-card-lg) var(--r-card-lg) 0 0;
+}
+
+.sheetHandle {
+  /* vaul ships a default grey; these are the app's own neutrals so the grabber
+     doesn't glow against a dark sheet. */
+  background: var(--border-strong);
+  margin-top: 0.625rem;
+  margin-bottom: 0.125rem;
+}
+
+.sheetBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* The home indicator sits under the sheet's own bottom edge, so the padding
+     belongs on the scrolling content — on the sheet itself it would be inside
+     the scroll area's floor and the last row would still tuck under it. */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
 /* Mobile: the panels become sheets.
    Anchored to the row they overflow the viewport — a calendar opened on a row
    near the bottom had its last two weeks cut off behind the tab bar, and the

@@ -105,6 +105,12 @@
   --sidebar-w: 16.375rem;
   --tabbar-h: 4.5rem;
 
+  /* The horizontal breathing room every screen leaves between its content and
+     the viewport edge. A token rather than a literal because the swipe tray
+     has to cancel it out exactly — see SwipeRow.module.css. Getting the two
+     out of step leaves a visible strip of page behind the actions. */
+  --gutter: 1.375rem;
+
   /* Motion. One scale, so a hover, a panel and a list entrance all move at
      related speeds instead of each component inventing its own timing. */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);

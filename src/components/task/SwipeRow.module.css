@@ -1,7 +1,11 @@
 .wrap {
   position: relative;
-  overflow: hidden;
   border-radius: var(--r-chip);
+  /* Deliberately not `overflow: hidden`. The tray has to reach past this box to
+     the viewport edge (see `.delete::after`), and clipping here would cut it
+     off at the content gutter — which is exactly the strip of empty page that
+     used to show to the right of the actions. Nothing else here overflows, so
+     the clip was only ever load-bearing for that bleed. */
   /* The browser owns vertical panning; we only ever claim the horizontal axis.
      Without this the swipe and the scroll container fight each other. */
   touch-action: pan-y;
@@ -68,6 +72,39 @@
 .delete {
   background: var(--accent);
   color: var(--on-accent);
+  position: relative;
+  /* Square on the side that meets the bleed, so the fill reads as one surface
+     running off the screen rather than a rounded button with a patch behind. */
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Carries the last action out past the row to the viewport edge.
+ *
+ * The row sits inside a column with `--gutter` of padding, so a tray anchored
+ * at the row's own right edge stops short of the screen and leaves a strip of
+ * page showing beside it. Extending the fill rather than widening the tray
+ * keeps `offsetWidth` — which is what the swipe snaps to — equal to the buttons
+ * alone, so the gesture distance doesn't change.
+ *
+ * Exactly `--gutter`, which is the whole distance to the edge only because the
+ * views collapse their trailing action column on touch — a hidden `⋯` still
+ * leaves its grid gap, and that gap was showing as a strip of page here.
+ *
+ * Tempting to overshoot with `100vw` and let AppShell's `overflow-x: hidden`
+ * trim it. That clips the *paint* but not the scrollable overflow: the scroll
+ * container's `scrollWidth` grows by the excess, and Upcoming calls
+ * `scrollIntoView`, which is free to act on it. Sized exactly, there is no
+ * overflow to act on. `verify-swipe-bleed` is what catches this drifting.
+ */
+.delete::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: var(--gutter);
+  background: var(--accent);
 }
 
 .content {

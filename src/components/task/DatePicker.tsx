@@ -48,12 +48,19 @@ export function DatePicker({
   onPick,
   onClose,
   title,
+  /**
+   * Drops the picker's own card so it can sit directly on a surface that is
+   * already glass — the mobile task sheet. Without it you get a panel inside a
+   * panel, with two borders and two blurs stacked.
+   */
+  flat = false,
 }: {
   today: string;
   selected?: string | null;
   onPick: (date: string | null) => void;
   onClose: () => void;
   title?: string;
+  flat?: boolean;
 }) {
   // Opens on the selected date's month, so the current value is visible rather
   // than requiring the user to navigate back to find it.
@@ -83,6 +90,7 @@ export function DatePicker({
     <div
       ref={rootRef}
       className={styles.picker}
+      data-flat={flat || undefined}
       role="dialog"
       aria-label={title ?? "Pick a date"}
       tabIndex={-1}
