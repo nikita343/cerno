@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
-import { stripe } from "@/lib/stripe";
+import { sendEmail, hasEmailConfig } from "@/lib/email/send";
+import {
+  paymentIssueEmail,
+  subscriptionEndedEmail,
+} from "@/lib/email/templates";
+import { siteUrl, stripe } from "@/lib/stripe";
 import { createAdminClient, hasAdminConfig } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -111,6 +116,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
     await write(admin, userId, subscription);
+
+    // Notifications come after the write and never block it. A mail outage must
+    // not stop entitlement being recorded — and because Stripe retries on a
+    // non-2xx, throwing here would replay the whole event and could send the
+    // same message repeatedly.
+    await notify(admin, userId, event.type, subscription).catch((error) =>
+      console.error("[stripe/webhook] notify failed", error),
+    );
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("[stripe/webhook] handler failed", event.type, error);
@@ -118,6 +132,41 @@ export async function POST(request: Request) {
     // want: the event was genuine and our write failed.
     return NextResponse.json({ error: "Handler failed." }, { status: 500 });
   }
+}
+
+/**
+ * Tells the customer what just changed, where it is worth telling them.
+ *
+ * Only the two states a person needs to act on or be reassured about. A mail on
+ * every renewal would train people to ignore all of them, and the ones that
+ * matter would go unread with the rest.
+ */
+async function notify(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  type: Stripe.Event.Type,
+  subscription: Stripe.Subscription,
+): Promise<void> {
+  if (!hasEmailConfig()) return;
+
+  const isPaymentProblem =
+    type === "customer.subscription.updated" &&
+    (subscription.status === "past_due" || subscription.status === "unpaid");
+  const hasEnded = type === "customer.subscription.deleted";
+
+  if (!isPaymentProblem && !hasEnded) return;
+
+  // The address comes from auth, not from Stripe: the Stripe customer email is
+  // editable by the customer and may not be the account we would be talking to.
+  const { data } = await admin.auth.admin.getUserById(userId);
+  const to = data.user?.email;
+  if (!to) return;
+
+  const url = `${siteUrl()}/dashboard/settings/plan`;
+  await sendEmail(
+    to,
+    isPaymentProblem ? paymentIssueEmail({ url }) : subscriptionEndedEmail({ url }),
+  );
 }
 
 /**

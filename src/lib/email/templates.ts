@@ -50,6 +50,71 @@ export function workspaceInviteEmail(params: {
   });
 }
 
+/**
+ * First email after signing up.
+ *
+ * Deliberately not a feature tour. Someone who just made an account wants one
+ * next action, and everything else is noise they will not read. The one line
+ * about what Cerno does is there because a welcome mail is often opened days
+ * later, out of context.
+ */
+export function welcomeEmail(params: { url: string; name?: string | null }): Email {
+  const greeting = params.name ? `Welcome, ${params.name}` : "Welcome to Cerno";
+
+  return build(greeting, {
+    preheader: "Dump what's on your mind and Cerno builds the day around it.",
+    heading: greeting,
+    body: [
+      "Cerno turns a brain dump into a realistic day. Write everything you're carrying — one long sentence is fine — and it splits that into tasks, estimates the effort, and schedules what actually fits.",
+      "Whatever doesn't fit gets parked with a reason, rather than quietly dropped.",
+    ],
+    cta: { label: "Plan your first day", url: params.url },
+    footnote:
+      "You're on the free plan, which covers everything personal, forever. There's nothing to set up.",
+  });
+}
+
+/**
+ * A card failed and Stripe will retry.
+ *
+ * Written to be reassuring and specific: nothing has been lost yet, retries are
+ * automatic, and the one useful action is naming the card. Dunning mail that
+ * leads with a threat gets deleted by people who would happily have paid.
+ */
+export function paymentIssueEmail(params: { url: string }): Email {
+  return build("Your Cerno payment didn't go through", {
+    preheader: "We'll retry automatically. Updating your card avoids any interruption.",
+    heading: "Your payment didn't go through",
+    body: [
+      "The card on your Cerno Team subscription was declined. Stripe retries automatically over the next few days, so this often resolves itself.",
+      "If it doesn't, updating your card now avoids any interruption. Your workspaces and everything in them stay exactly where they are either way.",
+    ],
+    cta: { label: "Update your card", url: params.url },
+    footnote: "Billing is handled by Stripe — we never see your card details.",
+  });
+}
+
+/**
+ * The subscription ended.
+ *
+ * The single most important thing to say is what did *not* happen: nothing was
+ * deleted. Someone cancelling a planner is worried about their data, and a mail
+ * that only says "sorry to see you go" answers the wrong question.
+ */
+export function subscriptionEndedEmail(params: { url: string }): Email {
+  return build("Your Cerno Team plan has ended", {
+    preheader: "Your workspaces and tasks are all still here.",
+    heading: "Your Team plan has ended",
+    body: [
+      "Nothing has been deleted. Your workspaces, their tasks and everyone in them are exactly as you left them, and you can still read and edit all of it.",
+      "What changes: you can't create new workspaces until Team is active again. Everything personal is unaffected and stays free.",
+    ],
+    cta: { label: "Restart Team", url: params.url },
+    footnote:
+      "If you cancelled by mistake, restarting picks up where you left off — nothing was lost.",
+  });
+}
+
 /** Sent to the payer once Stripe confirms. Receipts come from Stripe itself. */
 export function teamWelcomeEmail(params: { url: string }): Email {
   return build("You're on Cerno Team", {
