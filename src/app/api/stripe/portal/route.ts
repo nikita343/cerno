@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { devDetail } from "@/lib/apiError";
 import { hasStripeConfig, siteUrl, stripe } from "@/lib/stripe";
 import { resolveRequestUser } from "@/lib/supabase/request";
 
@@ -55,7 +56,7 @@ export async function POST() {
   } catch (error) {
     console.error("[/api/stripe/portal]", error);
     return NextResponse.json(
-      { error: "Couldn't open billing. Try again." },
+      { error: "Couldn't open billing. Try again.", ...devDetail(error) },
       { status: 502 },
     );
   }

@@ -35,7 +35,11 @@ Everything below in order. Steps 1–3 are the ones nothing works without.
       `customer.subscription.deleted`, `invoice.payment_failed`
 - [ ] Copy **that endpoint's** signing secret — it differs from the CLI's, and
       using the wrong one rejects every event with a 400
-- [ ] Set `NEXT_PUBLIC_SITE_URL` so Stripe redirects back to the right host
+- [ ] **Set `NEXT_PUBLIC_SITE_URL` to your real domain** (Vercel → Settings →
+      Environment Variables → Production), then **redeploy** — env vars are
+      baked in at build time. Skip this and Stripe returns paying customers to
+      the per-deployment `*.vercel.app` host, where their session cookie does
+      not exist and the app bounces them to /login.
 
 **The one rule:** the browser never decides whether someone has paid. It asks
 Stripe to start a checkout, and Stripe tells *our server* what happened. The

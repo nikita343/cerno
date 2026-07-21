@@ -37,10 +37,16 @@ export function BillingCard() {
       const body = (await response.json().catch(() => null)) as {
         url?: string;
         error?: string;
+        detail?: string;
       } | null;
 
       if (!response.ok || !body?.url) {
-        setError(body?.error ?? "Something went wrong. Try again.");
+        // `detail` is only ever populated outside production — see devDetail.
+        setError(
+          [body?.error ?? "Something went wrong. Try again.", body?.detail]
+            .filter(Boolean)
+            .join(" — "),
+        );
         return;
       }
       // A full navigation, not a fetch redirect: Stripe's page has to replace

@@ -45,11 +45,31 @@ export const ENTITLED_STATUSES = new Set<Stripe.Subscription.Status>([
   "past_due",
 ]);
 
-/** Absolute URL for Stripe's return redirects. */
+/**
+ * Absolute URL for Stripe's return redirects.
+ *
+ * Order matters, and the middle entry is the point.
+ *
+ * `VERCEL_URL` is the *per-deployment* host — `cerno-6hu2bzfb4-….vercel.app`,
+ * a different value for every build. Sending a customer back there after paying
+ * lands them on a domain their session cookie was never set for, so the app
+ * bounces them to /login as if the payment hadn't happened. It is only used
+ * here as a last resort before localhost.
+ *
+ * `VERCEL_PROJECT_PRODUCTION_URL` is the stable production domain and is what
+ * a deployment should fall back to. `NEXT_PUBLIC_SITE_URL` still wins over
+ * both, because a custom domain is the only one of the three that knows about
+ * `usecerno.xyz`.
+ */
 export function siteUrl(): string {
   const raw =
     process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : null) ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
     "http://localhost:3000";
+  // Trailing slashes would produce `//dashboard/settings`, which some hosts
+  // treat as a protocol-relative URL.
   return raw.replace(/\/+$/, "");
 }

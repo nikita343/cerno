@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { devDetail } from "@/lib/apiError";
 import { hasStripeConfig, siteUrl, stripe } from "@/lib/stripe";
 import { resolveRequestUser } from "@/lib/supabase/request";
 
@@ -75,7 +76,7 @@ export async function POST() {
     // for us, never echoed.
     console.error("[/api/stripe/checkout]", error);
     return NextResponse.json(
-      { error: "Couldn't start checkout. Try again." },
+      { error: "Couldn't start checkout. Try again.", ...devDetail(error) },
       { status: 502 },
     );
   }
