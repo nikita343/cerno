@@ -36,6 +36,7 @@ create table if not exists public.telegram_link_codes (
   expires_at timestamptz not null
 );
 
+-- // Index for the webhook to find a code quickly, and to enforce that a user
 create index if not exists telegram_link_codes_user_idx
   on public.telegram_link_codes (user_id);
 
