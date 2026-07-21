@@ -385,3 +385,132 @@
   border-color: var(--overdue);
   color: var(--overdue);
 }
+
+/* ----------------------------------------------------------------- billing */
+
+.planHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.planText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-width: 0;
+}
+
+.planName {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.planBadge {
+  margin-left: auto;
+  flex: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--r-tile);
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.planBadge[data-paid] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.planPoints {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+/* A dash rather than a tick: these are facts about the plan, not a sales
+   checklist, and ticks on the free tier read as marketing. */
+.planPoints li {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.planPoints li::before {
+  content: "—";
+  color: var(--text-faint);
+  flex: none;
+}
+
+.planActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.planPrimary,
+.planSecondary {
+  padding: 0.5625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--r-button);
+  cursor: pointer;
+  border: var(--hairline) solid transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.planPrimary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.planPrimary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.planSecondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.planSecondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.planPrimary:disabled,
+.planSecondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.planLink {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.planLink:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.planError {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--overdue);
+}

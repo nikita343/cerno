@@ -17,7 +17,7 @@ import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { DASHBOARD_ROOT, NAV_ITEMS, screenFromPath } from "@/lib/nav";
-import type { ScreenKey } from "@/lib/types";
+import { isEntitled, type ScreenKey } from "@/lib/types";
 import { inboxTasks } from "@/store/createAppStore";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
@@ -32,6 +32,11 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
   settings: CogIcon,
 };
 
+/** First letter, for the workspace glyph. Falls back rather than rendering "". */
+function initial(name: string): string {
+  return name.trim().charAt(0).toUpperCase() || "#";
+}
+
 export function Sidebar() {
   const user = useUser();
   const pathname = usePathname();
@@ -41,6 +46,9 @@ export function Sidebar() {
   const inboxCount = useAppStore((s) => inboxTasks(s.tasks).length);
   const setSearchQuery = useAppStore((s) => s.setSearchQuery);
   const labels = useAppStoreShallow((s) => s.labels);
+  const workspaces = useAppStoreShallow((s) => s.workspaces);
+  // Only decides what to *offer*. Creating one is gated by the database.
+  const entitled = useAppStore((s) => isEntitled(s.subscription));
   // See MobileTabBar: a per-item `startsWith` would mark Today active on every
   // page, because every nav href is prefixed with the dashboard root.
   const current = screenFromPath(pathname);
@@ -112,6 +120,50 @@ export function Sidebar() {
         {labels.length === 0 && (
           <Link href={`${DASHBOARD_ROOT}/filters`} className={styles.labelEmpty}>
             Add a label
+          </Link>
+        )}
+      </div>
+
+      {/* Workspaces sit below labels: personal navigation first, shared spaces
+          under it. Someone on the free plan sees the section only as a single
+          upsell row — an empty "Workspaces" heading on a plan that cannot have
+          any is just a reminder of what you haven't bought. */}
+      <div className={styles.labels}>
+        {entitled || workspaces.length > 0 ? (
+          <>
+            <span className={styles.labelsHeading}>Workspaces</span>
+            {workspaces.map((workspace) => (
+              <Link
+                key={workspace.id}
+                href={`${DASHBOARD_ROOT}/workspaces/${workspace.id}`}
+                className={styles.labelRow}
+                data-active={pathname.includes(workspace.id) || undefined}
+              >
+                <span className={styles.workspaceGlyph} aria-hidden="true">
+                  {initial(workspace.name)}
+                </span>
+                <span className={styles.labelName}>{workspace.name}</span>
+                <span className={styles.workspaceSeats}>
+                  {workspace.member_count}
+                </span>
+              </Link>
+            ))}
+            {entitled && (
+              <Link
+                href={`${DASHBOARD_ROOT}/workspaces/new`}
+                className={styles.labelEmpty}
+              >
+                New workspace
+              </Link>
+            )}
+          </>
+        ) : (
+          <Link
+            href={`${DASHBOARD_ROOT}/settings`}
+            className={styles.upsellRow}
+          >
+            <span className={styles.labelName}>Workspaces</span>
+            <span className={styles.upsellBadge}>Team</span>
           </Link>
         )}
       </div>

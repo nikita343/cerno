@@ -16,18 +16,28 @@ import {
   uploadAvatar,
   type TaskPatch,
 } from "@/lib/supabase/data";
+import {
+  createWorkspaceRow,
+  deleteWorkspaceRow,
+  loadWorkspaces,
+  removeMember,
+  updateWorkspaceRow,
+} from "@/lib/supabase/workspaces";
 import { applyTheme, DEFAULT_THEME } from "@/lib/theme";
 import {
   DEFAULT_LABELS,
   DEFAULT_SETTINGS,
+  FREE_PLAN,
   type CaptureMode,
   type DayPlan,
   type Dump,
   type Label,
   type Priority,
   type Task,
+  type Subscription,
   type Theme,
   type UserSettings,
+  type Workspace,
 } from "@/lib/types";
 
 export interface AppState {
@@ -39,6 +49,24 @@ export interface AppState {
   dumps: Dump[];
   labels: Label[];
   settings: UserSettings;
+  /**
+   * The signed-in user's id, or null when signed out.
+   *
+   * Spread in from `InitialData` and declared here so components can read it —
+   * a workspace roster has to know which row is "you" to render Leave rather
+   * than Remove.
+   */
+  userId: string | null;
+
+  /**
+   * Workspaces the user belongs to, and their plan.
+   *
+   * Both are loaded with the dashboard rather than fetched per screen: the
+   * sidebar lists workspaces on every page, and the plan decides whether the
+   * "New workspace" affordance is even offered.
+   */
+  workspaces: Workspace[];
+  subscription: Subscription;
 
   /**
    * Minutes from midnight, as the app currently believes them.
@@ -125,6 +153,17 @@ export interface AppActions {
   /** Roll unfinished tasks from past days onto today. */
   carryOver: () => Promise<void>;
 
+  /* --- workspaces --- */
+  createWorkspace: (name: string, description: string | null) => Promise<string>;
+  updateWorkspace: (
+    id: string,
+    patch: { name?: string; description?: string | null },
+  ) => Promise<void>;
+  deleteWorkspace: (id: string) => Promise<void>;
+  /** Removing yourself; the same call an admin uses to remove someone else. */
+  leaveWorkspace: (id: string) => Promise<void>;
+  refreshWorkspaces: () => Promise<void>;
+
   /* labels */
   addLabel: (name: string, color: string) => Promise<void>;
   renameLabel: (id: string, name: string) => Promise<void>;
@@ -165,6 +204,8 @@ export interface InitialData {
   dumps: Dump[];
   labels: Label[];
   settings: UserSettings;
+  workspaces: Workspace[];
+  subscription: Subscription;
   /** The user id, for writes that must state it. Null when signed out. */
   userId: string | null;
 }
@@ -190,6 +231,11 @@ export function buildInitialData(today: string): InitialData {
       created_at: `${today}T00:00:00.000Z`,
     })),
     settings: DEFAULT_SETTINGS,
+    // No backend means no workspaces and no plan. The fixtures deliberately
+    // don't invent a team: a keyless demo showing a fake workspace you cannot
+    // open is worse than showing none.
+    workspaces: [],
+    subscription: FREE_PLAN,
     userId: null,
   };
 }
@@ -576,6 +622,91 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
       /* ---------------------------------------------------------------- */
       /* Labels                                                           */
       /* ---------------------------------------------------------------- */
+
+      /* --------------------------------------------------------- workspaces */
+      //
+      // Not routed through `writeThrough`: that helper optimistically patches
+      // `tasks` and rolls that array back. Workspace mutations either carry
+      // server-side invariants (entitlement, the seat cap, the founding admin
+      // row) or need the server's generated id, so each waits for the write and
+      // then reconciles. A workspace that appears instantly and vanishes a
+      // moment later because the plan had lapsed is worse than a brief wait.
+
+      createWorkspace: async (name, description) => {
+        const db = getDb();
+        if (!db) throw new Error("Workspaces need a backend.");
+        const workspace = await createWorkspaceRow(db, name.trim(), description);
+        set((state) => ({ workspaces: [...state.workspaces, workspace] }));
+        return workspace.id;
+      },
+
+      updateWorkspace: async (id, patch) => {
+        const db = getDb();
+        const previous = get().workspaces;
+        set({
+          workspaces: previous.map((w) => (w.id === id ? { ...w, ...patch } : w)),
+          syncError: null,
+        });
+        if (!db) return;
+        try {
+          await updateWorkspaceRow(db, id, patch);
+        } catch (error) {
+          console.error("[store] workspace update failed", error);
+          set({ workspaces: previous, syncError: SYNC_FAILED });
+        }
+      },
+
+      deleteWorkspace: async (id) => {
+        const db = getDb();
+        const previous = get().workspaces;
+        const previousTasks = get().tasks;
+        // Its tasks go too — `on delete cascade` on tasks.workspace_id. They are
+        // dropped locally as well, or the timeline keeps rendering rows that no
+        // longer exist on the server.
+        set((state) => ({
+          workspaces: state.workspaces.filter((w) => w.id !== id),
+          tasks: state.tasks.filter((t) => t.workspace_id !== id),
+          syncError: null,
+        }));
+        if (!db) return;
+        try {
+          await deleteWorkspaceRow(db, id);
+        } catch (error) {
+          console.error("[store] workspace delete failed", error);
+          set({ workspaces: previous, tasks: previousTasks, syncError: SYNC_FAILED });
+        }
+      },
+
+      leaveWorkspace: async (id) => {
+        const db = getDb();
+        const userId = initial.userId;
+        if (!db || !userId) return;
+        const previous = get().workspaces;
+        const previousTasks = get().tasks;
+        set((state) => ({
+          workspaces: state.workspaces.filter((w) => w.id !== id),
+          tasks: state.tasks.filter((t) => t.workspace_id !== id),
+          syncError: null,
+        }));
+        try {
+          await removeMember(db, id, userId);
+        } catch (error) {
+          console.error("[store] leave workspace failed", error);
+          set({ workspaces: previous, tasks: previousTasks, syncError: SYNC_FAILED });
+        }
+      },
+
+      // Called after joining, or when a seat count may have moved. Cheap enough
+      // to re-read on the workspace screen rather than track membership deltas.
+      refreshWorkspaces: async () => {
+        const db = getDb();
+        if (!db) return;
+        try {
+          set({ workspaces: await loadWorkspaces(db) });
+        } catch (error) {
+          console.error("[store] workspace refresh failed", error);
+        }
+      },
 
       addLabel: async (name, color) => {
         const userId = initial.userId;

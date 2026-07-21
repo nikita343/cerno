@@ -225,3 +225,72 @@
 .labelEmpty:hover {
   color: var(--text-secondary);
 }
+
+/* -------------------------------------------------------------- workspaces */
+
+/* A letter tile rather than a coloured dot: labels use dots, and reusing them
+   here would make two different kinds of thing look like one list. */
+.workspaceGlyph {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.3125rem;
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.labelRow[data-active] .workspaceGlyph {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.labelRow[data-active] {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.workspaceSeats {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The free-plan state: one row that says what exists and what it costs, rather
+   than an empty section heading. */
+.upsellRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.84375rem;
+  color: var(--text-muted);
+  transition: background var(--dur) var(--ease);
+}
+
+.upsellRow:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.upsellBadge {
+  margin-left: auto;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.375rem;
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

@@ -4,9 +4,10 @@ import { UserProvider } from "@/components/auth/UserProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { todayISO } from "@/lib/date";
 import { loadDashboard, seedDefaultLabels } from "@/lib/supabase/data";
+import { loadSubscription, loadWorkspaces } from "@/lib/supabase/workspaces";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { DEFAULT_SETTINGS } from "@/lib/types";
+import { DEFAULT_SETTINGS, FREE_PLAN } from "@/lib/types";
 import { toProfile } from "@/lib/user";
 import { buildInitialData, type InitialData } from "@/store/createAppStore";
 import { StoreProvider } from "@/store/StoreProvider";
@@ -58,7 +59,29 @@ export default async function DashboardLayout({
         }
       }
 
-      initialData = { today, ...data, labels, userId: user.id };
+      // Workspaces and the plan load alongside the dashboard: the sidebar
+      // lists workspaces on every screen, and the plan decides whether the
+      // "New workspace" affordance is offered at all. Failing either must not
+      // take the app down, so they settle independently of the main read.
+      const [workspaces, subscription] = await Promise.all([
+        loadWorkspaces(supabase).catch((error) => {
+          console.error("[dashboard] workspace load failed", error);
+          return [];
+        }),
+        loadSubscription(supabase).catch((error) => {
+          console.error("[dashboard] subscription load failed", error);
+          return FREE_PLAN;
+        }),
+      ]);
+
+      initialData = {
+        today,
+        ...data,
+        labels,
+        workspaces,
+        subscription,
+        userId: user.id,
+      };
     } catch (error) {
       // A failed read must not take down the whole app. The shell still
       // renders and the user can capture a dump; the alternative is Next's
@@ -71,6 +94,8 @@ export default async function DashboardLayout({
         dumps: [],
         labels: [],
         settings: DEFAULT_SETTINGS,
+        workspaces: [],
+        subscription: FREE_PLAN,
         userId: user.id,
       };
     }

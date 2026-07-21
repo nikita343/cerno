@@ -26,6 +26,7 @@ import {
 } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
 
+import { BillingCard } from "./BillingCard";
 import styles from "./SettingsView.module.css";
 import view from "./View.module.css";
 
@@ -267,6 +268,17 @@ export function SettingsView() {
             </span>
           </label>
         </div>
+      </section>
+
+      {/* --------------------------------------------------------- billing */}
+
+      <section className={view.section}>
+        <SectionHead
+          Icon={SparkIcon}
+          label="Plan"
+          note="Workspaces need Team"
+        />
+        <BillingCard />
       </section>
 
       {/* -------------------------------------------------------- calendar */}

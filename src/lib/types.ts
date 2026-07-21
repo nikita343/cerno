@@ -83,6 +83,15 @@ export interface Task {
   status: TaskStatus;
   /** ISO date the task is planned for. Drives Today and carry-over. */
   plan_date: string | null;
+  /**
+   * The workspace this task belongs to, or null for a personal task.
+   *
+   * Nullable rather than a separate table: a task is the same shape either
+   * way, the planner produces both, and Today interleaves them.
+   */
+  workspace_id?: string | null;
+  /** Who is responsible. Only meaningful on a workspace task. */
+  assignee_id?: string | null;
   tags: Tag[];
   /** One calm line: why this priority/time/deadline. */
   reasoning: string | null;
@@ -216,4 +225,96 @@ export interface UserProfile {
   initials: string;
   /** Uploaded avatar, or the OAuth provider's photo. Null falls back to initials. */
   avatarUrl: string | null;
+}
+
+/* --------------------------------------------------------------- workspaces */
+
+export type WorkspaceRole = "admin" | "member";
+
+export interface Workspace {
+  id: string;
+  owner_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  /** The signed-in user's role here. Derived on load, not a column. */
+  role: WorkspaceRole;
+  /** How many people are in it, for the seats indicator. */
+  member_count: number;
+}
+
+export interface WorkspaceMember {
+  workspace_id: string;
+  user_id: string;
+  role: WorkspaceRole;
+  joined_at: string;
+  /** Resolved from the profile where available; the email is the fallback. */
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+}
+
+export interface WorkspaceInvite {
+  id: string;
+  workspace_id: string;
+  /** Null for a shareable link; set for one addressed to a person. */
+  email: string | null;
+  token: string;
+  role: WorkspaceRole;
+  max_uses: number;
+  uses: number;
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Stripe's own vocabulary, copied verbatim.
+ *
+ * Which of these count as "paid" is decided in one place — `has_active_plan()`
+ * in SQL — because that is what actually gates workspace creation. The client
+ * mirrors it for what to *show*, never for what to *allow*.
+ */
+export type PlanStatus =
+  | "inactive"
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid"
+  | "incomplete"
+  | "incomplete_expired";
+
+export interface Subscription {
+  status: PlanStatus;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  has_customer: boolean;
+}
+
+export const FREE_PLAN: Subscription = {
+  status: "inactive",
+  current_period_end: null,
+  cancel_at_period_end: false,
+  has_customer: false,
+};
+
+/** Team plan seat ceiling. Must match `max_workspace_members()` in SQL. */
+export const MAX_WORKSPACE_MEMBERS = 10;
+
+/**
+ * True when the plan currently entitles the user.
+ *
+ * Mirrors `has_active_plan()`. Used only to decide what the UI *offers* —
+ * every actual grant is enforced by the database, so a client that got this
+ * wrong would show a misleading button, not hand out a free plan.
+ */
+export function isEntitled(subscription: Subscription): boolean {
+  if (subscription.status === "active" || subscription.status === "trialing") {
+    return true;
+  }
+  if (subscription.status === "past_due" && subscription.current_period_end) {
+    return new Date(subscription.current_period_end) > new Date();
+  }
+  return false;
 }

@@ -1,0 +1,366 @@
+/* Workspace screens: the workspace itself, its roster, and the create form. */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+/* Same letter tile as the sidebar, larger — the two should read as the same
+   object seen at two sizes. */
+.glyph {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.seats {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.card {
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-card);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+/* ------------------------------------------------------------------ people */
+
+.memberList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.375rem;
+  border-radius: var(--r-tile);
+  flex-wrap: wrap;
+}
+
+.memberRow:hover {
+  background: var(--bg-sunken);
+}
+
+.memberGlyph {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.memberText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.0625rem;
+}
+
+.memberName {
+  font-size: 0.875rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.you {
+  color: var(--text-faint);
+  font-size: 0.75rem;
+}
+
+.memberEmail {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roleBadge {
+  margin-left: auto;
+  flex: none;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.375rem;
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.roleBadge[data-owner] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.memberActions {
+  display: flex;
+  gap: 0.25rem;
+  flex: none;
+}
+
+.miniButton {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--r-tile);
+  background: transparent;
+  border: var(--hairline) solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.miniButton:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.miniButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.danger {
+  color: var(--overdue);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--overdue-soft);
+  color: var(--overdue);
+}
+
+/* ----------------------------------------------------------------- invites */
+
+.inviteBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.875rem;
+  border-top: var(--hairline) solid var(--border);
+}
+
+.inviteLabel,
+.fieldLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.inviteRow {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.inviteInput,
+.input,
+.textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.6875rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--bg);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-button);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.inviteInput:focus,
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+
+.textarea {
+  resize: vertical;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.invitePrimary,
+.primary {
+  flex: none;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--r-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  border: var(--hairline) solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.invitePrimary:hover:not(:disabled),
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.invitePrimary:disabled,
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.inviteSecondary,
+.secondary {
+  flex: none;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--r-button);
+  background: transparent;
+  border: var(--hairline) solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.inviteSecondary:hover:not(:disabled),
+.secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.inviteList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.inviteItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.375rem;
+  border-radius: var(--r-tile);
+  background: var(--bg-sunken);
+  flex-wrap: wrap;
+}
+
+.inviteWho {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inviteMeta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.fieldNote,
+.fullNote {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.inlineLink {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+
+.error {
+  font-size: 0.8125rem;
+  color: var(--overdue);
+}
+
+/* -------------------------------------------------------------- create form */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  min-width: 0;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Touch targets: the row actions are small by desktop standards, and three of
+   them in a row on a phone is a mis-tap waiting to happen. */
+@media (hover: none) and (pointer: coarse) {
+  .miniButton {
+    padding: 0.4375rem 0.625rem;
+  }
+
+  .memberActions {
+    width: 100%;
+    padding-left: 2.375rem;
+  }
+}
