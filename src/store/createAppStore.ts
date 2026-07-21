@@ -212,6 +212,10 @@ export interface AppActions {
    * the new token is written, because the lookup is by exact token.
    */
   rotateFeedToken: (enabled: boolean) => Promise<void>;
+  /** Re-reads whether a Telegram chat is linked. Returns the current state. */
+  refreshTelegramLinked: () => Promise<boolean>;
+  /** Unlinks the connected Telegram chat. */
+  disconnectTelegram: () => Promise<void>;
 
   /* reminders */
   setNowMinutes: (minutes: number) => void;
@@ -589,6 +593,40 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
 
       addTaskSmart: async (text, date, workspaceId = null, assigneeId = null) => {
         const { today } = get();
+        const placeholderDate = date ?? today;
+
+        // A placeholder goes in *before* the parse, so the row appears the
+        // instant you hit enter. The alternative — awaiting the model, which
+        // can take a second or two, before anything shows — clears the input
+        // and leaves the list unchanged, which reads as "did that work?".
+        // Replaced in place when the parse resolves; removed if it fails.
+        const tempId = newId();
+        set((state) => {
+          const lastOrder = state.tasks
+            .filter((t) => t.status === "today" && t.plan_date === placeholderDate)
+            .reduce((max, t) => Math.max(max, t.sort_order), -1);
+          const placeholder: Task = {
+            id: tempId,
+            dump_id: null,
+            workspace_id: workspaceId,
+            assignee_id: assigneeId,
+            title: text,
+            description: null,
+            priority: "medium",
+            estimated_minutes: 30,
+            deadline: null,
+            suggested_start: null,
+            status: "today",
+            plan_date: placeholderDate,
+            tags: [],
+            reasoning: null,
+            sort_order: lastOrder + 1,
+            created_at: new Date().toISOString(),
+            pending: true,
+          };
+          return { tasks: [...state.tasks, placeholder], syncError: null };
+        });
+
         try {
           // Persisted server-side by /api/tasks/parse; the returned task
           // already has its database id.
@@ -606,19 +644,15 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             date === undefined
               ? parsed
               : { ...parsed, plan_date: date, status: "today" };
-          const targetDate = task.plan_date ?? today;
 
-          set((state) => {
-            // New quick-adds go to the end of that day's list rather than
-            // reshuffling a plan the user has already seen.
-            const lastOrder = state.tasks
-              .filter((t) => t.status === "today" && t.plan_date === targetDate)
-              .reduce((max, t) => Math.max(max, t.sort_order), -1);
-            return {
-              tasks: [...state.tasks, { ...task, sort_order: lastOrder + 1 }],
-              syncError: null,
-            };
-          });
+          // Swap the placeholder for the real task, keeping its slot so the row
+          // resolves in place rather than jumping to the end.
+          set((state) => ({
+            tasks: state.tasks.map((t) =>
+              t.id === tempId ? { ...task, sort_order: t.sort_order } : t,
+            ),
+            syncError: null,
+          }));
 
           // The route already persisted the parser's own date, so a pinned day
           // needs a follow-up write. Skipped when the parser's answer stood.
@@ -634,7 +668,12 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             }
           }
         } catch {
-          set({ syncError: SYNC_FAILED });
+          // The task never landed — take the placeholder back out so the list
+          // doesn't show a row that isn't really there.
+          set((state) => ({
+            tasks: state.tasks.filter((t) => t.id !== tempId),
+            syncError: SYNC_FAILED,
+          }));
         }
       },
 
@@ -883,6 +922,43 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
 
         try {
           await saveSettings(db, { feed_token }, userId);
+        } catch {
+          set({ settings: previous, syncError: SYNC_FAILED });
+        }
+      },
+
+      refreshTelegramLinked: async () => {
+        // Linking finishes over in Telegram, so the app can't observe it
+        // directly — it re-reads its own settings row (RLS-scoped to the
+        // caller) to pick up the chat id the webhook wrote. Only the boolean is
+        // kept; the id never enters the client.
+        const db = getDb();
+        const userId = initial.userId;
+        if (!db || !userId) return false;
+        try {
+          const { data } = await db
+            .from("user_settings")
+            .select("telegram_chat_id")
+            .eq("user_id", userId)
+            .maybeSingle();
+          const linked = ((data as { telegram_chat_id: number | null } | null)
+            ?.telegram_chat_id ?? null) !== null;
+          set((state) => ({
+            settings: { ...state.settings, telegram_linked: linked },
+          }));
+          return linked;
+        } catch {
+          return get().settings.telegram_linked;
+        }
+      },
+
+      disconnectTelegram: async () => {
+        const previous = get().settings;
+        // Optimistic: the row update is a plain RLS-allowed settings write.
+        set({ settings: { ...previous, telegram_linked: false } });
+        try {
+          const response = await fetch("/api/telegram/unlink", { method: "POST" });
+          if (!response.ok) throw new Error("unlink failed");
         } catch {
           set({ settings: previous, syncError: SYNC_FAILED });
         }

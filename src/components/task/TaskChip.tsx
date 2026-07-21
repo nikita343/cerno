@@ -194,17 +194,31 @@ export function TaskChip({
         </p>
       )}
 
-      {reasoning && (
+      {/* While a quick-add is being parsed the row is already visible, but its
+          details (priority, tag, time) aren't real yet — this line says so, so
+          the placeholder values don't read as the model's actual answer. */}
+      {task.pending ? (
         <div className={styles.reasoning}>
           <span className={styles.rule} />
-          <span className={styles.reasoningText}>{reasoning}</span>
+          <span className={styles.reasoningText}>{t.capture.planning}</span>
         </div>
+      ) : (
+        reasoning && (
+          <div className={styles.reasoning}>
+            <span className={styles.rule} />
+            <span className={styles.reasoningText}>{reasoning}</span>
+          </div>
+        )
       )}
     </>
   );
 
   return (
-    <div className={styles.chip} data-overdue={isOverdue || undefined}>
+    <div
+      className={styles.chip}
+      data-overdue={isOverdue || undefined}
+      data-pending={task.pending || undefined}
+    >
       {content}
     </div>
   );

@@ -58,6 +58,7 @@ export function SettingsView({ section }: { section: SettingsSlug }) {
       {section === "language" && <LanguageSection />}
       {section === "plan" && <PlanSection />}
       {section === "calendar" && <CalendarSection />}
+      {section === "telegram" && <TelegramSection />}
       {section === "model" && <ModelSection />}
     </div>
   );
@@ -351,6 +352,106 @@ function ModelSection() {
         </div>
       </section>
     </>
+  );
+}
+
+function TelegramSection() {
+  const linked = useAppStore((s) => s.settings.telegram_linked);
+  const refreshTelegramLinked = useAppStore((s) => s.refreshTelegramLinked);
+  const disconnectTelegram = useAppStore((s) => s.disconnectTelegram);
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Set once we've opened Telegram, so the card can prompt "come back and
+  // confirm" — linking finishes over there, out of the app's sight.
+  const [awaiting, setAwaiting] = useState(false);
+
+  // Catch the moment they return from Telegram: re-read the link status when the
+  // tab regains focus, so a successful connect reflects without a manual reload.
+  useEffect(() => {
+    if (!awaiting) return;
+    const check = () => void refreshTelegramLinked();
+    window.addEventListener("focus", check);
+    return () => window.removeEventListener("focus", check);
+  }, [awaiting, refreshTelegramLinked]);
+
+  const connect = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/telegram/link", { method: "POST" });
+      const body = (await response.json()) as { url?: string; error?: string };
+      if (!response.ok || !body.url) {
+        throw new Error(body.error ?? "Couldn't start linking.");
+      }
+      setAwaiting(true);
+      window.open(body.url, "_blank", "noopener");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Couldn't start linking.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className={view.section}>
+      <div className={styles.card}>
+        {linked ? (
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Telegram connected</span>
+            <span className={styles.fieldNote}>
+              Send tasks to <strong>@cernohelperbot</strong> and they land in your
+              day — one message, one or more tasks. Send <strong>/today</strong>
+              {" "}for what&rsquo;s left, and you&rsquo;ll get a short brief each
+              morning.
+            </span>
+            <button
+              type="button"
+              className={styles.feedAction}
+              onClick={() => void disconnectTelegram()}
+            >
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <div className={styles.field}>
+            <span className={styles.fieldNote}>
+              Link <strong>@cernohelperbot</strong> to add tasks from Telegram —
+              type them one per line and they appear in your day. You&rsquo;ll
+              also get a short brief each morning.
+            </span>
+            <button
+              type="button"
+              className={styles.uploadButton}
+              onClick={() => void connect()}
+              disabled={busy}
+            >
+              {busy ? "Opening Telegram…" : "Connect Telegram"}
+            </button>
+
+            {awaiting && (
+              <span className={styles.fieldNote}>
+                Tap <strong>Start</strong> in Telegram, then come back — this
+                updates on its own.{" "}
+                <button
+                  type="button"
+                  className={styles.feedAction}
+                  onClick={() => void refreshTelegramLinked()}
+                >
+                  Check now
+                </button>
+              </span>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
 

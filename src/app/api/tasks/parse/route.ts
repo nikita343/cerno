@@ -2,12 +2,8 @@ import { NextResponse } from "next/server";
 import * as z from "zod";
 
 import { describeError } from "@/lib/ai/client";
-import { generateStructured } from "@/lib/ai/generate";
-import { smartAddSystemPrompt } from "@/lib/ai/prompt";
-import { buildSmartTaskSchema } from "@/lib/ai/schema";
+import { buildSmartTask } from "@/lib/ai/smartTask";
 import { todayISO } from "@/lib/date";
-import { newId } from "@/lib/id";
-import { parseSingleTask } from "@/lib/planner";
 import { upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
@@ -15,7 +11,7 @@ import {
   resolveRequestUser,
   type RequestUser,
 } from "@/lib/supabase/request";
-import type { Tag, Task } from "@/lib/types";
+import type { Task } from "@/lib/types";
 
 /**
  * Persists a task for the signed-in user, if there is one.
@@ -79,76 +75,24 @@ export async function POST(request: Request) {
     loadModelChoice(caller),
   ]);
 
-  const heuristic = (): Task => ({
-    ...parseSingleTask(body.text, today, labelNames),
-    workspace_id: body.workspaceId ?? null,
-    assignee_id: body.assigneeId ?? null,
-  });
-
   try {
-    const generated = await generateStructured({
-      choice: modelChoice,
-      schema: buildSmartTaskSchema(labelNames),
-      schemaName: "smart_task",
-      maxTokens: 1_500,
-      // A single short phrase — no deliberation needed, and thinking here would
-      // only add latency to what should feel instant.
-      thinking: false,
-      system: smartAddSystemPrompt({
-        now: today,
-        timezone: body.timezone,
-        labelNames,
-      }),
-      user: body.text,
-    });
-
-    if (!generated) {
-      const task = heuristic();
-      await persist(task, caller);
-      return NextResponse.json({ task, planner: "heuristic" });
-    }
-    const parsed = generated.parsed;
-
-    const createdAt = new Date().toISOString();
-    const task: Task = {
-      id: newId(),
-      dump_id: null,
+    const task = await buildSmartTask({
+      text: body.text,
+      today,
+      timezone: body.timezone,
+      labelNames,
+      modelChoice,
       // Set before persisting so the insert is checked against the workspace
       // policy, not written as personal and moved afterwards.
-      workspace_id: body.workspaceId ?? null,
-      assignee_id: body.assigneeId ?? null,
-      title: parsed.title,
-      // A quick-add has no note yet; the user writes one if they want it.
-      description: null,
-      priority: parsed.priority,
-      estimated_minutes: Math.min(
-        480,
-        Math.max(5, Math.round(parsed.estimated_minutes)),
-      ),
-      deadline: parsed.deadline,
-      suggested_start: parsed.suggested_start,
-      status: "today",
-      // A named future day wins over "drop it on today" — otherwise "massage on
-      // Sunday" lands on today's plan and the day the person asked for is lost.
-      plan_date: futureDate(parsed.plan_date, today) ?? today,
-      tags: [parsed.tag as Tag],
-      reasoning: parsed.reasoning,
-      sort_order: 0,
-      created_at: createdAt,
-    };
+      workspaceId: body.workspaceId ?? null,
+      assigneeId: body.assigneeId ?? null,
+    });
 
     await persist(task, caller);
-    return NextResponse.json({ task, planner: "ai" });
+    return NextResponse.json({ task });
   } catch (error) {
     const { status, message } = describeError(error);
     console.error("[/api/tasks/parse]", error);
     return NextResponse.json({ error: message }, { status });
   }
-}
-
-/** A well-formed plan_date strictly after today, else null. */
-function futureDate(value: string | null, today: string): string | null {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  if (Number.isNaN(Date.parse(value))) return null;
-  return value > today ? value : null;
 }

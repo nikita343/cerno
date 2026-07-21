@@ -81,6 +81,7 @@ function sectionLabel(t: ReturnType<typeof useT>, slug: string): string {
     case "reminders": return t.settings.reminders;
     case "language": return t.settings.language;
     case "calendar": return t.settings.calendar;
+    case "telegram": return t.settings.telegram;
     case "model": return t.settings.model;
     default: return slug;
   }

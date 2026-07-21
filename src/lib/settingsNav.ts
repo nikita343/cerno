@@ -32,6 +32,7 @@ export type SettingsSlug =
   | "reminders"
   | "language"
   | "calendar"
+  | "telegram"
   | "model";
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
@@ -59,6 +60,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Calendar feed",
     note: "Subscribe from Google or Apple",
     hint: "Subscribe from Google, Apple or Outlook",
+  },
+  {
+    slug: "telegram",
+    label: "Telegram",
+    note: "Add tasks and get a morning brief",
+    hint: "Send tasks to the bot and they land in your day",
   },
   {
     slug: "model",

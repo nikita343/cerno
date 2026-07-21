@@ -175,6 +175,7 @@ export interface UserSettingsRow {
   display_name: string | null;
   avatar_url: string | null;
   feed_token: string | null;
+  telegram_chat_id: number | null;
   updated_at: string;
 }
 
@@ -199,6 +200,9 @@ export function toSettings(row: Partial<UserSettingsRow> | null): UserSettings {
     display_name: row.display_name ?? null,
     avatar_url: row.avatar_url ?? null,
     feed_token: row.feed_token ?? null,
+    // Only the fact of a link crosses to the client, never the chat id itself.
+    // Absent column (migration 0011 not yet applied) reads as unlinked.
+    telegram_linked: (row.telegram_chat_id ?? null) !== null,
   };
 }
 

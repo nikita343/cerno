@@ -97,6 +97,14 @@ export interface Task {
   reasoning: string | null;
   sort_order: number;
   created_at: string;
+  /**
+   * Client-only: a quick-add placeholder awaiting its parse from the server.
+   *
+   * Never persisted — `toTaskRow` doesn't read it — and never set on a task
+   * that came from the database. It exists so a smart-add can show a row the
+   * instant you hit enter, instead of an empty gap while the model thinks.
+   */
+  pending?: boolean;
 }
 
 export interface DayPlan {
@@ -232,6 +240,12 @@ export interface UserSettings {
    * task title without signing in. Regenerating it revokes the old URL.
    */
   feed_token: string | null;
+  /**
+   * Whether a Telegram chat is linked. Just the boolean — the chat id itself
+   * stays server-side, since the client only ever needs to show connected or
+   * not and offer to disconnect.
+   */
+  telegram_linked: boolean;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -246,6 +260,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   display_name: null,
   avatar_url: null,
   feed_token: null,
+  telegram_linked: false,
 };
 
 /* ------------------------------------------------------- notifications */

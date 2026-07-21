@@ -159,6 +159,13 @@
   border-color: var(--border);
 }
 
+/* A dragged task is over this item — only Today and Inbox ever light up. */
+.navItem[data-drop-over] {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent, var(--text)) 12%, transparent);
+  border-color: var(--accent, var(--text));
+}
+
 .badge {
   margin-left: auto;
   font-size: 0.75rem;

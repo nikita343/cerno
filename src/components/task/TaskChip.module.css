@@ -28,6 +28,30 @@
   border-color: color-mix(in srgb, var(--overdue) 22%, var(--border));
 }
 
+/* A quick-add still being parsed. The gentle pulse says "working" without a
+   spinner competing with the rest of the list; it settles the moment the real
+   task swaps in. */
+.chip[data-pending] {
+  animation: cernoChipPending 1.3s var(--ease-in-out, ease-in-out) infinite;
+}
+
+@keyframes cernoChipPending {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip[data-pending] {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 .chip[data-interactive] {
   cursor: pointer;
 }

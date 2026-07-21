@@ -46,6 +46,11 @@ export const dropId = {
   stripDay: (date: string) => `strip-${date}`,
   block: (date: string, block: BlockKey) => `block:${date}:${block}`,
   tomorrow: "postpone:tomorrow",
+  // The mobile tab bar and the desktop sidebar are both always mounted (each
+  // hidden at the other's breakpoint), so the two "Today" / "Inbox" drop zones
+  // must have distinct ids even though they share a target.
   today: "tab:today",
   inbox: "tab:inbox",
+  navToday: "nav:today",
+  navInbox: "nav:inbox",
 } as const;

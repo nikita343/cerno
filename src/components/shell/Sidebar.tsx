@@ -16,6 +16,8 @@ import {
 } from "@/components/icons";
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
+import { dropId, type DropTarget } from "@/components/dnd/dropTarget";
+import { useDropZone } from "@/components/dnd/useDrag";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { DASHBOARD_ROOT, NAV_ITEMS, screenFromPath } from "@/lib/nav";
 import { isEntitled, type ScreenKey } from "@/lib/types";
@@ -33,6 +35,18 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
   filters: FilterIcon,
   workspaces: UsersIcon,
   settings: CogIcon,
+};
+
+/**
+ * Which sidebar items accept a dropped task, mirroring the mobile tab bar.
+ *
+ * Today pulls the task onto the current day; Inbox strips its day. Upcoming is
+ * absent on purpose — it has no single day to mean, so a drop there would have
+ * to guess. Drop onto a specific day inside the Upcoming view instead.
+ */
+const NAV_DROP: Partial<Record<ScreenKey, { id: string; target: DropTarget }>> = {
+  today: { id: dropId.navToday, target: { kind: "today" } },
+  inbox: { id: dropId.navInbox, target: { kind: "inbox" } },
 };
 
 /** First letter, for the workspace glyph. Falls back rather than rendering "". */
@@ -84,25 +98,16 @@ export function Sidebar() {
       </button>
 
       <nav className={styles.nav} aria-label="Primary">
-        {NAV_ITEMS.map((item) => {
-          const Icon = NAV_ICONS[item.key];
-          const active = current === item.key;
-          return (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={styles.navItem}
-              data-active={active || undefined}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon size="1.1875rem" />
-              <span>{navLabel(t, item.key)}</span>
-              {item.key === "inbox" && inboxCount > 0 && (
-                <span className={styles.badge}>{inboxCount}</span>
-              )}
-            </Link>
-          );
-        })}
+        {NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.key}
+            navKey={item.key}
+            href={item.href}
+            label={navLabel(t, item.key)}
+            active={current === item.key}
+            badge={item.key === "inbox" ? inboxCount : 0}
+          />
+        ))}
       </nav>
 
       <div className={styles.labels}>
@@ -172,6 +177,49 @@ export function Sidebar() {
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * A sidebar nav item that is also a drop target for Today and Inbox.
+ *
+ * The drop hook is always called (hooks can't be conditional) but `disabled`
+ * for the items that aren't targets, so only Today and Inbox light up and only
+ * they resolve a drop. Mirrors the mobile tab bar.
+ */
+function NavLink({
+  navKey,
+  href,
+  label,
+  active,
+  badge,
+}: {
+  navKey: ScreenKey;
+  href: string;
+  label: string;
+  active: boolean;
+  badge: number;
+}) {
+  const Icon = NAV_ICONS[navKey];
+  const config = NAV_DROP[navKey];
+  const drop = useDropZone(
+    config?.id ?? `nav:${navKey}`,
+    config?.target ?? { kind: "today" },
+    !config,
+  );
+
+  return (
+    <Link
+      {...drop}
+      href={href}
+      className={styles.navItem}
+      data-active={active || undefined}
+      aria-current={active ? "page" : undefined}
+    >
+      <Icon size="1.1875rem" />
+      <span>{label}</span>
+      {badge > 0 && <span className={styles.badge}>{badge}</span>}
+    </Link>
   );
 }
 
