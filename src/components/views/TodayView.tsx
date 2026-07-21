@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CalendarIcon, CheckIcon } from "@/components/icons";
+import { CalendarIcon } from "@/components/icons";
 import { DatePicker } from "@/components/task/DatePicker";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { SwipeRow } from "@/components/task/SwipeRow";
@@ -42,6 +42,11 @@ export function TodayView() {
 
   const [bulkOpen, setBulkOpen] = useState(false);
   const bulkRef = useRef<HTMLDivElement>(null);
+
+  // Lifted out of TaskMenu because the menu can be opened three ways here: the
+  // ⋯ button, the swipe tray, and tapping the card on touch.
+  const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
+  const openMenuFor = useCallback((id: string) => setMenuTaskId(id), []);
 
   // Overdue ids in the order they appear on the timeline, so the bulk action
   // and the count in its label always describe the same set.
@@ -202,27 +207,37 @@ export function TodayView() {
                   </span>
                 </div>
 
-                <ol className={view.list}>
+                <ol className={styles.timeline}>
                   {items.map(({ task, start, fixed }, index) => {
                     const isDone = task.status === "done";
                     const isOverdue = overdue.has(task.id);
                     const toggle = () =>
                       isDone ? uncompleteTask(task.id) : completeTask(task.id);
 
+                    // Consecutive tasks landing on the same minute print the
+                    // time once. Repeating "10:45" down a column says nothing
+                    // and reads as a rendering fault.
+                    const clock = formatClock(start);
+                    const repeats =
+                      index > 0 && formatClock(items[index - 1].start) === clock;
+
                     return (
                       <li
                         key={task.id}
                         className={styles.row}
                         data-removing={removing.has(task.id) || undefined}
+                        data-grouped={repeats || undefined}
                         style={{ "--i": index } as React.CSSProperties}
                       >
-                        <span
-                          className={styles.time}
-                          data-fixed={fixed || undefined}
-                          data-overdue={isOverdue || undefined}
-                        >
-                          {formatClock(start)}
-                        </span>
+                        {!repeats && (
+                          <span
+                            className={styles.time}
+                            data-fixed={fixed || undefined}
+                            data-overdue={isOverdue || undefined}
+                          >
+                            {clock}
+                          </span>
+                        )}
 
                         <div className={styles.chipWrap}>
                           <SwipeRow
@@ -230,30 +245,18 @@ export function TodayView() {
                             completed={isDone}
                             onComplete={toggle}
                             onDelete={() => requestDelete(task.id)}
+                            onMenu={() => openMenuFor(task.id)}
                           >
                             <TaskChip
                               task={task}
                               today={today}
                               overdue={isOverdue}
+                              onToggleComplete={toggle}
                             />
                           </SwipeRow>
                         </div>
 
                         <div className={styles.rowActions}>
-                          <button
-                            type="button"
-                            className={styles.iconButton}
-                            data-on={isDone || undefined}
-                            onClick={toggle}
-                            aria-label={
-                              isDone
-                                ? `Mark "${task.title}" as not done`
-                                : `Mark "${task.title}" as done`
-                            }
-                            aria-pressed={isDone}
-                          >
-                            <CheckIcon size="1rem" />
-                          </button>
                           {/* Delete moved into this menu so it can't be hit
                               while reaching for the check, and so it can carry
                               a confirmation. */}
@@ -261,6 +264,10 @@ export function TodayView() {
                             task={task}
                             today={today}
                             onDelete={requestDelete}
+                            open={menuTaskId === task.id}
+                            onOpenChange={(next) =>
+                              setMenuTaskId(next ? task.id : null)
+                            }
                           />
                         </div>
                       </li>

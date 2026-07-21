@@ -76,6 +76,9 @@ export function seedTasks(today = todayISO()): Task[] {
       priority: "medium",
       estimated_minutes: 10,
       deadline: null,
+      // Deliberately collides with the landlord call's derived 10:30 start, so
+      // the seeded day exercises the "same time, print it once" grouping.
+      suggested_start: "10:30",
       status: "today",
       plan_date: today,
       tags: ["comms"],

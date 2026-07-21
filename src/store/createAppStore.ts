@@ -111,8 +111,14 @@ export interface AppActions {
   rescheduleTask: (id: string, date: string | null) => Promise<void>;
   /** Same, for every id at once — the bulk overdue action. */
   rescheduleMany: (ids: string[], date: string | null) => Promise<void>;
-  /** Parse one phrase into a structured task and drop it on today. */
-  addTaskSmart: (text: string) => Promise<void>;
+  /**
+   * Parse one phrase into a structured task.
+   *
+   * `date` pins it to a specific day, overriding whatever the parser inferred —
+   * adding from Thursday's row means Thursday, even if the text says nothing
+   * about a date. Omit it to let the parser decide (the Today quick-add).
+   */
+  addTaskSmart: (text: string, date?: string) => Promise<void>;
   /** Roll unfinished tasks from past days onto today. */
   carryOver: () => Promise<void>;
 
@@ -481,27 +487,50 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         );
       },
 
-      addTaskSmart: async (text) => {
+      addTaskSmart: async (text, date) => {
         const { today } = get();
         try {
           // Persisted server-side by /api/tasks/parse; the returned task
           // already has its database id.
-          const task = await smartAddTask(
+          const parsed = await smartAddTask(
             text,
             today,
             get().labels.map((l) => l.name),
           );
+
+          // An explicit day wins over whatever the parser inferred. Added from
+          // Thursday's row, it goes on Thursday.
+          const task: Task =
+            date === undefined
+              ? parsed
+              : { ...parsed, plan_date: date, status: "today" };
+          const targetDate = task.plan_date ?? today;
+
           set((state) => {
-            // New quick-adds go to the end of today's list rather than
+            // New quick-adds go to the end of that day's list rather than
             // reshuffling a plan the user has already seen.
             const lastOrder = state.tasks
-              .filter((t) => t.status === "today" && t.plan_date === today)
+              .filter((t) => t.status === "today" && t.plan_date === targetDate)
               .reduce((max, t) => Math.max(max, t.sort_order), -1);
             return {
               tasks: [...state.tasks, { ...task, sort_order: lastOrder + 1 }],
               syncError: null,
             };
           });
+
+          // The route already persisted the parser's own date, so a pinned day
+          // needs a follow-up write. Skipped when the parser's answer stood.
+          const db = getDb();
+          if (db && date !== undefined && parsed.plan_date !== date) {
+            try {
+              await updateTaskRow(db, task.id, {
+                plan_date: date,
+                status: "today",
+              });
+            } catch {
+              set({ syncError: SYNC_FAILED });
+            }
+          }
         } catch {
           set({ syncError: SYNC_FAILED });
         }

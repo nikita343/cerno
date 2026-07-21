@@ -46,6 +46,13 @@
   color: var(--on-accent);
 }
 
+/* Neutral, between the two coloured actions — it opens a menu rather than
+   doing anything by itself, so it shouldn't compete with them. */
+.more {
+  background: var(--border-strong);
+  color: var(--on-accent);
+}
+
 .delete {
   background: var(--accent);
   color: var(--on-accent);

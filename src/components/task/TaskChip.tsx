@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertIcon } from "@/components/icons";
+import { AlertIcon, CheckIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
 import { taskDuration } from "@/lib/format";
 import { labelColor } from "@/lib/labels";
@@ -19,8 +19,14 @@ export interface TaskChipProps {
   done?: boolean;
   /** Hides the priority badge where the surrounding UI already conveys it. */
   showPriority?: boolean;
-  /** Makes the whole chip a button — used where tapping reveals reasoning. */
-  onClick?: () => void;
+  /**
+   * Toggles completion from the checkbox on the left.
+   *
+   * Optional: views that show a task purely as a search or filter *result*
+   * pass nothing and get a plain priority dot instead, because completing
+   * something from a result list is not what that screen is for.
+   */
+  onToggleComplete?: () => void;
   /** Past its scheduled finish and still open. Set by the calling view. */
   overdue?: boolean;
   /** Renders the user's own note under the title. */
@@ -46,7 +52,7 @@ export function TaskChip({
   showTag = true,
   showPriority = true,
   done,
-  onClick,
+  onToggleComplete,
   overdue = false,
   showDescription = true,
 }: TaskChipProps) {
@@ -64,11 +70,34 @@ export function TaskChip({
   const content = (
     <>
       <div className={styles.row}>
-        <span
-          className={styles.dot}
-          data-high={isHigh || undefined}
-          data-priority={isDone ? "done" : task.priority}
-        />
+        {/* The checkbox takes the priority dot's place rather than sitting
+            beside it: two small circles on one left edge read as related when
+            they aren't. Priority survives as the ring colour, and in the
+            HIGH/MED/LOW badge on the right. */}
+        {onToggleComplete ? (
+          <button
+            type="button"
+            className={styles.checkbox}
+            data-priority={isDone ? "done" : task.priority}
+            data-done={isDone || undefined}
+            onClick={onToggleComplete}
+            role="checkbox"
+            aria-checked={isDone}
+            aria-label={
+              isDone
+                ? `Mark "${task.title}" as not done`
+                : `Mark "${task.title}" as done`
+            }
+          >
+            <CheckIcon size="0.75rem" className={styles.checkboxTick} />
+          </button>
+        ) : (
+          <span
+            className={styles.dot}
+            data-high={isHigh || undefined}
+            data-priority={isDone ? "done" : task.priority}
+          />
+        )}
         <span className={styles.title} data-done={isDone || undefined}>
           {task.title}
         </span>
@@ -127,20 +156,6 @@ export function TaskChip({
       )}
     </>
   );
-
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        className={styles.chip}
-        onClick={onClick}
-        data-interactive
-        data-overdue={isOverdue || undefined}
-      >
-        {content}
-      </button>
-    );
-  }
 
   return (
     <div className={styles.chip} data-overdue={isOverdue || undefined}>

@@ -2,6 +2,10 @@
   position: fixed;
   inset: 0;
   background: var(--scrim-menu);
+  /* Frosted, not merely dimmed. Prefixed for Safari, which still
+     requires -webkit- for backdrop-filter. */
+  -webkit-backdrop-filter: blur(var(--scrim-blur));
+  backdrop-filter: blur(var(--scrim-blur));
   z-index: 50;
   animation: cernoFadeIn var(--dur) var(--ease);
 }

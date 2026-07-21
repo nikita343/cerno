@@ -45,6 +45,72 @@
   min-width: 0;
 }
 
+/* The completion control. Takes the priority dot's slot, and keeps priority as
+   its ring colour so the left edge still carries that signal at a glance. */
+.checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.09375rem solid var(--prio-low);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  color: transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.checkbox[data-priority="high"] {
+  border-color: var(--prio-high);
+}
+
+.checkbox[data-priority="medium"] {
+  border-color: var(--prio-medium);
+}
+
+.checkbox[data-priority="low"] {
+  border-color: var(--prio-low);
+}
+
+/* The tick previews on hover, so the control reads as "click to complete"
+   rather than as a decorative ring. */
+.checkbox:hover {
+  background: color-mix(in srgb, currentColor 0%, var(--surface-hover));
+  color: var(--text-faint);
+}
+
+.checkbox[data-done],
+.checkbox[data-priority="done"] {
+  background: var(--prio-low);
+  border-color: var(--prio-low);
+  color: var(--on-accent);
+}
+
+.checkboxTick {
+  pointer-events: none;
+}
+
+/* The visual box stays 18px, but the tappable area is padded out to 44px via a
+   pseudo-element — a checkbox big enough to hit reliably would dominate the
+   row. */
+@media (hover: none) and (pointer: coarse) {
+  .checkbox {
+    position: relative;
+  }
+
+  .checkbox::after {
+    content: "";
+    position: absolute;
+    inset: -0.8125rem;
+  }
+}
+
 .dot {
   width: 0.5625rem;
   height: 0.5625rem;

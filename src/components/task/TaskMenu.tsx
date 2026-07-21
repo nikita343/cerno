@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -37,23 +37,40 @@ export function TaskMenu({
   task,
   today,
   onDelete,
+  open: controlledOpen,
+  onOpenChange,
+  /** Hides the ⋯ button, for callers that open the menu some other way. */
+  hideTrigger = false,
 }: {
   task: Task;
   today: string;
   /** Deferred by the caller so the row can play its exit animation. */
   onDelete: (id: string) => void;
+  /**
+   * Controlled mode. Omit both to let the menu manage its own state.
+   *
+   * Today needs control because the menu can also be opened from the swipe
+   * tray and by tapping the card — affordances that live outside this
+   * component.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
   const updateTask = useAppStore((s) => s.updateTask);
   const rescheduleTask = useAppStore((s) => s.rescheduleTask);
 
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [panel, setPanel] = useState<Panel>("menu");
   const [editing, setEditing] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
   // Portals need a DOM target, which doesn't exist during the server render.
@@ -64,93 +81,53 @@ export function TaskMenu({
     setPanel("menu");
   };
 
-  // Pointer-down rather than click: a click listener fires after the target's
-  // own handler, so clicking a second row's trigger would close this menu and
-  // immediately reopen it on the same frame.
-  //
-  // Both refs are checked because the popover is portalled to <body> and is
-  // therefore NOT inside the wrapper.
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (wrapRef.current?.contains(target)) return;
-      if (popRef.current?.contains(target)) return;
-      close();
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
-    document.addEventListener("pointerdown", onDown);
     window.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  /**
-   * Positions the popover against the trigger, in viewport coordinates.
-   *
-   * The popover is portalled to <body> rather than rendered in the row, because
-   * an ancestor with a `transform` (PageTransition has one) makes
-   * `position: fixed` resolve against *that element* instead of the viewport,
-   * and traps it in that element's stacking context — the FAB then paints over
-   * it whatever z-index it is given. A portal escapes both problems, at the
-   * cost of having to compute the anchor position by hand.
-   *
-   * Ignored on mobile, where CSS pins the panel to the bottom as a sheet.
-   */
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current || !popRef.current) return;
-    if (window.matchMedia("(max-width: 599px)").matches) {
-      setCoords(null);
-      return;
-    }
-
-    const trigger = triggerRef.current.getBoundingClientRect();
-    const pop = popRef.current.getBoundingClientRect();
-    const margin = 8;
-
-    // Right-aligned to the trigger, then pulled back inside the viewport.
-    let left = trigger.right - pop.width;
-    left = Math.max(margin, Math.min(left, window.innerWidth - pop.width - margin));
-
-    // Below by default; above when that would overflow and there is room.
-    let top = trigger.bottom + 6;
-    if (top + pop.height > window.innerHeight - margin) {
-      const above = trigger.top - pop.height - 6;
-      top = above >= margin ? above : Math.max(margin, window.innerHeight - pop.height - margin);
-    }
-
-    setCoords({ top, left });
-  }, [open, panel]);
+  // Focus moves into the dialog so keyboard users land inside it.
+  useEffect(() => {
+    if (open) popRef.current?.focus();
+  }, [open]);
 
   return (
-    <div className={styles.wrap} ref={wrapRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className={styles.trigger}
-        onClick={() => (open ? close() : setOpen(true))}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`More actions for "${task.title}"`}
-      >
-        <MoreIcon size="1rem" />
-      </button>
-
-      {open && mounted && createPortal(
-        <div
-          ref={popRef}
-          className={styles.pop}
-          data-wide={panel === "date" || undefined}
-          // Hidden until measured, so it never paints at 0,0 first. Mobile has
-          // no coords — CSS pins it to the bottom edge instead.
-          style={coords ? { top: coords.top, left: coords.left } : undefined}
-          data-unpositioned={coords === null || undefined}
-          role="menu"
+    <div className={styles.wrap}>
+      {!hideTrigger && (
+        <button
+          type="button"
+          className={styles.trigger}
+          onClick={() => (open ? close() : setOpen(true))}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`More actions for "${task.title}"`}
         >
+          <MoreIcon size="1rem" />
+        </button>
+      )}
+
+      {/* Portalled to <body>: an ancestor `transform` (PageTransition has one)
+          makes `position: fixed` resolve against that element instead of the
+          viewport, and traps it in that element's stacking context. */}
+      {open && mounted && createPortal(
+        <>
+          <div
+            className={styles.scrim}
+            onClick={close}
+            aria-hidden="true"
+          />
+          <div
+            ref={popRef}
+            className={styles.pop}
+            data-wide={panel === "date" || undefined}
+            role="menu"
+            aria-label={`Actions for "${task.title}"`}
+            tabIndex={-1}
+          >
           {panel === "menu" && (
             <div className={styles.menu}>
               <button
@@ -254,9 +231,10 @@ export function TaskMenu({
                   Cancel
                 </button>
               </div>
-            </div>
-          )}
-        </div>,
+              </div>
+            )}
+          </div>
+        </>,
         document.body,
       )}
 

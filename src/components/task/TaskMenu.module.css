@@ -34,28 +34,38 @@
 
 /* -------------------------------------------------------------------- popover */
 
-/* Portalled to <body> and positioned from a layout effect, because an ancestor
-   `transform` (PageTransition) would otherwise make `position: fixed` resolve
-   against that element and trap it in its stacking context. Coordinates arrive
-   as inline top/left. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim-menu);
+  -webkit-backdrop-filter: blur(var(--scrim-blur));
+  backdrop-filter: blur(var(--scrim-blur));
+  z-index: 60;
+  animation: cernoFadeIn var(--dur) var(--ease);
+}
+
+/* Centred rather than anchored to the row. An anchored popover had to measure
+   the trigger, flip when it ran out of room below, and still fought the FAB
+   and the rows beneath it; centring removes all of that. Portalled to <body>
+   because an ancestor `transform` (PageTransition) would otherwise make
+   `position: fixed` resolve against that element instead of the viewport. */
 .pop {
   position: fixed;
-  z-index: 60;
-  width: 13rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 61;
+  width: 15rem;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
   background: var(--surface);
   border: var(--hairline) solid var(--border-menu);
   border-radius: var(--r-card);
-  overflow: hidden;
-  animation: cernoRise var(--dur) var(--ease-out);
+  animation: cernoCardIn var(--dur-slow) var(--ease-out);
 }
 
-/* One frame before measurement. Hidden rather than off-screen so it still has
-   a measurable size. */
-.pop[data-unpositioned] {
-  visibility: hidden;
-}
-
-/* The date panel carries a month grid and needs its own width. */
+/* The date panel carries a month grid and brings its own surface. */
 .pop[data-wide] {
   width: auto;
   border: none;
@@ -229,25 +239,20 @@
    near the bottom had its last two weeks cut off behind the tab bar, and the
    FAB (z-index 25) painted over it. Fixed to the bottom edge, above both. */
 @media screen and (max-width: 599px) {
-  /* `!important` beats the inline top/left the desktop path sets — the layout
-     effect skips measuring on mobile, but a stale value can survive a resize
-     across the breakpoint. */
-  .pop,
-  .pop[data-unpositioned] {
-    position: fixed;
-    top: auto !important;
+  .pop {
+    top: auto;
     bottom: 0;
-    left: 0 !important;
+    left: 0;
     right: 0;
+    transform: none;
     width: auto;
-    visibility: visible;
+    max-width: none;
     max-height: 88vh;
     overflow-y: auto;
     overscroll-behavior: contain;
     border-radius: var(--r-card-lg) var(--r-card-lg) 0 0;
     border-bottom: none;
     padding-bottom: env(safe-area-inset-bottom, 0);
-    z-index: 60;
     animation: cernoSheetUp var(--dur-slow) var(--ease-out);
   }
 

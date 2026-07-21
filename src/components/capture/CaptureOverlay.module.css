@@ -10,6 +10,10 @@
   justify-content: center;
   padding: 1.75rem;
   background: var(--scrim-capture-desktop);
+  /* Frosted, not merely dimmed. Prefixed for Safari, which still
+     requires -webkit- for backdrop-filter. */
+  -webkit-backdrop-filter: blur(var(--scrim-blur));
+  backdrop-filter: blur(var(--scrim-blur));
   animation: cernoFadeIn var(--dur) var(--ease);
 }
 
@@ -72,6 +76,10 @@
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
     background: var(--scrim-capture-mobile);
+    /* Frosted, not merely dimmed. Prefixed for Safari, which still
+       requires -webkit- for backdrop-filter. */
+    -webkit-backdrop-filter: blur(var(--scrim-blur));
+    backdrop-filter: blur(var(--scrim-blur));
   }
 
   /* A bottom sheet slides rather than scales — it should read as coming from

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, PlusIcon } from "@/components/icons";
+import { PlusIcon } from "@/components/icons";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskChip } from "@/components/task/TaskChip";
 import { pluralize } from "@/lib/format";
@@ -59,17 +59,16 @@ export function InboxView() {
                 <div className={styles.chipWrap}>
                   {/* Reasoning is always visible here — Inbox is where you
                       check Cerno's thinking. */}
-                  <TaskChip task={task} today={today} showReasoning />
+                  <TaskChip
+                    task={task}
+                    today={today}
+                    showReasoning
+                    onToggleComplete={() => void completeTask(task.id)}
+                  />
                 </div>
                 <div className={styles.actions}>
-                  <button
-                    type="button"
-                    className={styles.iconButton}
-                    onClick={() => completeTask(task.id)}
-                    aria-label={`Mark "${task.title}" as done`}
-                  >
-                    <CheckIcon size="1rem" />
-                  </button>
+                  {/* Completing moved onto the card's checkbox; what remains
+                      here is the action unique to Inbox — placing the task. */}
                   <button
                     type="button"
                     className={styles.iconButton}

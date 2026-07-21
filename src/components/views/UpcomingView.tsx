@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/components/icons";
+import { DayAddTask } from "@/components/task/DayAddTask";
 import { TaskChip } from "@/components/task/TaskChip";
 import { TaskMenu } from "@/components/task/TaskMenu";
 import {
@@ -29,6 +30,8 @@ export function UpcomingView() {
   const stepWeek = useAppStore((s) => s.stepUpcomingWeek);
   const setAnchor = useAppStore((s) => s.setUpcomingAnchor);
   const deleteTask = useAppStore((s) => s.deleteTask);
+  const completeTask = useAppStore((s) => s.completeTask);
+  const uncompleteTask = useAppStore((s) => s.uncompleteTask);
   const { overdue } = useReminders();
 
   // Selecting a day scrolls its group into view rather than filtering the
@@ -144,42 +147,69 @@ export function UpcomingView() {
                         </span>
                       </div>
                       <div className={styles.blockRows}>
-                        {items.map(({ task, start, fixed }) => (
-                          <div key={task.id} className={styles.timedRow}>
-                            <span
-                              className={styles.rowTime}
-                              data-fixed={fixed || undefined}
-                              data-overdue={overdue.has(task.id) || undefined}
+                        {items.map(({ task, start, fixed }, i) => {
+                          // Same rule as Today: consecutive tasks on the same
+                          // minute print the time once.
+                          const clock = formatClock(start);
+                          const repeats =
+                            i > 0 && formatClock(items[i - 1].start) === clock;
+
+                          return (
+                            <div
+                              key={task.id}
+                              className={styles.timedRow}
+                              data-grouped={repeats || undefined}
                             >
-                              {formatClock(start)}
-                            </span>
-                            <div className={styles.rowChip}>
-                              <TaskChip
-                                task={task}
-                                today={today}
-                                // Only today's rows can be overdue — the set is
-                                // built from today's schedule, so a future day
-                                // never matches.
-                                overdue={overdue.has(task.id)}
-                              />
+                              {!repeats && (
+                                <span
+                                  className={styles.rowTime}
+                                  data-fixed={fixed || undefined}
+                                  data-overdue={
+                                    overdue.has(task.id) || undefined
+                                  }
+                                >
+                                  {clock}
+                                </span>
+                              )}
+                              <div className={styles.rowChip}>
+                                <TaskChip
+                                  task={task}
+                                  today={today}
+                                  // Only today's rows can be overdue — the set
+                                  // is built from today's schedule, so a future
+                                  // day never matches.
+                                  overdue={overdue.has(task.id)}
+                                  onToggleComplete={() =>
+                                    task.status === "done"
+                                      ? void uncompleteTask(task.id)
+                                      : void completeTask(task.id)
+                                  }
+                                />
+                              </div>
+                              {/* Rescheduling a future task is the most natural
+                                  action on this screen, so the menu belongs
+                                  here as well as on Today. */}
+                              <div className={styles.rowMenu}>
+                                <TaskMenu
+                                  task={task}
+                                  today={today}
+                                  onDelete={(id) => void deleteTask(id)}
+                                />
+                              </div>
                             </div>
-                            {/* Rescheduling a future task is the most natural
-                                action on this screen, so the menu belongs here
-                                as well as on Today. */}
-                            <TaskMenu
-                              task={task}
-                              today={today}
-                              onDelete={(id) => void deleteTask(id)}
-                            />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ),
                 )}
+                <DayAddTask date={date} today={today} />
               </div>
             ) : (
-              <p className={view.emptyDashed}>Nothing planned yet.</p>
+              <>
+                <p className={view.emptyDashed}>Nothing planned yet.</p>
+                <DayAddTask date={date} today={today} />
+              </>
             )}
           </section>
         ))}

@@ -1,0 +1,83 @@
+/* Quiet until hovered — one of these sits under every day in the agenda, and
+   seven loud buttons would compete with the tasks they belong to. */
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.4375rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-faint);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-tile-lg);
+  cursor: pointer;
+  align-self: flex-start;
+  transition:
+    color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.trigger:hover {
+  color: var(--accent);
+  background: var(--surface-hover);
+}
+
+.form {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.375rem 0.25rem 0.625rem;
+  background: var(--surface);
+  border: var(--hairline) solid var(--border-strong);
+  border-radius: var(--r-button-lg);
+  animation: cernoRowIn var(--dur-fast) var(--ease-out);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.4375rem 0;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.submit {
+  width: 1.875rem;
+  height: 1.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: none;
+  border-radius: var(--r-tile);
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.submit:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .trigger {
+    /* No hover to reveal it, so it carries its own weight on touch. */
+    color: var(--text-muted);
+    padding: 0.5625rem 0.5rem;
+  }
+
+  .submit {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}

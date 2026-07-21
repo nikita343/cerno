@@ -65,10 +65,18 @@
   --warn: var(--prio-medium);
   --warn-soft: rgba(217, 130, 24, 0.11);
 
-  /* Scrims — always darken, so they read as an overlay in either theme */
-  --scrim-capture-desktop: rgba(28, 25, 23, 0.45);
-  --scrim-capture-mobile: rgba(28, 25, 23, 0.5);
-  --scrim-menu: rgba(28, 25, 23, 0.32);
+  /* Scrims.
+     The page's own background at 80%, plus a blur — so an overlay reads as
+     frosted glass over the app rather than a dark sheet on top of it. Tinted
+     per theme rather than always darkening, because an 80% dark wash in light
+     mode would black the page out.
+
+     `--scrim-blur` is applied via backdrop-filter. Every overlay uses the same
+     value; a popup that blurs differently reads as a different surface. */
+  --scrim-capture-desktop: rgba(250, 250, 249, 0.8);
+  --scrim-capture-mobile: rgba(250, 250, 249, 0.8);
+  --scrim-menu: rgba(250, 250, 249, 0.8);
+  --scrim-blur: 10px;
 
   color-scheme: light;
 
@@ -127,9 +135,9 @@
   --overdue-soft: rgba(255, 0, 61, 0.16);
   --warn-soft: rgba(242, 169, 59, 0.15);
 
-  --scrim-capture-desktop: rgba(9, 9, 11, 0.74);
-  --scrim-capture-mobile: rgba(9, 9, 11, 0.78);
-  --scrim-menu: rgba(9, 9, 11, 0.55);
+  --scrim-capture-desktop: rgba(10, 10, 11, 0.8);
+  --scrim-capture-mobile: rgba(10, 10, 11, 0.8);
+  --scrim-menu: rgba(10, 10, 11, 0.8);
 
   color-scheme: dark;
 }

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { CheckIcon, TrashIcon } from "@/components/icons";
+import { CheckIcon, MoreIcon, TrashIcon } from "@/components/icons";
 
 import styles from "./SwipeRow.module.css";
 
@@ -12,6 +12,12 @@ export interface SwipeRowProps {
   completed?: boolean;
   onComplete: () => void;
   onDelete: () => void;
+  /**
+   * Opens the task menu. Adds a ⋯ to the tray, and makes a tap on the closed
+   * row open the menu — on touch there is no hover, so without these the menu's
+   * Edit / Date / Priority actions have no way in.
+   */
+  onMenu?: () => void;
   children: React.ReactNode;
 }
 
@@ -44,6 +50,7 @@ export function SwipeRow({
   completed = false,
   onComplete,
   onDelete,
+  onMenu,
   children,
 }: SwipeRowProps) {
   const [offset, setOffset] = useState(0);
@@ -115,6 +122,18 @@ export function SwipeRow({
           <CheckIcon size="1.125rem" />
           <span className={styles.actionLabel}>{completed ? "Undo" : "Done"}</span>
         </button>
+        {onMenu && (
+          <button
+            type="button"
+            className={`${styles.action} ${styles.more}`}
+            tabIndex={isOpen ? 0 : -1}
+            onClick={() => runAction(onMenu)}
+            aria-label={`More actions for "${title}"`}
+          >
+            <MoreIcon size="1.125rem" />
+            <span className={styles.actionLabel}>More</span>
+          </button>
+        )}
         <button
           type="button"
           className={`${styles.action} ${styles.delete}`}
@@ -135,6 +154,24 @@ export function SwipeRow({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
+        // A tap on the closed row opens the menu. Guarded on the axis lock and
+        // on the row being closed, so it can't fire at the end of a swipe or
+        // while the tray is showing — where the tap means "close".
+        onClick={(e) => {
+          if (!onMenu) return;
+          // Touch only. On a pointer device the ⋯ is already visible on hover,
+          // and making the whole card open a menu on click would hijack every
+          // stray click in the list.
+          if (!window.matchMedia("(hover: none)").matches) return;
+          if (axis.current === "horizontal") return;
+          if (isOpen) {
+            close();
+            return;
+          }
+          // The checkbox and any other control inside the card own their taps.
+          if ((e.target as HTMLElement).closest("button")) return;
+          onMenu();
+        }}
       >
         {children}
       </div>
