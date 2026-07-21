@@ -4,9 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/components/icons";
 import { DayAddTask } from "@/components/task/DayAddTask";
-import { SwipeRow } from "@/components/task/SwipeRow";
-import { TaskChip } from "@/components/task/TaskChip";
-import { TaskMenu } from "@/components/task/TaskMenu";
+import { TaskRow } from "@/components/task/TaskRow";
 import {
   dayLetter,
   dayOfMonth,
@@ -157,7 +155,7 @@ export function UpcomingView() {
                           {totalDuration(minutes)}
                         </span>
                       </div>
-                      <div className={styles.blockRows}>
+                      <ul className={styles.blockRows}>
                         {items.map(({ task, start, fixed }, i) => {
                           // Same rule as Today: consecutive tasks on the same
                           // minute print the time once.
@@ -166,59 +164,26 @@ export function UpcomingView() {
                             i > 0 && formatClock(items[i - 1].start) === clock;
 
                           return (
-                            <div
+                            <TaskRow
                               key={task.id}
-                              className={styles.timedRow}
-                              data-grouped={repeats || undefined}
-                            >
-                              {!repeats && (
-                                <span
-                                  className={styles.rowTime}
-                                  data-fixed={fixed || undefined}
-                                  data-overdue={
-                                    overdue.has(task.id) || undefined
-                                  }
-                                >
-                                  {clock}
-                                </span>
-                              )}
-                              <div className={styles.rowChip}>
-                                <SwipeRow
-                                  title={task.title}
-                                  completed={task.status === "done"}
-                                  onComplete={() => toggle(task)}
-                                  onDelete={() => void deleteTask(task.id)}
-                                  onMenu={() => setMenuTaskId(task.id)}
-                                >
-                                  <TaskChip
-                                    task={task}
-                                    today={today}
-                                    // Only today's rows can be overdue — the
-                                    // set is built from today's schedule, so a
-                                    // future day never matches.
-                                    overdue={overdue.has(task.id)}
-                                    onToggleComplete={() => toggle(task)}
-                                  />
-                                </SwipeRow>
-                              </div>
-                              {/* Rescheduling a future task is the most natural
-                                  action on this screen, so the menu belongs
-                                  here as well as on Today. */}
-                              <div className={styles.rowMenu}>
-                                <TaskMenu
-                                  task={task}
-                                  today={today}
-                                  onDelete={(id) => void deleteTask(id)}
-                                  open={menuTaskId === task.id}
-                                  onOpenChange={(next) =>
-                                    setMenuTaskId(next ? task.id : null)
-                                  }
-                                />
-                              </div>
-                            </div>
+                              task={task}
+                              today={today}
+                              clock={repeats ? null : clock}
+                              fixed={fixed}
+                              // Only today's rows can be overdue — the set is
+                              // built from today's schedule, so a future day
+                              // never matches.
+                              overdue={overdue.has(task.id)}
+                              onToggle={() => toggle(task)}
+                              onDelete={(id) => void deleteTask(id)}
+                              menuOpen={menuTaskId === task.id}
+                              onMenuOpenChange={(next) =>
+                                setMenuTaskId(next ? task.id : null)
+                              }
+                            />
                           );
                         })}
-                      </div>
+                      </ul>
                     </div>
                   ),
                 )}

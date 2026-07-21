@@ -29,6 +29,51 @@ Two deliberate deviations from `Cerno — Daily Planner Brief/DEVELOPMENT.md`:
   9:41 status bar) are mockup chrome, not app UI. This renders responsive
   full-viewport, swapping sidebar ↔ tab bar at 960px.
 
+## Calendar sync
+
+**One-way, read-only, and pull-based.** Cerno publishes; your calendar reads.
+Nothing your calendar does comes back — moving a Cerno event in Google Calendar
+changes nothing here, and there is no write path for it to travel down.
+
+Settings hands out a URL:
+
+```
+/api/calendar/<feed_token>
+```
+
+Your calendar app fetches that on its own schedule and re-renders whatever it
+gets. The feed advertises `REFRESH-INTERVAL:PT1H` and `X-PUBLISHED-TTL:PT1H`,
+but those are **hints, not contracts** — Google in particular ignores them and
+refreshes on its own cadence, historically anywhere from minutes to ~24 hours.
+So: a task you add now may not appear in Google Calendar for hours. Apple
+Calendar and Outlook honour a per-subscription interval you can set yourself.
+There is no way for Cerno to push, which is the trade for not asking you for
+calendar write access.
+
+Each event is a floating local time — no `VTIMEZONE`, no `Z` suffix — so a task
+at 09:00 shows at 09:00 wherever the reading device happens to be. Tasks with no
+time become all-day events.
+
+### The token is a credential
+
+Anyone holding that URL can read your task titles and descriptions, with no
+sign-in. That is inherent to how calendar subscriptions work: the calendar app
+fetches it unauthenticated, so the URL *is* the authentication.
+
+Consequences, all deliberate:
+
+- It is a random `uuid`, never your user id — the user id appears elsewhere and
+  would make the feed guessable from it.
+- It is **revocable**. Rotating it in Settings breaks every existing
+  subscription immediately, which is the point.
+- An unknown token returns **404, not 403** — a 403 confirms a token exists.
+- `cache-control: no-store` and `referrer-policy: no-referrer`, so it isn't
+  held in a shared cache or leaked in a `Referer` header.
+- The route reads through a `SECURITY DEFINER` function scoped to one token
+  rather than a service-role key. There is no master key in the app to leak.
+
+Treat the URL like a password. If it gets out, rotate it.
+
 ## Layout
 
 ```

@@ -217,82 +217,13 @@
 }
 
 .blockRows {
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 0.5625rem;
 }
 
-/* Time above the card rather than in a left gutter — see TodayView.module.css. */
-.timedRow {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    "time    time"
-    "chip actions";
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-}
-
-/* Inherits the time above it, so it sits tight against its predecessor. */
-.timedRow[data-grouped] {
-  margin-top: -0.375rem;
-}
-
-/* See TodayView.module.css: an open task menu overlaps the rows below it, and
-   later siblings paint on top, so the whole row has to be lifted — desktop
-   only, or the stacking context it creates traps the mobile sheet. */
-@media screen and (min-width: 600px) {
-  .timedRow:has([aria-expanded="true"]) {
-    position: relative;
-    z-index: 20;
-  }
-}
-
-.rowTime {
-  grid-area: time;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-  padding-left: 0.125rem;
-}
-
-.rowTime[data-fixed] {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* After [data-fixed] so it wins when a task is both — see TodayView.module.css. */
-.rowTime[data-overdue] {
-  color: var(--overdue);
-  font-weight: 600;
-}
-
-.rowChip {
-  grid-area: chip;
-  min-width: 0;
-}
-
-/* The ⋯ lives in the second grid column. Always present here — this view has
-   no swipe gesture, so hiding it on touch would leave no way in. */
-.rowMenu {
-  grid-area: actions;
-}
-
-/* Same rule as Today: on a phone the ⋯ lives in the swipe tray and on a tap of
-   the card, so an always-visible button beside every row is a third way in that
-   costs width the title needs. Collapsing the track as well as hiding the
-   button matters — a hidden item still leaves its column gap, which shows as a
-   strip of page between the swipe actions and the screen edge. */
-@media (hover: none) {
-  .rowMenu {
-    display: none;
-  }
-
-  .timedRow {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "time"
-      "chip";
-  }
-}
+/* The timed row itself now lives in `components/task/TaskRow` — grid, time
+   label, chip slot, menu slot and the touch rules were identical to Today's
+   copy, and keeping two of them is exactly how this view kept a permanent ⋯ on
+   phones long after Today had replaced it with the swipe. */

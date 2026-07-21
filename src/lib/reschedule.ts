@@ -141,3 +141,44 @@ export function shiftMonth(anchorISO: string, delta: number): string {
   // otherwise land on 2 or 3 March.
   return toISODate(new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1));
 }
+
+/* ------------------------------------------------------------------- times */
+
+export interface TimePreset {
+  /** `HH:MM`. */
+  value: string;
+  label: string;
+}
+
+/**
+ * The four times worth one tap.
+ *
+ * Anchored to the parts of the day the timeline already groups by (see
+ * `TIME_BLOCKS`), so picking "Afternoon" here lands the task in the Afternoon
+ * block rather than somewhere near it. Anything else is a job for the exact
+ * time field — presets are for the common case, not for expressing everything.
+ */
+export const TIME_PRESETS: readonly TimePreset[] = [
+  { value: "09:00", label: "Morning" },
+  { value: "12:00", label: "Midday" },
+  { value: "15:00", label: "Afternoon" },
+  { value: "18:00", label: "Evening" },
+] as const;
+
+/**
+ * Normalises what an `<input type="time">` gives back.
+ *
+ * Empty means cleared. Browsers may include seconds (`14:30:00`), which the
+ * column does not want and which would make an equality check against a preset
+ * fail — so it is trimmed to `HH:MM`.
+ */
+export function normaliseTime(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const match = /^(\d{1,2}):(\d{2})/.exec(trimmed);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}

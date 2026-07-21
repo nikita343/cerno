@@ -15,7 +15,9 @@ import { monthYear } from "@/lib/date";
 import {
   buildPresets,
   monthGrid,
+  normaliseTime,
   shiftMonth,
+  TIME_PRESETS,
   type PresetKey,
 } from "@/lib/reschedule";
 
@@ -49,6 +51,13 @@ export function DatePicker({
   onClose,
   title,
   /**
+   * The task's current start time, `HH:MM` or null. Passing `onPickTime` is
+   * what turns the time section on — the bulk overdue action omits it, because
+   * "everything at 15:00" is a stack, not a schedule.
+   */
+  time,
+  onPickTime,
+  /**
    * Drops the picker's own card so it can sit directly on a surface that is
    * already glass — the mobile task sheet. Without it you get a panel inside a
    * panel, with two borders and two blurs stacked.
@@ -60,6 +69,8 @@ export function DatePicker({
   onPick: (date: string | null) => void;
   onClose: () => void;
   title?: string;
+  time?: string | null;
+  onPickTime?: (time: string | null) => void;
   flat?: boolean;
 }) {
   // Opens on the selected date's month, so the current value is visible rather
@@ -188,6 +199,55 @@ export function DatePicker({
           )}
         </div>
       </div>
+
+      {/* Time is a separate commitment from the day, so it sits below the
+          calendar rather than beside the presets. Whether picking one closes
+          the panel is the caller's business — see TaskMenu. */}
+      {onPickTime && (
+        <div className={styles.times}>
+          <span className={styles.timesLabel}>Time</span>
+
+          <div className={styles.timeRow} role="group" aria-label="Start time">
+            {TIME_PRESETS.map((preset) => (
+              <button
+                key={preset.value}
+                type="button"
+                className={styles.timeChip}
+                data-active={time === preset.value || undefined}
+                aria-pressed={time === preset.value}
+                onClick={() => onPickTime(preset.value)}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.timeExact}>
+            <label className={styles.timeFieldLabel} htmlFor="task-start-time">
+              At
+            </label>
+            <input
+              id="task-start-time"
+              type="time"
+              className={styles.timeInput}
+              value={time ?? ""}
+              onChange={(e) => onPickTime(normaliseTime(e.target.value))}
+            />
+            {/* Clearing hands the task back to the derived timeline, where it
+                is laid end-to-end after whatever precedes it. That is a real
+                state, not an empty one, so it gets its own control rather than
+                relying on the user emptying the field. */}
+            <button
+              type="button"
+              className={styles.timeClear}
+              onClick={() => onPickTime(null)}
+              disabled={time == null}
+            >
+              No time
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

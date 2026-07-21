@@ -139,7 +139,12 @@ export function TaskMenu({
           >
             <CalendarIcon size="1rem" className={styles.rowIcon} />
             <span>Date</span>
-            <span className={styles.rowHint}>{task.plan_date ?? "None"}</span>
+            {/* Shows the time too, now that this panel sets it — otherwise the
+                only way to see a task's start is to open the panel. */}
+            <span className={styles.rowHint}>
+              {task.plan_date ?? "None"}
+              {task.suggested_start ? ` · ${task.suggested_start}` : ""}
+            </span>
           </button>
 
           <div className={styles.divider} />
@@ -189,6 +194,26 @@ export function TaskMenu({
           onClose={close}
           onPick={(date) => {
             void rescheduleTask(task.id, date);
+            close();
+          }}
+          time={task.suggested_start}
+          /*
+           * Closes, like picking a date does.
+           *
+           * The intent was to leave it open so a day and a time could be set in
+           * one visit — but setting a time re-sorts the timeline, and if the
+           * task crosses a part-of-day boundary its row moves to a different
+           * block, unmounting this menu with it. That made the panel survive a
+           * 09:00 → 09:30 change and vanish on 09:00 → 15:00, which is worse
+           * than always closing.
+           *
+           * Keeping it open would mean hoisting the menu to a per-view
+           * singleton so it outlives its row. Worth doing; not worth doing
+           * quietly in the middle of this. Setting both at once has a home in
+           * the meantime: the edit dialog.
+           */
+          onPickTime={(next) => {
+            void updateTask(task.id, { suggested_start: next });
             close();
           }}
         />

@@ -162,8 +162,15 @@
   align-items: flex-start;
 }
 
+/* Priority takes the slack; the two numeric fields size to their content and
+   sit at a readable minimum rather than being squeezed by it. */
 .split > .field:first-child {
   flex: 1;
+}
+
+.split > .field:not(:first-child) {
+  flex: none;
+  width: 7rem;
 }
 
 @media screen and (max-width: 479px) {

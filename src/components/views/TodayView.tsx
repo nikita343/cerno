@@ -5,9 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarIcon } from "@/components/icons";
 import { DatePicker } from "@/components/task/DatePicker";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
-import { SwipeRow } from "@/components/task/SwipeRow";
-import { TaskChip } from "@/components/task/TaskChip";
-import { TaskMenu } from "@/components/task/TaskMenu";
+import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
 import { taskDuration, totalDuration, pluralize } from "@/lib/format";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
@@ -222,55 +220,22 @@ export function TodayView() {
                       index > 0 && formatClock(items[index - 1].start) === clock;
 
                     return (
-                      <li
+                      <TaskRow
                         key={task.id}
-                        className={styles.row}
-                        data-removing={removing.has(task.id) || undefined}
-                        data-grouped={repeats || undefined}
-                        style={{ "--i": index } as React.CSSProperties}
-                      >
-                        {!repeats && (
-                          <span
-                            className={styles.time}
-                            data-fixed={fixed || undefined}
-                            data-overdue={isOverdue || undefined}
-                          >
-                            {clock}
-                          </span>
-                        )}
-
-                        <div className={styles.chipWrap}>
-                          <SwipeRow
-                            title={task.title}
-                            completed={isDone}
-                            onComplete={toggle}
-                            onDelete={() => requestDelete(task.id)}
-                            onMenu={() => openMenuFor(task.id)}
-                          >
-                            <TaskChip
-                              task={task}
-                              today={today}
-                              overdue={isOverdue}
-                              onToggleComplete={toggle}
-                            />
-                          </SwipeRow>
-                        </div>
-
-                        <div className={styles.rowActions}>
-                          {/* Delete moved into this menu so it can't be hit
-                              while reaching for the check, and so it can carry
-                              a confirmation. */}
-                          <TaskMenu
-                            task={task}
-                            today={today}
-                            onDelete={requestDelete}
-                            open={menuTaskId === task.id}
-                            onOpenChange={(next) =>
-                              setMenuTaskId(next ? task.id : null)
-                            }
-                          />
-                        </div>
-                      </li>
+                        task={task}
+                        today={today}
+                        clock={repeats ? null : clock}
+                        fixed={fixed}
+                        overdue={isOverdue}
+                        onToggle={toggle}
+                        onDelete={requestDelete}
+                        removing={removing.has(task.id)}
+                        index={index}
+                        menuOpen={menuTaskId === task.id}
+                        onMenuOpenChange={(next) =>
+                          setMenuTaskId(next ? task.id : null)
+                        }
+                      />
                     );
                   })}
                 </ol>

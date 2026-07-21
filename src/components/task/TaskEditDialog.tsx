@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CloseIcon } from "@/components/icons";
+import { normaliseTime } from "@/lib/reschedule";
 import { usePresence } from "@/lib/usePresence";
 import type { Priority, Task } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
@@ -23,7 +24,7 @@ const PRIORITIES: Array<{ value: Priority; label: string }> = [
 ];
 
 /**
- * Edit a task's title, description, priority and estimate.
+ * Edit a task's title, description, priority, start time and estimate.
  *
  * A modal rather than inline fields: the description is multi-line and the row
  * it belongs to is a single flex line by design. Everything commits on Save so
@@ -44,6 +45,7 @@ export function TaskEditDialog({
   const [description, setDescription] = useState(task.description ?? "");
   const [priority, setPriority] = useState<Priority>(task.priority);
   const [minutes, setMinutes] = useState(String(task.estimated_minutes));
+  const [start, setStart] = useState(task.suggested_start ?? "");
 
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -82,6 +84,10 @@ export function TaskEditDialog({
 
     void updateTask(task.id, {
       title: trimmedTitle,
+      // Normalised rather than passed through: browsers may hand back
+      // "14:30:00", and the column wants HH:MM. An unparseable value clears the
+      // time instead of writing something the timeline can't read.
+      suggested_start: normaliseTime(start),
       // Empty saves as null, not "": null is "never written", which is what
       // the card checks to decide whether to render the block at all.
       description: trimmedDescription === "" ? null : trimmedDescription,
@@ -191,6 +197,19 @@ export function TaskEditDialog({
                 ))}
               </div>
             </div>
+
+            <label className={styles.field}>
+              {/* Empty means "no fixed time", which hands the task back to the
+                  derived timeline rather than pinning it. That is why this
+                  isn't defaulted to anything. */}
+              <span className={styles.label}>Starts</span>
+              <input
+                className={styles.input}
+                type="time"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+              />
+            </label>
 
             <label className={styles.field}>
               <span className={styles.label}>Estimate</span>

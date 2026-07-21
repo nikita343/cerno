@@ -97,6 +97,9 @@ export interface AppActions {
         | "priority"
         | "estimated_minutes"
         | "deadline"
+        // `null` clears the time and hands the task back to the derived
+        // timeline, which is a meaningfully different state from "09:00".
+        | "suggested_start"
       >
     >,
   ) => Promise<void>;

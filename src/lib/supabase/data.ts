@@ -248,6 +248,9 @@ export type TaskPatch = Partial<
     | "deadline"
     | "status"
     | "plan_date"
+    // A time the user set by hand. Writable because rescheduling is not only a
+    // question of which day — "move it to 16:00" is the same action.
+    | "suggested_start"
     | "reasoning"
     | "sort_order"
   >

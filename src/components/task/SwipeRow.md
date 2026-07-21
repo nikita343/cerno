@@ -56,14 +56,15 @@ Three things have to hold together for that to land exactly on the edge:
    AppShell's `overflow-x: hidden` trim it *looks* identical but grows the
    scroll container's `scrollWidth` by the excess, and `UpcomingView` calls
    `scrollIntoView`, which is free to act on it.
-3. Each view **collapses its trailing action column** on `(hover: none)`, not
+3. The row **collapses its trailing action column** on `(hover: none)`, not
    just hides the button. An empty `auto` grid track still contributes its
    column gap — that gap was 8px on Today and 42px on Upcoming, and it showed
    up as exactly the strip this is meant to remove.
 
-Point 3 is the fragile one: it lives in `TodayView.module.css` and
-`UpcomingView.module.css`, not here. A new view that mounts a `SwipeRow` has to
-do the same, or the gap comes back.
+Point 3 lives in `TaskRow.module.css`, not here. It used to live in two view
+stylesheets that had to agree, which is how the 42px version survived on
+Upcoming — see `TaskRow.md`. A caller that mounts a `SwipeRow` outside a
+`TaskRow` has to handle it itself.
 
 ## Accessibility
 
