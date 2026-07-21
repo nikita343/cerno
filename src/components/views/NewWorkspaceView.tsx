@@ -41,7 +41,11 @@ export function NewWorkspaceView() {
           <button
             type="button"
             className={styles.primary}
-            onClick={() => router.push(`${DASHBOARD_ROOT}/settings`)}
+            // Straight to the plan section, not the settings index. This
+            // button makes a promise ("See the plan") and the index shows a
+            // list of section links instead — on desktop it opens Profile,
+            // which has nothing to do with what was clicked.
+            onClick={() => router.push(`${DASHBOARD_ROOT}/settings/plan`)}
           >
             See the plan
           </button>

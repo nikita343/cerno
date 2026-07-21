@@ -142,6 +142,20 @@ export interface AppActions {
    * rendering on a day it was explicitly rescheduled to.
    */
   rescheduleTask: (id: string, date: string | null) => Promise<void>;
+  /**
+   * Schedules a task onto a day *and* pins its start time, in one write.
+   *
+   * The drag-onto-a-time-block gesture: dropping into Afternoon both moves the
+   * task to that day and sets it to start when the afternoon does. Separate
+   * from `rescheduleTask` (which never touches the time) and from `updateTask`
+   * (which deliberately can't touch `plan_date`/`status`), so neither has to
+   * grow a second responsibility.
+   */
+  scheduleTaskAt: (
+    id: string,
+    date: string,
+    suggestedStart: string,
+  ) => Promise<void>;
   /** Same, for every id at once — the bulk overdue action. */
   rescheduleMany: (ids: string[], date: string | null) => Promise<void>;
   /**
@@ -535,6 +549,18 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
 
       rescheduleTask: (id, date) => {
         const patch = reschedulePatch(date);
+        return writeThrough(
+          (tasks) => tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+          (db) => updateTaskRow(db, id, patch),
+        );
+      },
+
+      scheduleTaskAt: (id, date, suggestedStart) => {
+        const patch = {
+          plan_date: date,
+          status: "today" as const,
+          suggested_start: suggestedStart,
+        };
         return writeThrough(
           (tasks) => tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
           (db) => updateTaskRow(db, id, patch),

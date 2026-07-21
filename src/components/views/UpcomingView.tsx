@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/components/icons";
+import { dropId } from "@/components/dnd/dropTarget";
+import { useDropZone } from "@/components/dnd/useDrag";
 import { DayAddTask } from "@/components/task/DayAddTask";
 import { TaskRow } from "@/components/task/TaskRow";
 import {
@@ -18,6 +20,7 @@ import type { Task } from "@/lib/types";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { tasksOn } from "@/store/createAppStore";
+import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./UpcomingView.module.css";
@@ -25,6 +28,7 @@ import view from "./View.module.css";
 
 export function UpcomingView() {
   const today = useAppStore((s) => s.today);
+  const t = useT();
   const anchor = useAppStore((s) => s.upcomingAnchor);
   const tasks = useAppStore((s) => s.tasks);
   const stepWeek = useAppStore((s) => s.stepUpcomingWeek);
@@ -66,7 +70,7 @@ export function UpcomingView() {
   return (
     <div className={view.view}>
       <div className={styles.header}>
-        <h1 className={view.h1}>Upcoming</h1>
+        <h1 className={view.h1}>{t.upcoming.title}</h1>
         <span className={styles.monthLabel}>{monthYear(anchor)}</span>
 
         <div className={styles.stepper}>
@@ -74,7 +78,7 @@ export function UpcomingView() {
             type="button"
             className={styles.stepButton}
             onClick={() => stepWeek(-1)}
-            aria-label="Previous week"
+            aria-label={t.upcoming.previousWeek}
           >
             <ChevronLeft size="0.9375rem" />
           </button>
@@ -86,58 +90,41 @@ export function UpcomingView() {
               setSelected(today);
             }}
             disabled={showingThisWeek}
-            aria-label="Jump to this week"
+            aria-label={t.upcoming.jumpToThisWeek}
           >
-            Today
+            {t.nav.today}
           </button>
           <button
             type="button"
             className={styles.stepButton}
             onClick={() => stepWeek(1)}
-            aria-label="Next week"
+            aria-label={t.upcoming.nextWeek}
           >
             <ChevronRight size="0.9375rem" />
           </button>
         </div>
       </div>
 
-      <div className={styles.strip} role="group" aria-label="Week">
-        {week.map((date) => {
-          const isToday = date === today;
-          const count = groups.find((g) => g.date === date)?.tasks.length ?? 0;
-          return (
-            <button
-              key={date}
-              type="button"
-              className={styles.day}
-              data-today={isToday || undefined}
-              data-selected={selected === date || undefined}
-              onClick={() => selectDay(date)}
-              aria-label={`${relativeDayTitle(date, today)}, ${count} ${
-                count === 1 ? "task" : "tasks"
-              }`}
-              aria-current={isToday ? "date" : undefined}
-            >
-              <span className={styles.dayLetter}>{dayLetter(date)}</span>
-              <span className={styles.dayNumber} data-today={isToday || undefined}>
-                {dayOfMonth(date)}
-              </span>
-              <span
-                className={styles.dayMarker}
-                data-has={count > 0 || undefined}
-                aria-hidden="true"
-              />
-            </button>
-          );
-        })}
+      <div className={styles.strip} role="group" aria-label={t.upcoming.week}>
+        {week.map((date) => (
+          <StripDay
+            key={date}
+            date={date}
+            today={today}
+            count={groups.find((g) => g.date === date)?.tasks.length ?? 0}
+            selected={selected === date}
+            label={relativeDayTitle(date, today, t.date)}
+            onSelect={selectDay}
+          />
+        ))}
       </div>
 
       <div className={styles.groups}>
         {groups.map(({ date, tasks: dayTasks }) => (
-          <section key={date} id={`day-${date}`} className={styles.group}>
+          <DayGroup key={date} date={date}>
             <div className={styles.groupHead}>
               <h2 className={styles.groupTitle}>
-                {relativeDayTitle(date, today)}
+                {relativeDayTitle(date, today, t.date)}
               </h2>
               <span className={view.sectionMeta}>
                 &middot; {relativeDaySub(date, today)}
@@ -150,7 +137,7 @@ export function UpcomingView() {
                   ({ block, items, minutes }) => (
                     <div key={block.key} className={styles.block}>
                       <div className={styles.blockHead}>
-                        <span className={styles.blockLabel}>{block.label}</span>
+                        <span className={styles.blockLabel}>{t.today[block.key]}</span>
                         <span className={styles.blockTotal}>
                           {totalDuration(minutes)}
                         </span>
@@ -180,6 +167,7 @@ export function UpcomingView() {
                               onMenuOpenChange={(next) =>
                                 setMenuTaskId(next ? task.id : null)
                               }
+                              draggable
                             />
                           );
                         })}
@@ -191,13 +179,83 @@ export function UpcomingView() {
               </div>
             ) : (
               <>
-                <p className={view.emptyDashed}>Nothing planned yet.</p>
+                <p className={view.emptyDashed}>{t.upcoming.nothingPlanned}</p>
                 <DayAddTask date={date} today={today} />
               </>
             )}
-          </section>
+          </DayGroup>
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * A day in the week strip that is also a drop target.
+ *
+ * Dropping a task here reschedules it onto this day even when the day's section
+ * is scrolled out of view — the strip is always visible, so it's the fast way
+ * to move something several days out.
+ */
+function StripDay({
+  date,
+  today,
+  count,
+  selected,
+  label,
+  onSelect,
+}: {
+  date: string;
+  today: string;
+  count: number;
+  selected: boolean;
+  label: string;
+  onSelect: (date: string) => void;
+}) {
+  const isToday = date === today;
+  const drop = useDropZone(dropId.stripDay(date), { kind: "day", date });
+  return (
+    <button
+      {...drop}
+      type="button"
+      className={styles.day}
+      data-today={isToday || undefined}
+      data-selected={selected || undefined}
+      onClick={() => onSelect(date)}
+      aria-label={`${label}, ${count} ${count === 1 ? "task" : "tasks"}`}
+      aria-current={isToday ? "date" : undefined}
+    >
+      <span className={styles.dayLetter}>{dayLetter(date)}</span>
+      <span className={styles.dayNumber} data-today={isToday || undefined}>
+        {dayOfMonth(date)}
+      </span>
+      <span
+        className={styles.dayMarker}
+        data-has={count > 0 || undefined}
+        aria-hidden="true"
+      />
+    </button>
+  );
+}
+
+/**
+ * A day's agenda section, and the larger of its two drop targets.
+ *
+ * Keeps the `day-${date}` DOM id the week strip scrolls to; `dropId.day`
+ * produces the same string, so the drag system and `getElementById` share one
+ * identifier.
+ */
+function DayGroup({
+  date,
+  children,
+}: {
+  date: string;
+  children: React.ReactNode;
+}) {
+  const drop = useDropZone(dropId.day(date), { kind: "day", date });
+  return (
+    <section {...drop} id={dropId.day(date)} className={styles.group}>
+      {children}
+    </section>
   );
 }

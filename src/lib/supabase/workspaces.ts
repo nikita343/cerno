@@ -132,34 +132,33 @@ export async function createWorkspaceRow(
 }
 
 /**
- * Members, with whatever profile detail is readable.
+ * Members, with their names and photos.
  *
- * `user_settings` is the only place a display name and avatar live, and its RLS
- * is per-user — so a teammate's name is *not* readable today and this falls
- * back to the id. Showing "a person you cannot name" is bad, and fixing it
- * means a profiles table readable by co-members; that is a deliberate follow-up
- * rather than something to bodge by loosening settings.
+ * Goes through the `workspace_member_profiles` RPC rather than selecting
+ * `workspace_members` directly, for two reasons:
+ *
+ *  - Names live in `user_settings` and `auth.users`, neither of which a
+ *    teammate can read. The RPC is SECURITY DEFINER and resolves them with the
+ *    same precedence as `toProfile()` — see 0008_member_identity.sql.
+ *  - Its first statement is an `is_workspace_member(ws)` check, which *is* the
+ *    access control. A direct select would lean on the table policy instead.
+ *
+ * Selecting the table directly is what this used to do, and every teammate
+ * rendered as "Pending" — `memberProfile()`'s fallback for a member with no
+ * name at all — because the three profile columns were hardcoded to null.
  */
 export async function loadMembers(
   supabase: SupabaseClient,
   workspaceId: string,
 ): Promise<WorkspaceMember[]> {
-  const { data, error } = await supabase
-    .from("workspace_members")
-    .select("workspace_id, user_id, role, joined_at")
-    .eq("workspace_id", workspaceId)
-    .order("joined_at", { ascending: true });
+  const { data, error } = await supabase.rpc("workspace_member_profiles", {
+    ws: workspaceId,
+  });
   if (error) throw error;
 
-  return (data ?? []).map((row) => ({
-    ...(row as Omit<
-      WorkspaceMember,
-      "display_name" | "email" | "avatar_url"
-    >),
-    display_name: null,
-    email: null,
-    avatar_url: null,
-  }));
+  return ((data ?? []) as Omit<WorkspaceMember, "workspace_id">[]).map(
+    (row) => ({ ...row, workspace_id: workspaceId }),
+  );
 }
 
 export async function loadInvites(

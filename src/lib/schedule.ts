@@ -29,6 +29,11 @@ export interface TimeBlock {
   to: number;
 }
 
+/**
+ * `label` is an English fallback. Views render `t.today[block.key]` instead —
+ * this module is imported outside React (the iCal feed, tests) and can't call
+ * a hook, so the string stays here for those callers.
+ */
 export const TIME_BLOCKS: readonly TimeBlock[] = [
   { key: "morning", label: "Morning", from: 0, to: 12 * 60 },
   { key: "afternoon", label: "Afternoon", from: 12 * 60, to: 17 * 60 },

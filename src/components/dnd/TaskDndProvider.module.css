@@ -1,0 +1,26 @@
+/* The card that follows the cursor while dragging. Deliberately not a full
+   TaskChip — a drag needs a legible label, not every control, and rendering the
+   real chip would drag its checkbox and menu along for the ride. */
+.overlay {
+  display: flex;
+  align-items: center;
+  max-width: 22rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong, var(--border));
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.35);
+  cursor: grabbing;
+  /* Above the tab bar and FAB so the card is never clipped by the chrome it's
+     being dragged toward. */
+  z-index: 60;
+}
+
+.overlayTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

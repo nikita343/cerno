@@ -7,10 +7,10 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   grid-template-areas:
-    "time    time"
-    "chip actions";
+    "time    time    time"
+    "chip action actions";
   align-items: center;
   gap: 0.25rem 0.5rem;
 }
@@ -30,6 +30,17 @@
    tucks up to sit closer to the first, so they read as one group. */
 .row[data-grouped] {
   margin-top: -0.375rem;
+}
+
+/* While the row's copy rides the cursor in the drag overlay, the source stays
+   in place but recedes, so the list doesn't reflow and it's obvious which task
+   is in flight.
+   No touch-action override on purpose: the 220ms hold in TaskDndProvider's
+   TouchSensor is what disambiguates a drag from a scroll or a swipe, so the
+   row keeps its default touch behaviour and none of the three gestures is
+   starved. */
+.row[data-dragging] {
+  opacity: 0.4;
 }
 
 .row[data-removing] {
@@ -81,6 +92,13 @@
   min-width: 0;
 }
 
+.rowAction {
+  grid-area: action;
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
 .actions {
   grid-area: actions;
   display: flex;
@@ -108,10 +126,30 @@
     display: none;
   }
 
+  /* Single column by default. An empty trailing track still contributes its
+     column gap, and that gap shows as a strip of bare page behind the swipe
+     actions — see SwipeRow.md. So the collapse is unconditional...
+     */
   .row {
     grid-template-columns: 1fr;
     grid-template-areas:
       "time"
       "chip";
+  }
+
+  /* ...and a row that *does* carry a screen-specific action puts it on its own
+     line underneath, not beside the card. Beside it would shorten the card and
+     reopen exactly that gap; underneath, the card still spans the full width
+     and the swipe bleed stays exact. */
+  .row:has(.rowAction) {
+    grid-template-areas:
+      "time"
+      "chip"
+      "action";
+  }
+
+  .rowAction {
+    justify-content: flex-start;
+    padding-left: 0.125rem;
   }
 }

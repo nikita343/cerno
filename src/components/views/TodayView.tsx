@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CalendarIcon } from "@/components/icons";
+import { Droppable } from "@/components/dnd/Droppable";
+import { dropId } from "@/components/dnd/dropTarget";
+import { useDragActive } from "@/components/dnd/TaskDndProvider";
 import { DatePicker } from "@/components/task/DatePicker";
 import { PickerModal } from "@/components/task/PickerModal";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
@@ -13,6 +16,7 @@ import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { PHONE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { deferredFor, scheduledFor, totalMinutes } from "@/store/createAppStore";
+import { useT } from "@/lib/i18n";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import { EmptyState } from "./EmptyState";
@@ -24,6 +28,7 @@ const REMOVE_MS = 260;
 
 export function TodayView() {
   const today = useAppStore((s) => s.today);
+  const t = useT();
   const dayPlan = useAppStore((s) => s.dayPlans[s.today]);
   const scheduled = useAppStoreShallow((s) => scheduledFor(s.tasks, s.today));
   const deferred = useAppStoreShallow((s) => deferredFor(s.tasks, s.today));
@@ -116,6 +121,10 @@ export function TodayView() {
   const remaining = totalMinutes(open);
   const hasAnything = scheduled.length > 0 || deferred.length > 0;
 
+  // The postpone bar only appears while something is being dragged — see
+  // useDragActive. A permanent "drop here for tomorrow" strip would be noise.
+  const dragActive = useDragActive();
+
   return (
     <div className={`${view.view} ${view.viewWide}`}>
       <header className={styles.header}>
@@ -132,15 +141,15 @@ export function TodayView() {
 
       {!hasAnything && (
         <EmptyState
-          title="Nothing to plan yet"
-          helper="Dump whatever is on your mind and Cerno will build the day around it."
+          title={t.today.nothingToPlan}
+          helper={t.today.nothingHelper}
           action={
             <button
               type="button"
               className={styles.emptyAction}
               onClick={openCapture}
             >
-              What&rsquo;s on your mind?
+              {t.today.whatsOnYourMind}
             </button>
           }
         />
@@ -149,7 +158,7 @@ export function TodayView() {
       {scheduled.length > 0 && (
         <section className={view.section}>
           <div className={view.sectionHead}>
-            <h2 className={view.sectionLabel}>Scheduled</h2>
+            <h2 className={view.sectionLabel}>{t.today.scheduled}</h2>
             <span className={view.sectionMeta}>
               {open.length} {pluralize(open.length, "task")}
             </span>
@@ -164,7 +173,7 @@ export function TodayView() {
                   aria-expanded={bulkOpen}
                 >
                   <CalendarIcon size="0.875rem" />
-                  Reschedule {overdueIdList.length}
+                  {t.today.reschedule} {overdueIdList.length}
                 </button>
 
                 {bulkOpen && (
@@ -197,9 +206,15 @@ export function TodayView() {
 
           <div className={styles.blocks}>
             {blocks.map(({ block, items, minutes }) => (
-              <section key={block.key} className={styles.block}>
+              <Droppable
+                key={block.key}
+                as="section"
+                id={dropId.block(today, block.key)}
+                target={{ kind: "block", date: today, blockKey: block.key }}
+                className={styles.block}
+              >
                 <div className={styles.blockHead}>
-                  <span className={styles.blockLabel}>{block.label}</span>
+                  <span className={styles.blockLabel}>{t.today[block.key]}</span>
                   <span className={styles.blockRange}>
                     {formatClock(items[0].start)} &ndash;{" "}
                     {formatClock(items[items.length - 1].end)}
@@ -240,11 +255,12 @@ export function TodayView() {
                         onMenuOpenChange={(next) =>
                           setMenuTaskId(next ? task.id : null)
                         }
+                        draggable
                       />
                     );
                   })}
                 </ol>
-              </section>
+              </Droppable>
             ))}
           </div>
         </section>
@@ -253,9 +269,9 @@ export function TodayView() {
       {deferred.length > 0 && (
         <section className={view.section}>
           <div className={view.sectionHead}>
-            <h2 className={view.sectionLabel}>Deferred</h2>
+            <h2 className={view.sectionLabel}>{t.today.deferred}</h2>
             <span className={view.sectionMeta}>
-              {deferred.length} · parked for tomorrow
+              {deferred.length} · {t.today.parkedForTomorrow}
             </span>
           </div>
 
@@ -281,13 +297,27 @@ export function TodayView() {
                     className={styles.moveButton}
                     onClick={() => moveToToday(task.id)}
                   >
-                    Move to today
+                    {t.today.moveToToday}
                   </button>
                 </div>
               </li>
             ))}
           </ul>
         </section>
+      )}
+
+      {/* Appears only mid-drag. Dropping a today task here parks it on tomorrow
+          — the "drop to postpone" gesture, made explicit rather than requiring
+          a trip to Upcoming's week strip. */}
+      {dragActive && (
+        <Droppable
+          id={dropId.tomorrow}
+          target={{ kind: "tomorrow" }}
+          className={styles.postpone}
+        >
+          <CalendarIcon size="1rem" />
+          <span>{t.today.postponeToTomorrow}</span>
+        </Droppable>
       )}
     </div>
   );

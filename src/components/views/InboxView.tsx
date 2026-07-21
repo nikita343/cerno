@@ -1,10 +1,12 @@
 "use client";
 
-import { PlusIcon } from "@/components/icons";
+import { useState } from "react";
+
 import { SmartAddBar } from "@/components/task/SmartAddBar";
-import { TaskChip } from "@/components/task/TaskChip";
+import { TaskRow } from "@/components/task/TaskRow";
 import { pluralize } from "@/lib/format";
 import { inboxTasks } from "@/store/createAppStore";
+import { useT } from "@/lib/i18n";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import { EmptyState } from "./EmptyState";
@@ -13,10 +15,13 @@ import view from "./View.module.css";
 
 export function InboxView() {
   const today = useAppStore((s) => s.today);
+  const t = useT();
   const tasks = useAppStoreShallow((s) => inboxTasks(s.tasks));
   const lastDump = useAppStore((s) => s.dumps[0]);
   const completeTask = useAppStore((s) => s.completeTask);
   const moveToToday = useAppStore((s) => s.moveToToday);
+  const deleteTask = useAppStore((s) => s.deleteTask);
+  const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
   const openCapture = useAppStore((s) => s.openCapture);
 
   const fromLastDump = lastDump
@@ -55,36 +60,40 @@ export function InboxView() {
           {tasks.map((task) => {
             const onToday = task.status === "today" && task.plan_date === today;
             return (
-              <li key={task.id} className={styles.row}>
-                <div className={styles.chipWrap}>
-                  {/* Reasoning is always visible here — Inbox is where you
-                      check Cerno's thinking. */}
-                  <TaskChip
-                    task={task}
-                    today={today}
-                    showReasoning
-                    onToggleComplete={() => void completeTask(task.id)}
-                  />
-                </div>
-                <div className={styles.actions}>
-                  {/* Completing moved onto the card's checkbox; what remains
-                      here is the action unique to Inbox — placing the task. */}
+              <TaskRow
+                key={task.id}
+                task={task}
+                today={today}
+                // Inbox tasks have no day, so there is no clock to show.
+                clock={null}
+                // Inbox is where you check Cerno's thinking, so the reasoning
+                // stays visible here and nowhere else.
+                showReasoning
+                onToggle={() => void completeTask(task.id)}
+                onDelete={(id) => void deleteTask(id)}
+                menuOpen={menuTaskId === task.id}
+                onMenuOpenChange={(next) =>
+                  setMenuTaskId(next ? task.id : null)
+                }
+                // Labelled, not a bare "+". The icon gave no clue what it did
+                // and read as "add something", when it actually schedules the
+                // task — the one action this screen exists for.
+                // Drag an inbox item onto a day in Upcoming, a time block in
+                // Today, or the Today tab — the labelled button is the one-tap
+                // path, the drag is the "put it exactly there" path.
+                draggable
+                action={
                   <button
                     type="button"
-                    className={styles.iconButton}
+                    className={styles.todayButton}
                     data-on={onToday || undefined}
                     onClick={() => moveToToday(task.id)}
                     disabled={onToday}
-                    aria-label={
-                      onToday
-                        ? `"${task.title}" is already on today`
-                        : `Add "${task.title}" to today`
-                    }
                   >
-                    <PlusIcon size="1rem" />
+                    {onToday ? t.inbox.onToday : t.inbox.addToToday}
                   </button>
-                </div>
-              </li>
+                }
+              />
             );
           })}
         </ul>

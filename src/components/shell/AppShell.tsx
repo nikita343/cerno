@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 
 import { CaptureOverlay } from "@/components/capture/CaptureOverlay";
+import { TaskDndProvider } from "@/components/dnd/TaskDndProvider";
 import { CheckoutReturn } from "@/components/views/CheckoutReturn";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { LanguageOnboarding } from "@/components/onboarding/LanguageOnboarding";
@@ -36,16 +37,21 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.shell}>
-      <Sidebar />
+      {/* Wraps the sidebar, the content and the tab bar in one drag context, so
+          a task can be dragged from the timeline onto a day, a time block, or a
+          tab — the tab bar and sidebar are drop targets, not just navigation. */}
+      <TaskDndProvider>
+        <Sidebar />
 
-      <div className={styles.main}>
-        <MobileTopBar />
-        <main className={styles.content} id="main">
-          <PageTransition>{children}</PageTransition>
-        </main>
-        {!captureOpen && <Fab />}
-        <MobileTabBar />
-      </div>
+        <div className={styles.main}>
+          <MobileTopBar />
+          <main className={styles.content} id="main">
+            <PageTransition>{children}</PageTransition>
+          </main>
+          {!captureOpen && <Fab />}
+          <MobileTabBar />
+        </div>
+      </TaskDndProvider>
 
       <CaptureOverlay />
       <SettingsMenuOverlay />

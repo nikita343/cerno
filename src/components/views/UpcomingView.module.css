@@ -100,6 +100,14 @@
   border-color: var(--border-strong);
 }
 
+/* A dragged task is over this day. The strong tint reads at a glance even
+   though the chip is small — the whole point of the strip target is dropping
+   onto a day too far out to have its section on screen. */
+.day[data-drop-over] {
+  background: color-mix(in srgb, var(--accent, var(--text)) 12%, var(--surface));
+  border-color: var(--accent, var(--text));
+}
+
 .dayLetter {
   font-size: 0.6875rem;
   font-weight: 600;
@@ -151,6 +159,17 @@
   flex-direction: column;
   gap: 0.6875rem;
   scroll-margin-top: 1rem;
+  border-radius: 0.75rem;
+  outline: 1.5px dashed transparent;
+  outline-offset: 0.5rem;
+  transition: outline-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+/* A dragged task is over this day's whole agenda — the larger, more forgiving
+   of a day's two drop targets. */
+.group[data-drop-over] {
+  outline-color: var(--accent, var(--text));
+  background: color-mix(in srgb, var(--accent, var(--text)) 5%, transparent);
 }
 
 .groupHead {

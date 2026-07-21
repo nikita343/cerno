@@ -12,11 +12,25 @@ import {
   SearchIcon,
   UsersIcon,
 } from "@/components/icons";
+import { dropId, type DropTarget } from "@/components/dnd/dropTarget";
+import { useDropZone } from "@/components/dnd/useDrag";
 import { useT } from "@/lib/i18n";
 import { NAV_ITEMS, screenFromPath, TAB_ORDER } from "@/lib/nav";
 import type { ScreenKey } from "@/lib/types";
 
 import styles from "./MobileTabBar.module.css";
+
+/**
+ * Which tabs accept a dropped task, and what dropping means.
+ *
+ * Today pulls the task onto the current day; Inbox strips its day and sends it
+ * back to unscheduled. The other tabs aren't drop targets — "Upcoming" has no
+ * single day to mean, and Filters/Search/Workspaces have nothing to drop onto.
+ */
+const TAB_DROP: Partial<Record<ScreenKey, { id: string; target: DropTarget }>> = {
+  today: { id: dropId.today, target: { kind: "today" } },
+  inbox: { id: dropId.inbox, target: { kind: "inbox" } },
+};
 
 const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
   search: SearchIcon,
@@ -44,23 +58,57 @@ export function MobileTabBar() {
       {TAB_ORDER.map((key) => {
         const item = NAV_ITEMS.find((n) => n.key === key);
         if (!item) return null;
-        const Icon = NAV_ICONS[key];
-        const active = current === key;
-
         return (
-          <Link
+          <TabLink
             key={key}
+            tabKey={key}
             href={item.href}
-            className={styles.tab}
-            data-active={active || undefined}
-            aria-current={active ? "page" : undefined}
-          >
-            <Icon size="1.375rem" />
-            <span>{navLabel(t, item.key, true)}</span>
-          </Link>
+            label={navLabel(t, key, true)}
+            active={current === key}
+          />
         );
       })}
     </nav>
+  );
+}
+
+/**
+ * One tab, which is also a drop target for the two tabs that can accept a task.
+ *
+ * The drop hook is always called (hooks can't be conditional) but `disabled`
+ * for the tabs that aren't targets, so only Today and Inbox light up and only
+ * they resolve a drop.
+ */
+function TabLink({
+  tabKey,
+  href,
+  label,
+  active,
+}: {
+  tabKey: ScreenKey;
+  href: string;
+  label: string;
+  active: boolean;
+}) {
+  const Icon = NAV_ICONS[tabKey];
+  const config = TAB_DROP[tabKey];
+  const drop = useDropZone(
+    config?.id ?? `tab:${tabKey}`,
+    config?.target ?? { kind: "today" },
+    !config,
+  );
+
+  return (
+    <Link
+      {...drop}
+      href={href}
+      className={styles.tab}
+      data-active={active || undefined}
+      aria-current={active ? "page" : undefined}
+    >
+      <Icon size="1.375rem" />
+      <span>{label}</span>
+    </Link>
   );
 }
 

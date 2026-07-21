@@ -138,14 +138,39 @@ export function eyebrowDate(iso: string): string {
  * Heading for an Upcoming day group: "Today" / "Tomorrow" / weekday name for
  * the next week, then "Jul 28" beyond that.
  */
-export function relativeDayTitle(iso: string, today: string): string {
+export function relativeDayTitle(
+  iso: string,
+  today: string,
+  /**
+   * Translations for the three relative days.
+   *
+   * Passed in rather than imported: this module is used outside React — by the
+   * iCal serialiser and by tests — where a hook can't be called. Callers inside
+   * a component pass `t.date`; everything else gets English.
+   */
+  labels: RelativeDayLabels = EN_RELATIVE_DAYS,
+): string {
   const delta = daysBetween(today, iso);
-  if (delta === 0) return "Today";
-  if (delta === 1) return "Tomorrow";
-  if (delta === -1) return "Yesterday";
+  if (delta === 0) return labels.today;
+  if (delta === 1) return labels.tomorrow;
+  if (delta === -1) return labels.yesterday;
+  // Weekday and month names come from Intl and are already localised by the
+  // browser, so they need no dictionary of their own.
   if (delta > 1 && delta < 7) return dayName(iso);
   return monthDay(iso);
 }
+
+export interface RelativeDayLabels {
+  today: string;
+  tomorrow: string;
+  yesterday: string;
+}
+
+const EN_RELATIVE_DAYS: RelativeDayLabels = {
+  today: "Today",
+  tomorrow: "Tomorrow",
+  yesterday: "Yesterday",
+};
 
 /** Sub-line beside the group heading — never repeats the title. */
 export function relativeDaySub(iso: string, today: string): string {

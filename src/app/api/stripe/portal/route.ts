@@ -50,7 +50,10 @@ export async function POST() {
   try {
     const session = await stripe().billingPortal.sessions.create({
       customer: data.stripe_customer_id,
-      return_url: `${siteUrl()}/dashboard/settings`,
+      // Back to where they left from. Same reason as the checkout URLs: the
+      // settings index says nothing about billing, so returning there after
+      // cancelling a subscription reads as "did that work?".
+      return_url: `${siteUrl()}/dashboard/settings/plan`,
     });
     return NextResponse.json({ url: session.url });
   } catch (error) {

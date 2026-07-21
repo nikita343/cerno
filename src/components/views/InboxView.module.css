@@ -73,3 +73,40 @@
     justify-content: flex-end;
   }
 }
+
+/* "Add to today", the action this screen exists for. Text, not an icon: the
+   bare "+" it replaces read as "create something" when it actually schedules
+   the task you are looking at. */
+.todayButton {
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  border-radius: var(--r-tile);
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.todayButton:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Already scheduled — inert rather than hidden, so the row doesn't reflow the
+   moment you use it and you can see the action took effect. */
+.todayButton:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .todayButton {
+    padding: 0.4375rem 0.75rem;
+  }
+}

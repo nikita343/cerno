@@ -49,3 +49,10 @@
   color: var(--text);
   font-weight: 600;
 }
+
+/* A dragged task is over this tab — only Today and Inbox ever light up. The
+   filled tint reads as a target even at the tab bar's small scale. */
+.tab[data-drop-over] {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent, var(--text)) 14%, transparent);
+}

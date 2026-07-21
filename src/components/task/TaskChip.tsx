@@ -3,6 +3,7 @@
 import { AlertIcon, CheckIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
 
+import { useT } from "@/lib/i18n";
 import { labelColor } from "@/lib/labels";
 import type { Task } from "@/lib/types";
 import { useAppStoreShallow } from "@/store/StoreProvider";
@@ -41,11 +42,7 @@ export interface TaskChipProps {
   workspaceName?: string | null;
 }
 
-const PRIORITY_LABEL: Record<Task["priority"], string> = {
-  high: "High",
-  medium: "Med",
-  low: "Low",
-};
+
 
 /**
  * The atomic task row. Everything else composes this.
@@ -69,6 +66,15 @@ export function TaskChip({
   // than look them up in a constant. Subscribed shallowly: a recolour should
   // repaint the dot, but an unrelated store change should not.
   const labels = useAppStoreShallow((s) => s.labels);
+  const t = useT();
+
+  // Built per render rather than as a module constant, because the labels are
+  // translated and a constant would freeze whichever language loaded first.
+  const priorityLabel: Record<Task["priority"], string> = {
+    high: t.today.high,
+    medium: t.today.medium,
+    low: t.today.low,
+  };
 
   const isDone = done ?? task.status === "done";
   const isHigh = task.priority === "high" && !isDone;
@@ -115,7 +121,7 @@ export function TaskChip({
         {isOverdue && (
           <span className={styles.overdue} title="Past its scheduled time">
             <AlertIcon size="0.75rem" />
-            Overdue
+            {t.today.overdue}
           </span>
         )}
 
@@ -125,7 +131,7 @@ export function TaskChip({
             data-priority={task.priority}
             data-done={isDone || undefined}
           >
-            {PRIORITY_LABEL[task.priority]}
+            {priorityLabel[task.priority]}
           </span>
         )}
 
@@ -138,7 +144,7 @@ export function TaskChip({
 
         {task.deadline && (
           <span className={styles.pill}>
-            due {deadlineLabel(task.deadline, today)}
+            {t.today.due} {deadlineLabel(task.deadline, today)}
           </span>
         )}
 
