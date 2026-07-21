@@ -4,7 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
-import { BellIcon, GlobeIcon, SparkIcon, UploadIcon, UserIcon } from "@/components/icons";
+import {
+  BellIcon,
+  CalendarIcon,
+  GlobeIcon,
+  SparkIcon,
+  UploadIcon,
+  UserIcon,
+} from "@/components/icons";
 import { AVATAR_MAX_BYTES } from "@/lib/supabase/data";
 import {
   browserTimezone,
@@ -262,6 +269,19 @@ export function SettingsView() {
         </div>
       </section>
 
+      {/* -------------------------------------------------------- calendar */}
+
+      <section className={view.section}>
+        <SectionHead
+          Icon={CalendarIcon}
+          label="Calendar feed"
+          note="Subscribe from Google, Apple or Outlook"
+        />
+        <div className={styles.card}>
+          <CalendarFeed />
+        </div>
+      </section>
+
       {/* ------------------------------------------------------------- model */}
 
       <section className={view.section}>
@@ -294,6 +314,126 @@ export function SettingsView() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * The iCal subscribe URL.
+ *
+ * Treated as a credential throughout: it is hidden until revealed, the copy
+ * action is the primary affordance rather than reading it off the screen, and
+ * the warning about what the link exposes sits next to the button that hands it
+ * out — not buried in docs nobody opens.
+ */
+function CalendarFeed() {
+  const feedToken = useAppStore((s) => s.settings.feed_token);
+  const rotateFeedToken = useAppStore((s) => s.rotateFeedToken);
+
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  // Built in the browser: the origin is whatever host the user is actually on,
+  // so this works on localhost, a preview deploy and the real domain without
+  // any configuration.
+  const url = feedToken
+    ? `${typeof window === "undefined" ? "" : window.location.origin}/api/calendar/${feedToken}`
+    : "";
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard access can be refused (insecure origin, permissions).
+      // Revealing the URL lets the user select it by hand instead.
+      setRevealed(true);
+    }
+  };
+
+  if (!feedToken) {
+    return (
+      <div className={styles.field}>
+        <span className={styles.fieldNote}>
+          Creates a private link your calendar app can subscribe to. Your
+          scheduled tasks appear as events, updated automatically.
+        </span>
+        <button
+          type="button"
+          className={styles.uploadButton}
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            await rotateFeedToken(true);
+            setBusy(false);
+          }}
+        >
+          <CalendarIcon size="1rem" />
+          Create feed link
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.field}>
+      <span className={styles.fieldLabel}>Your private feed URL</span>
+
+      <div className={styles.feedRow}>
+        <input
+          className={styles.input}
+          value={revealed ? url : url.replace(/\/[^/]+$/, "/••••••••")}
+          readOnly
+          onFocus={(e) => e.currentTarget.select()}
+          aria-label="Calendar feed URL"
+        />
+        <button
+          type="button"
+          className={styles.feedAction}
+          onClick={() => setRevealed(!revealed)}
+        >
+          {revealed ? "Hide" : "Show"}
+        </button>
+        <button type="button" className={styles.feedAction} onClick={copy}>
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+
+      <span className={styles.fieldNote}>
+        <strong>Anyone with this link can read your task titles</strong> without
+        signing in. Don&rsquo;t post it anywhere public. If it leaks, regenerate
+        it — the old link stops working immediately.
+      </span>
+
+      <div className={styles.feedRow}>
+        <button
+          type="button"
+          className={styles.feedAction}
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            await rotateFeedToken(true);
+            setRevealed(false);
+            setBusy(false);
+          }}
+        >
+          Regenerate
+        </button>
+        <button
+          type="button"
+          className={`${styles.feedAction} ${styles.feedDanger}`}
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            await rotateFeedToken(false);
+            setBusy(false);
+          }}
+        >
+          Turn off
+        </button>
+      </div>
     </div>
   );
 }

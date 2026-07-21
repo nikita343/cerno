@@ -38,8 +38,6 @@
   position: fixed;
   inset: 0;
   background: var(--scrim-menu);
-  -webkit-backdrop-filter: blur(var(--scrim-blur));
-  backdrop-filter: blur(var(--scrim-blur));
   z-index: 60;
   animation: cernoFadeIn var(--dur) var(--ease);
 }
@@ -59,7 +57,12 @@
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
-  background: var(--surface);
+  /* Glass: translucent surface + blurred backdrop, so the page shows through
+     rather than the card sitting on an opaque sheet. The saturation lift keeps
+     the blurred content from going grey. */
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: var(--hairline) solid var(--border-menu);
   border-radius: var(--r-card);
   animation: cernoCardIn var(--dur-slow) var(--ease-out);
@@ -257,9 +260,11 @@
   }
 
   /* The date panel supplies its own surface on desktop, where the wrapper is
-     transparent. As a sheet it needs the wrapper's surface back. */
+     transparent. As a sheet it needs the wrapper's glass back. */
   .pop[data-wide] {
-    background: var(--surface);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
     border: var(--hairline) solid var(--border-menu);
     border-bottom: none;
     overflow: auto;

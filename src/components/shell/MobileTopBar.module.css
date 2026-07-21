@@ -1,11 +1,20 @@
+/* The profile pill sits left, the bell hard right. They were adjacent, which
+   left the bell floating mid-bar with dead space beside it — and on a tablet
+   that gap is wide enough to read as a mistake. */
 .bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.625rem;
   padding: 0.625rem 1.125rem 0.75rem;
   padding-top: calc(0.625rem + env(safe-area-inset-top));
   flex: none;
   background: var(--bg);
+}
+
+/* Keeps the pill from stretching to fill the space it now has. */
+.profile {
+  flex: none;
 }
 
 /* Desktop uses the sidebar profile chip instead. */

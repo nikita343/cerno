@@ -167,6 +167,13 @@ export interface UserSettings {
   /** Overrides the name derived from the auth profile. */
   display_name: string | null;
   avatar_url: string | null;
+  /**
+   * Secret token for the iCal feed, or null when no feed exists.
+   *
+   * This is a credential, not an identifier: anyone holding it can read every
+   * task title without signing in. Regenerating it revokes the old URL.
+   */
+  feed_token: string | null;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -177,6 +184,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   reminders_enabled: true,
   display_name: null,
   avatar_url: null,
+  feed_token: null,
 };
 
 /* ------------------------------------------------------- notifications */

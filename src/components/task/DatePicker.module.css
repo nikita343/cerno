@@ -1,7 +1,12 @@
 .picker {
   width: 17.5rem;
   max-width: calc(100vw - 2rem);
-  background: var(--surface);
+  /* Glass: translucent surface + blurred backdrop, so the page shows through
+     rather than the card sitting on an opaque sheet. The saturation lift keeps
+     the blurred content from going grey. */
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: var(--hairline) solid var(--border-menu);
   border-radius: var(--r-card);
   overflow: hidden;
@@ -242,6 +247,11 @@
     border: none;
     border-radius: 0;
     background: transparent;
+    /* The sheet wrapper already blurs. A second backdrop-filter here would
+       blur the wrapper's own glass again — visibly muddier, and a wasted
+       compositing layer. */
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   .calendar {

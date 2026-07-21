@@ -163,6 +163,7 @@ export interface UserSettingsRow {
   reminders_enabled: boolean;
   display_name: string | null;
   avatar_url: string | null;
+  feed_token: string | null;
   updated_at: string;
 }
 
@@ -183,6 +184,7 @@ export function toSettings(row: Partial<UserSettingsRow> | null): UserSettings {
       row.reminders_enabled ?? DEFAULT_SETTINGS.reminders_enabled,
     display_name: row.display_name ?? null,
     avatar_url: row.avatar_url ?? null,
+    feed_token: row.feed_token ?? null,
   };
 }
 

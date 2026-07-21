@@ -131,6 +131,13 @@ export interface AppActions {
   /* settings */
   updateSettings: (patch: Partial<UserSettings>) => Promise<void>;
   uploadAvatarFile: (file: File) => Promise<void>;
+  /**
+   * Mints a new calendar feed token, or clears it.
+   *
+   * Regenerating is also how you revoke: the old URL stops resolving the moment
+   * the new token is written, because the lookup is by exact token.
+   */
+  rotateFeedToken: (enabled: boolean) => Promise<void>;
 
   /* reminders */
   setNowMinutes: (minutes: number) => void;
@@ -665,6 +672,24 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
 
         try {
           await saveSettings(db, patch, userId);
+        } catch {
+          set({ settings: previous, syncError: SYNC_FAILED });
+        }
+      },
+
+      rotateFeedToken: async (enabled) => {
+        // Generated client-side with crypto.randomUUID so the value never has
+        // to round-trip before the URL can be shown.
+        const feed_token = enabled ? newId() : null;
+        const previous = get().settings;
+        set({ settings: { ...previous, feed_token }, syncError: null });
+
+        const db = getDb();
+        const userId = initial.userId;
+        if (!db || !userId) return;
+
+        try {
+          await saveSettings(db, { feed_token }, userId);
         } catch {
           set({ settings: previous, syncError: SYNC_FAILED });
         }

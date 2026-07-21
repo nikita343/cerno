@@ -2,10 +2,6 @@
   position: fixed;
   inset: 0;
   background: var(--scrim-menu);
-  /* Frosted, not merely dimmed. Prefixed for Safari, which still
-     requires -webkit- for backdrop-filter. */
-  -webkit-backdrop-filter: blur(var(--scrim-blur));
-  backdrop-filter: blur(var(--scrim-blur));
   z-index: 40;
   animation: cernoFadeIn var(--dur) var(--ease);
 }
@@ -18,7 +14,12 @@
   left: 1rem;
   width: 18.375rem;
   max-width: calc(100vw - 2rem);
-  background: var(--surface);
+  /* Glass: translucent surface + blurred backdrop, so the page shows through
+     rather than the card sitting on an opaque sheet. The saturation lift keeps
+     the blurred content from going grey. */
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: var(--hairline) solid var(--border-menu);
   border-radius: var(--r-card);
   padding: 0.4375rem;

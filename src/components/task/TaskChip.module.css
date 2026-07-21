@@ -15,12 +15,12 @@
     box-shadow var(--dur) var(--ease);
 }
 
-/* Overdue is marked with a left edge rather than a full tint: the badge already
-   states it, and colouring the whole surface would fight the priority dot and
-   the label pill for the same attention. */
+/* Overdue tints the whole card rather than drawing a hard edge on it. The wash
+   is deliberately weak — it has to register while scanning without turning the
+   row into a warning banner, and the OVERDUE badge is what states it outright. */
 .chip[data-overdue] {
-  border-color: var(--overdue);
-  box-shadow: inset 0.1875rem 0 0 var(--overdue);
+  background: var(--overdue-soft);
+  border-color: color-mix(in srgb, var(--overdue) 22%, transparent);
 }
 
 .chip[data-interactive] {

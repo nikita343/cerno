@@ -333,3 +333,55 @@
     transition-duration: 0.01ms;
   }
 }
+
+/* ---------------------------------------------------------- calendar feed */
+
+.feedRow {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.feedRow .input {
+  /* The URL is long and monospaced digits scan better when it is revealed. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+}
+
+.feedAction {
+  flex: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-button);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.feedAction:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.feedAction:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.feedDanger {
+  color: var(--overdue);
+}
+
+.feedDanger:hover:not(:disabled) {
+  background: var(--overdue-soft);
+  border-color: var(--overdue);
+  color: var(--overdue);
+}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/components/icons";
 import { DayAddTask } from "@/components/task/DayAddTask";
+import { SwipeRow } from "@/components/task/SwipeRow";
 import { TaskChip } from "@/components/task/TaskChip";
 import { TaskMenu } from "@/components/task/TaskMenu";
 import {
@@ -15,6 +16,7 @@ import {
   weekDates,
 } from "@/lib/date";
 import { totalDuration } from "@/lib/format";
+import type { Task } from "@/lib/types";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { tasksOn } from "@/store/createAppStore";
@@ -33,6 +35,15 @@ export function UpcomingView() {
   const completeTask = useAppStore((s) => s.completeTask);
   const uncompleteTask = useAppStore((s) => s.uncompleteTask);
   const { overdue } = useReminders();
+
+  // Lifted for the same reason as Today: the menu opens from the ⋯, the swipe
+  // tray, and a tap on the card.
+  const [menuTaskId, setMenuTaskId] = useState<string | null>(null);
+
+  const toggle = (task: Task) =>
+    task.status === "done"
+      ? void uncompleteTask(task.id)
+      : void completeTask(task.id);
 
   // Selecting a day scrolls its group into view rather than filtering the
   // agenda down — the week stays readable as context.
@@ -172,19 +183,23 @@ export function UpcomingView() {
                                 </span>
                               )}
                               <div className={styles.rowChip}>
-                                <TaskChip
-                                  task={task}
-                                  today={today}
-                                  // Only today's rows can be overdue — the set
-                                  // is built from today's schedule, so a future
-                                  // day never matches.
-                                  overdue={overdue.has(task.id)}
-                                  onToggleComplete={() =>
-                                    task.status === "done"
-                                      ? void uncompleteTask(task.id)
-                                      : void completeTask(task.id)
-                                  }
-                                />
+                                <SwipeRow
+                                  title={task.title}
+                                  completed={task.status === "done"}
+                                  onComplete={() => toggle(task)}
+                                  onDelete={() => void deleteTask(task.id)}
+                                  onMenu={() => setMenuTaskId(task.id)}
+                                >
+                                  <TaskChip
+                                    task={task}
+                                    today={today}
+                                    // Only today's rows can be overdue — the
+                                    // set is built from today's schedule, so a
+                                    // future day never matches.
+                                    overdue={overdue.has(task.id)}
+                                    onToggleComplete={() => toggle(task)}
+                                  />
+                                </SwipeRow>
                               </div>
                               {/* Rescheduling a future task is the most natural
                                   action on this screen, so the menu belongs
@@ -194,6 +209,10 @@ export function UpcomingView() {
                                   task={task}
                                   today={today}
                                   onDelete={(id) => void deleteTask(id)}
+                                  open={menuTaskId === task.id}
+                                  onOpenChange={(next) =>
+                                    setMenuTaskId(next ? task.id : null)
+                                  }
                                 />
                               </div>
                             </div>
