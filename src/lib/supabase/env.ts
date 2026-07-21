@@ -6,8 +6,15 @@
  * is exactly why the RLS policies in `supabase/migrations/0001_init.sql` are
  * not optional: without them the anon key would be an open door.
  *
- * Never add the service-role key here. It bypasses RLS entirely and must not
- * exist in anything reachable from a `"use client"` module.
+ * Never add the service-role key *here*. It bypasses RLS entirely, and this
+ * module is imported by client components — a value in this file is a value in
+ * the browser bundle.
+ *
+ * There is exactly one place the service-role key legitimately exists:
+ * `./admin.ts`, used only by the Stripe webhook, which has no user session to
+ * derive `auth.uid()` from. That module is fenced with `import "server-only"`
+ * so importing it from client code fails the build. See its header for the
+ * full reasoning before adding a second caller.
  */
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
