@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Avatar } from "@/components/auth/Avatar";
 import { createClient } from "@/lib/supabase/client";
@@ -57,6 +57,7 @@ export function WorkspaceMembers({
   const [copied, setCopied] = useState<string | null>(null);
   /** What just happened, in the admin's terms — sent, or created but not sent. */
   const [notice, setNotice] = useState<string | null>(null);
+  const running = useRef(false);
 
   const seatsLeft = MAX_WORKSPACE_MEMBERS - workspace.member_count;
   const full = seatsLeft <= 0;
@@ -83,6 +84,11 @@ export function WorkspaceMembers({
   }, [refreshInvites]);
 
   const run = async (work: () => Promise<void>) => {
+    // Same reason as NewWorkspaceView: `busy` is state and lags a render, and
+    // `disabled={busy}` lags with it. Creating an invite twice is harmless but
+    // untidy; promoting or removing twice races the server for no reason.
+    if (running.current) return;
+    running.current = true;
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -97,6 +103,7 @@ export function WorkspaceMembers({
       setError(messageFor(caught));
     } finally {
       setBusy(false);
+      running.current = false;
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { isEntitled, MAX_WORKSPACE_MEMBERS } from "@/lib/types";
@@ -26,6 +26,7 @@ export function NewWorkspaceView() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!entitled) {
@@ -52,6 +53,20 @@ export function NewWorkspaceView() {
   const submit = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
+
+    // A ref, not the `busy` state.
+    //
+    // `setBusy(true)` doesn't take effect until the next render, so two calls
+    // in the same tick both sail past a state check — and there are two ways to
+    // fire this: Enter in the name field, and the button. Pressing Enter while
+    // the button also receives the event created two workspaces, which is
+    // exactly what happened. A ref flips synchronously.
+    //
+    // Creating a workspace is not idempotent server-side (each call mints a new
+    // id), so this guard is the only thing preventing duplicates.
+    if (submitting.current) return;
+    submitting.current = true;
+
     setBusy(true);
     setError(null);
     try {
@@ -69,6 +84,9 @@ export function NewWorkspaceView() {
           : "Couldn't create that workspace.",
       );
       setBusy(false);
+      // Only released on failure. On success we navigate away, and re-enabling
+      // would let a double-tap during the transition create a second one.
+      submitting.current = false;
     }
   };
 
