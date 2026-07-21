@@ -6,17 +6,18 @@ import { loadLinkedChats, loadTodaysTasks } from "@/lib/telegram/store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Local hour to send the brief. 8am reads as "start of the day" most places. */
-const BRIEF_HOUR = 8;
-
 /**
  * GET /api/cron/telegram-reminders — the morning brief.
  *
- * Meant to be called hourly by a scheduler (see vercel.json). Rather than fire
- * at one fixed UTC time and reach everyone at odd local hours, it runs every
- * hour and only messages the users for whom it is *locally* ~8am — so the timing
- * is right per timezone, and because it only matches one hour a day there's no
- * need to track "already sent".
+ * Fired once a day by the scheduler (see vercel.json — 06:00 UTC, which is
+ * mid-morning across the EU/Kyiv audience). A single daily fire can't be "8am
+ * everywhere", so it simply messages every linked user who has reminders on and
+ * something planned today, in their own timezone's sense of "today".
+ *
+ * Why once a day and not hourly-with-a-per-timezone-gate: Vercel's Hobby plan
+ * caps cron jobs at once per day, and an hourly schedule fails the deploy. If
+ * this runs on a Pro plan later, an hourly schedule plus a `localHour === 8`
+ * check would restore per-timezone timing — the git history has that version.
  *
  * Guarded by CRON_SECRET: the scheduler sends it as a bearer token, and without
  * a match the route refuses. Otherwise this would be an open endpoint that
@@ -34,7 +35,6 @@ export async function GET(request: Request) {
 
   for (const chat of chats) {
     if (!chat.reminders_enabled) continue;
-    if (localHour(chat.timezone) !== BRIEF_HOUR) continue;
 
     const today = todayIn(chat.timezone);
     const tasks = await loadTodaysTasks(chat.user_id, today);
@@ -59,20 +59,6 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ ok: true, sent });
-}
-
-function localHour(timezone: string): number {
-  try {
-    return Number(
-      new Date().toLocaleString("en-US", {
-        timeZone: timezone,
-        hour: "2-digit",
-        hour12: false,
-      }),
-    );
-  } catch {
-    return new Date().getUTCHours();
-  }
 }
 
 function todayIn(timezone: string): string {

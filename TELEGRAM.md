@@ -86,13 +86,22 @@ there is scoped by `user_id` by hand — see `src/lib/supabase/admin.ts`.
 
 ## The morning brief (cron)
 
-`vercel.json` schedules `/api/cron/telegram-reminders` hourly. It runs every
-hour but only messages users for whom it's locally ~8am, so timing is right per
-timezone without tracking "already sent". Vercel passes `CRON_SECRET` as a
+`vercel.json` schedules `/api/cron/telegram-reminders` once a day at **06:00
+UTC** (mid-morning for the EU/Kyiv audience). It messages every linked user who
+has reminders on and something planned today. Vercel passes `CRON_SECRET` as a
 bearer token; the route refuses without it, so the URL isn't an open trigger.
 
+**Why daily, not hourly:** Vercel's **Hobby** plan caps cron jobs at **once per
+day** — an hourly schedule fails the deployment outright. So the schedule is
+`0 6 * * *`. To move the time, edit that in `vercel.json`.
+
+**On a Pro plan** you can have per-timezone timing: set the schedule to
+`0 * * * *` (hourly) and re-add a `localHour(tz) === 8` gate in the route (it's
+in the git history). Hourly + the gate sends each user their brief at their own
+local 8am.
+
 Nothing else is needed — Vercel picks up the schedule from `vercel.json` on
-deploy. To change the hour, edit `BRIEF_HOUR` in the route.
+deploy.
 
 ## Local testing
 
