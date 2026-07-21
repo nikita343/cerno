@@ -4,12 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CloseIcon, MicIcon } from "@/components/icons";
 import {
-  ensureMicAccess,
-  isSpeechSupported,
-  startDictation,
-  type MicStatus,
-  type SpeechSession,
-} from "@/lib/speech";
+  isRecordingSupported,
+  startRecording,
+  transcribe,
+  VoiceUnavailableError,
+  type RecorderHandle,
+} from "@/lib/recorder";
+import { ensureMicAccess, type MicStatus } from "@/lib/speech";
 import { usePresence } from "@/lib/usePresence";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -33,13 +34,17 @@ export function CaptureOverlay() {
   const submitDump = useAppStore((s) => s.submitDump);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const sessionRef = useRef<SpeechSession | null>(null);
+  const recorderRef = useRef<RecorderHandle | null>(null);
   const dictatedRef = useRef(false);
 
   // Feature detection has to run on the client, so the mic starts hidden and
   // appears after mount where supported. That keeps SSR markup stable.
   const [speechReady, setSpeechReady] = useState(false);
-  useEffect(() => setSpeechReady(isSpeechSupported()), []);
+  useEffect(() => setSpeechReady(isRecordingSupported()), []);
+
+  /** True while audio is uploading and being transcribed. */
+  const [transcribing, setTranscribing] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
   /** Non-null while a mic problem needs explaining. */
   const [micIssue, setMicIssue] = useState<Exclude<MicStatus, "granted"> | null>(
@@ -54,9 +59,10 @@ export function CaptureOverlay() {
   // Keeps the card mounted through its exit animation — see CAPTURE_EXIT_MS.
   const { present, leaving } = usePresence(open, CAPTURE_EXIT_MS);
 
+  /** Discards any in-flight recording and releases the microphone. */
   const stopListening = useCallback(() => {
-    sessionRef.current?.stop();
-    sessionRef.current = null;
+    recorderRef.current?.cancel();
+    recorderRef.current = null;
   }, []);
 
   // Always release the microphone when the overlay goes away.
@@ -90,7 +96,11 @@ export function CaptureOverlay() {
   }, [open, isThinking, closeCapture, submitDump]);
 
   /**
-   * First click starts recording, second click stops it.
+   * First click records, second click stops and transcribes.
+   *
+   * The recording is sent to `/api/transcribe` rather than decoded in the
+   * browser: the Web Speech API this replaced only works properly in Chrome,
+   * and server transcription behaves identically everywhere.
    *
    * Availability is confirmed *before* switching to the listening state, so the
    * mic never appears to be recording when it isn't — a blocked microphone
@@ -98,12 +108,39 @@ export function CaptureOverlay() {
    */
   const toggleMic = async () => {
     if (isListening) {
-      stopListening();
+      const recorder = recorderRef.current;
+      recorderRef.current = null;
       setCaptureMode("ready");
+      if (!recorder) return;
+
+      setTranscribing(true);
+      try {
+        const recording = await recorder.stop();
+        if (!recording) return;
+
+        const text = await transcribe(recording);
+        // Appended, not replaced: a second recording should extend the dump
+        // rather than wipe what was already typed or said.
+        const existing = dumpText.trim();
+        setDumpText(existing ? `${existing} ${text}` : text);
+        dictatedRef.current = true;
+      } catch (error) {
+        // Not configured on the server: hide the mic for the rest of the
+        // session rather than leaving a button that can never succeed.
+        if (error instanceof VoiceUnavailableError) setSpeechReady(false);
+        setVoiceError(
+          error instanceof Error
+            ? error.message
+            : "Couldn't transcribe that. Try again.",
+        );
+      } finally {
+        setTranscribing(false);
+      }
       return;
     }
 
-    if (checkingMic) return;
+    if (checkingMic || transcribing) return;
+    setVoiceError(null);
     setCheckingMic(true);
     const status = await ensureMicAccess();
     setCheckingMic(false);
@@ -113,27 +150,12 @@ export function CaptureOverlay() {
       return;
     }
 
-    const session = startDictation({
-      onTranscript: (text) => setDumpText(text),
-      onEnd: () => {
-        sessionRef.current = null;
-        setCaptureMode("ready");
-      },
-      onError: () => {
-        sessionRef.current = null;
-        setCaptureMode("ready");
-        setMicIssue("unavailable");
-      },
-    });
-
-    if (!session) {
-      setSpeechReady(false);
-      return;
+    try {
+      recorderRef.current = await startRecording();
+      setCaptureMode("listening");
+    } catch {
+      setMicIssue("unavailable");
     }
-
-    dictatedRef.current = true;
-    sessionRef.current = session;
-    setCaptureMode("listening");
   };
 
   const handlePlan = () => {
@@ -212,6 +234,12 @@ export function CaptureOverlay() {
               {planError}
             </p>
           )}
+
+          {voiceError && !isThinking && (
+            <p className={styles.error} role="alert">
+              {voiceError}
+            </p>
+          )}
         </div>
 
         <div className={styles.footer}>
@@ -220,9 +248,9 @@ export function CaptureOverlay() {
               type="button"
               className={styles.mic}
               data-listening={isListening || undefined}
-              data-checking={checkingMic || undefined}
+              data-checking={checkingMic || transcribing || undefined}
               onClick={() => void toggleMic()}
-              disabled={isThinking || checkingMic}
+              disabled={isThinking || checkingMic || transcribing}
               aria-label={
                 isListening ? "Stop recording" : "Record your dump"
               }
@@ -241,7 +269,20 @@ export function CaptureOverlay() {
                 <span className={styles.bar} />
                 <span className={styles.bar} />
               </span>
-              <span className={styles.listeningText}>Listening…</span>
+              <span className={styles.listeningText}>
+                Recording — tap the mic to stop
+              </span>
+            </div>
+          )}
+
+          {transcribing && (
+            <div className={styles.listening} aria-live="polite">
+              <span className={styles.dots} aria-hidden="true">
+                <span className={styles.thinkDot} />
+                <span className={styles.thinkDot} />
+                <span className={styles.thinkDot} />
+              </span>
+              <span className={styles.listeningText}>Transcribing…</span>
             </div>
           )}
 

@@ -7,7 +7,14 @@
   touch-action: pan-y;
 }
 
-/* Right-anchored: the row slides left off the top of it. */
+/* Right-anchored: the row slides left off the top of it.
+ *
+ * Hidden outright while closed rather than merely covered by the card. It used
+ * to rely on the card being opaque, which quietly broke the moment overdue rows
+ * gained a translucent tint — the buttons showed through every one of them.
+ * `visibility` rather than `display` because the tray still has to be
+ * measurable: its width is what the swipe snaps to.
+ */
 .tray {
   position: absolute;
   inset: 0 0 0 auto;
@@ -15,6 +22,11 @@
   align-items: stretch;
   gap: 0.375rem;
   padding-left: 0.375rem;
+  visibility: hidden;
+}
+
+.wrap[data-open] .tray {
+  visibility: visible;
 }
 
 .action {

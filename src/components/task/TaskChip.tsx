@@ -2,7 +2,7 @@
 
 import { AlertIcon, CheckIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
-import { taskDuration } from "@/lib/format";
+
 import { labelColor } from "@/lib/labels";
 import type { Task } from "@/lib/types";
 import { useAppStoreShallow } from "@/store/StoreProvider";
@@ -120,7 +120,12 @@ export function TaskChip({
           </span>
         )}
 
-        <span className={styles.time}>{taskDuration(task.estimated_minutes)}</span>
+        {/* The per-task estimate is deliberately not shown. It is a guess, and
+            printing "90 min" next to every row gives it a precision it hasn't
+            earned. The number still drives the timeline — it is what lays tasks
+            onto the clock — it just isn't presented as fact. The block and day
+            totals remain, because "does this fit" is the question the estimate
+            is actually good enough to answer. */}
 
         {task.deadline && (
           <span className={styles.pill}>

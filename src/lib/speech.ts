@@ -1,56 +1,14 @@
 /**
- * Web Speech API wrapper.
+ * Microphone permission.
  *
- * `SpeechRecognition` is not in the DOM lib types and is still prefixed in
- * WebKit, so the surface is typed narrowly here rather than pulling in a
- * dependency. Everything is feature-detected — where it is unsupported the mic
- * button is hidden entirely and text input still works (DEVELOPMENT.md §8).
+ * Recording and transcription live in `lib/recorder.ts`; this file is only the
+ * permission handshake, which both paths need.
+ *
+ * The Web Speech API wrapper that used to live here is gone. It worked
+ * properly only in Chrome — Firefox has no `SpeechRecognition` at all and
+ * Safari's is unreliable — so dictation now records audio and transcribes it
+ * server-side, which behaves the same everywhere.
  */
-
-interface SpeechRecognitionAlternativeLike {
-  transcript: string;
-}
-
-interface SpeechRecognitionResultLike {
-  readonly length: number;
-  isFinal: boolean;
-  [index: number]: SpeechRecognitionAlternativeLike;
-}
-
-interface SpeechRecognitionEventLike {
-  resultIndex: number;
-  results: {
-    readonly length: number;
-    [index: number]: SpeechRecognitionResultLike;
-  };
-}
-
-export interface SpeechRecognitionLike {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-}
-
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function getConstructor(): SpeechRecognitionCtor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-export function isSpeechSupported(): boolean {
-  return getConstructor() !== null;
-}
 
 /* -------------------------------------------------------------------------- */
 /* Microphone availability                                                    */
@@ -124,102 +82,3 @@ export async function ensureMicAccess(): Promise<MicStatus> {
 /* -------------------------------------------------------------------------- */
 /* Dictation session                                                          */
 /* -------------------------------------------------------------------------- */
-
-export interface SpeechSession {
-  stop: () => void;
-}
-
-/**
- * Starts dictation and keeps it running until `stop()` is called.
- *
- * Browsers end a recognition run on their own after a pause in speech, which
- * would make recording stop halfway through a thought. To honour
- * click-to-start / click-to-stop, an `onend` that we did not ask for restarts
- * recognition transparently; only `stop()` ends the session for good.
- *
- * `onTranscript` receives the full text so far — committed results plus the
- * current interim guess — so the caller can just assign it.
- */
-export function startDictation({
-  onTranscript,
-  onEnd,
-  onError,
-  lang = "en-US",
-}: {
-  onTranscript: (text: string, isFinal: boolean) => void;
-  onEnd?: () => void;
-  onError?: (error: string) => void;
-  lang?: string;
-}): SpeechSession | null {
-  const Ctor = getConstructor();
-  if (!Ctor) return null;
-
-  let committed = "";
-  let stopped = false;
-  let recognition: SpeechRecognitionLike | null = null;
-
-  const build = (): SpeechRecognitionLike => {
-    const instance = new Ctor();
-    instance.continuous = true;
-    instance.interimResults = true;
-    instance.lang = lang;
-
-    instance.onresult = (event) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        const text = result[0]?.transcript ?? "";
-        if (result.isFinal) {
-          committed += text;
-        } else {
-          interim += text;
-        }
-      }
-      onTranscript((committed + interim).trimStart(), interim === "");
-    };
-
-    instance.onerror = (event) => {
-      // `no-speech` fires during ordinary pauses and `aborted` on our own
-      // stop() — neither is a failure worth surfacing. Anything else ends
-      // the session so the caller can reset the UI.
-      if (event.error === "no-speech" || event.error === "aborted") return;
-      stopped = true;
-      onError?.(event.error);
-    };
-
-    instance.onend = () => {
-      if (stopped) {
-        onEnd?.();
-        return;
-      }
-      // The browser gave up on a silence — pick straight back up.
-      try {
-        recognition = build();
-        recognition.start();
-      } catch {
-        stopped = true;
-        onEnd?.();
-      }
-    };
-
-    return instance;
-  };
-
-  try {
-    recognition = build();
-    recognition.start();
-  } catch {
-    return null;
-  }
-
-  return {
-    stop: () => {
-      stopped = true;
-      try {
-        recognition?.stop();
-      } catch {
-        /* already stopped */
-      }
-    },
-  };
-}

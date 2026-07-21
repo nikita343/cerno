@@ -17,10 +17,15 @@
 
 /* Overdue tints the whole card rather than drawing a hard edge on it. The wash
    is deliberately weak — it has to register while scanning without turning the
-   row into a warning banner, and the OVERDUE badge is what states it outright. */
+   row into a warning banner, and the OVERDUE badge is what states it outright.
+
+   `color-mix` against --surface rather than the translucent --overdue-soft, and
+   that matters: the card sits on top of the swipe tray, so any transparency
+   here lets the Done/More/Delete buttons show straight through an overdue row.
+   The fill must be opaque. */
 .chip[data-overdue] {
-  background: var(--overdue-soft);
-  border-color: color-mix(in srgb, var(--overdue) 22%, transparent);
+  background: color-mix(in srgb, var(--overdue) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--overdue) 22%, var(--border));
 }
 
 .chip[data-interactive] {
