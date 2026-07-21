@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import * as z from "zod";
 
-import { describeError, DEFAULT_MODEL, getClient } from "@/lib/ai/client";
+import { describeError } from "@/lib/ai/client";
+import { generateStructured } from "@/lib/ai/generate";
 import { planSystemPrompt, planUserPrompt } from "@/lib/ai/prompt";
 import { buildPlanResponseSchema, type PlannedTask } from "@/lib/ai/schema";
 import { addDays, todayISO } from "@/lib/date";
@@ -12,6 +12,7 @@ import { buildPlan } from "@/lib/planner";
 import { insertDump, upsertDayPlan, upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
+  loadModelChoice,
   resolveRequestUser,
   type RequestUser,
 } from "@/lib/supabase/request";
@@ -68,16 +69,19 @@ export async function POST(request: Request) {
   const capacityMinutes = body.capacityMinutes ?? DAY_CAPACITY_MINUTES;
   const carryIn = body.carryIn as Task[];
 
-  const client = getClient();
-
   // Resolved once and reused for persistence below: verifying the session is a
   // round trip to the auth server, and doing it twice per dump is wasteful.
   const caller = await resolveRequestUser();
-  const labelNames = await loadLabelNames(caller);
+  const [labelNames, modelChoice] = await Promise.all([
+    loadLabelNames(caller),
+    loadModelChoice(caller),
+  ]);
 
-  // No key configured — serve the heuristic planner rather than erroring.
-  if (!client) {
-    const result = buildPlan({
+  // Whether *any* vendor is configured is decided inside generateStructured,
+  // which falls back across providers before giving up. This local helper is
+  // what both that fallback and a hard failure land on.
+  const heuristic = () =>
+    buildPlan({
       dumpText: body.dumpText,
       source: body.source,
       today,
@@ -85,40 +89,35 @@ export async function POST(request: Request) {
       carryIn,
       labelNames,
     });
-    await persistPlan(result, caller);
-    return NextResponse.json({ ...result, planner: "heuristic" });
-  }
 
   try {
-    const response = await client.messages.parse({
-      model: DEFAULT_MODEL,
-      max_tokens: MAX_TOKENS,
+    const generated = await generateStructured({
+      // The user's stored preference, read server-side — never sent by the
+      // browser, which would let a caller choose what we spend money on.
+      choice: modelChoice,
+      schema: buildPlanResponseSchema(labelNames),
+      schemaName: "plan_response",
+      maxTokens: MAX_TOKENS,
       // Estimating effort and deciding what to cut is judgement work — let the
       // model think about it rather than answering off the cuff.
-      thinking: { type: "adaptive" },
-      output_config: {
-        effort: "medium",
-        format: zodOutputFormat(buildPlanResponseSchema(labelNames)),
-      },
+      thinking: true,
       system: planSystemPrompt({
         now: today,
         timezone: body.timezone,
         capacityMinutes,
         labelNames,
       }),
-      messages: [
-        {
-          role: "user",
-          content: planUserPrompt({ dumpText: body.dumpText, carryIn }),
-        },
-      ],
+      user: planUserPrompt({ dumpText: body.dumpText, carryIn }),
     });
 
-    const parsed = response.parsed_output;
-    if (!parsed) {
-      // The model refused or hit the token cap before completing the object.
-      throw new Error("empty parsed output");
+    // Neither vendor is configured — the heuristic planner is still a complete
+    // answer, so this is a fallback rather than a failure.
+    if (!generated) {
+      const result = heuristic();
+      await persistPlan(result, caller);
+      return NextResponse.json({ ...result, planner: "heuristic" });
     }
+    const parsed = generated.parsed;
 
     const result = assemble({
       parsed,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
@@ -322,9 +322,15 @@ function ModelSection() {
 
         <div className={styles.card}>
           <div className={styles.modelList}>
-            {MODEL_CHOICES.map((choice) => (
+            {MODEL_CHOICES.map((choice, i) => (
+              <Fragment key={choice.value}>
+              {/* Vendor heading before the first model of each group — two
+                  providers in one flat list reads as five interchangeable
+                  options, which they are not. */}
+              {(i === 0 || MODEL_CHOICES[i - 1].vendor !== choice.vendor) && (
+                <span className={styles.modelVendor}>{choice.vendor}</span>
+              )}
               <button
-                key={choice.value}
                 type="button"
                 className={styles.modelRow}
                 data-active={settings.model === choice.value || undefined}
@@ -339,6 +345,7 @@ function ModelSection() {
                   <span className={styles.modelNote}>{choice.note}</span>
                 </span>
               </button>
+              </Fragment>
             ))}
           </div>
         </div>

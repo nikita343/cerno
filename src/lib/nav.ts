@@ -3,7 +3,13 @@ import type { ScreenKey } from "./types";
 export interface NavItem {
   key: ScreenKey;
   href: string;
-  /** Sidebar wording; the tab bar uses `shortLabel` where they differ. */
+  /**
+   * English fallback only.
+   *
+   * The rendered label comes from the dictionary — see `navLabel` in the
+   * sidebar and tab bar. These stay so the module is readable and so anything
+   * outside a React tree (tests, metadata) still has a string.
+   */
   label: string;
   shortLabel?: string;
 }

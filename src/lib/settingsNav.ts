@@ -52,7 +52,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     slug: "language",
     label: "Language & region",
     note: "Language and timezone",
-    hint: "Language is saved but not applied yet",
+    hint: "Applies to navigation and settings; more screens are being translated",
   },
   {
     slug: "calendar",
@@ -64,7 +64,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     slug: "model",
     label: "Planning model",
     note: "Which Claude plans your day",
-    hint: "Saved but not applied yet",
+    hint: "Used for planning and quick add",
   },
 ] as const;
 

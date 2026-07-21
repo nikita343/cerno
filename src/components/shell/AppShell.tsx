@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { CaptureOverlay } from "@/components/capture/CaptureOverlay";
 import { CheckoutReturn } from "@/components/views/CheckoutReturn";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { LanguageOnboarding } from "@/components/onboarding/LanguageOnboarding";
 import { SettingsMenuOverlay } from "@/components/settings/SettingsMenuOverlay";
 import { useNowTicker } from "@/lib/useNow";
 import { useAppStore } from "@/store/StoreProvider";
@@ -52,6 +53,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           bar are both always in the DOM, so a panel next to each trigger would
           exist twice. */}
       <NotificationCenter />
+
+      {/* First-run language choice. Renders nothing once `onboarded` is true,
+          which is the common case, so it costs a boolean check per mount. */}
+      <LanguageOnboarding />
 
       {/* Mounted here, not in the billing card.
           It used to live inside BillingCard, which only renders on one Settings

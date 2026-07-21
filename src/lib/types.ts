@@ -154,16 +154,57 @@ export const LANGUAGES: ReadonlyArray<{
  * routes still use the server default. Kept as a coarse tier name rather than
  * an API model id so a model refresh doesn't invalidate every stored row.
  */
-export type ModelChoice = "opus" | "sonnet" | "haiku";
+/**
+ * Selectable planning models.
+ *
+ * These strings are stored in `user_settings.model` and constrained by a CHECK
+ * — widening this type means widening that constraint in the same commit, or
+ * every save of a new value fails. See 0009_model_choices.sql.
+ */
+export type ModelChoice =
+  | "opus"
+  | "sonnet"
+  | "haiku"
+  | "gpt-5"
+  | "gpt-5-mini";
 
 export const MODEL_CHOICES: ReadonlyArray<{
   value: ModelChoice;
   label: string;
   note: string;
+  /** Shown as a group heading in the picker. */
+  vendor: "Claude" | "OpenAI";
 }> = [
-  { value: "opus", label: "Opus", note: "Most capable. Slower, best judgement." },
-  { value: "sonnet", label: "Sonnet", note: "Balanced. The default." },
-  { value: "haiku", label: "Haiku", note: "Fastest. Best for short dumps." },
+  {
+    value: "opus",
+    label: "Opus 4.8",
+    note: "Best judgement about what to cut. Slower.",
+    vendor: "Claude",
+  },
+  {
+    value: "sonnet",
+    label: "Sonnet 5",
+    note: "Balanced, and the default.",
+    vendor: "Claude",
+  },
+  {
+    value: "haiku",
+    label: "Haiku 4.5",
+    note: "Fastest. Good for short dumps.",
+    vendor: "Claude",
+  },
+  {
+    value: "gpt-5",
+    label: "GPT-5",
+    note: "Capable and even-handed.",
+    vendor: "OpenAI",
+  },
+  {
+    value: "gpt-5-mini",
+    label: "GPT-5 mini",
+    note: "Quick and cheap.",
+    vendor: "OpenAI",
+  },
 ] as const;
 
 export interface UserSettings {
@@ -174,6 +215,13 @@ export interface UserSettings {
   /** Hours ahead of a task's start to warn about it. */
   reminder_lead_hours: number;
   reminders_enabled: boolean;
+  /**
+   * True once first-run language selection has happened.
+   *
+   * Separate from `language`, which has a default and therefore cannot tell
+   * "chose English" from "never asked".
+   */
+  onboarded: boolean;
   /** Overrides the name derived from the auth profile. */
   display_name: string | null;
   avatar_url: string | null;
@@ -192,6 +240,9 @@ export const DEFAULT_SETTINGS: UserSettings = {
   model: "sonnet",
   reminder_lead_hours: 2,
   reminders_enabled: true,
+  // Fixtures skip onboarding: a keyless dev environment should land on the
+  // dashboard, not on a language dialog whose choice it cannot persist.
+  onboarded: true,
   display_name: null,
   avatar_url: null,
   feed_token: null,

@@ -12,6 +12,7 @@ import {
   SearchIcon,
   UsersIcon,
 } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { NAV_ITEMS, screenFromPath, TAB_ORDER } from "@/lib/nav";
 import type { ScreenKey } from "@/lib/types";
 
@@ -32,6 +33,7 @@ const NAV_ICONS: Record<ScreenKey, typeof SearchIcon> = {
 
 export function MobileTabBar() {
   const pathname = usePathname();
+  const t = useT();
   // Resolved once, rather than each tab testing the path itself: every nav href
   // starts with /dashboard, so a per-tab `startsWith` lights up Today on every
   // page. screenFromPath already handles the root and the non-tab routes.
@@ -54,10 +56,28 @@ export function MobileTabBar() {
             aria-current={active ? "page" : undefined}
           >
             <Icon size="1.375rem" />
-            <span>{item.shortLabel ?? item.label}</span>
+            <span>{navLabel(t, item.key, true)}</span>
           </Link>
         );
       })}
     </nav>
   );
+}
+
+/**
+ * Translated nav label.
+ *
+ * Keyed off `ScreenKey` rather than the English string, so a wording change in
+ * `NAV_ITEMS` can't silently break the lookup.
+ */
+function navLabel(t: ReturnType<typeof useT>, key: ScreenKey, short = false): string {
+  switch (key) {
+    case "today": return t.nav.today;
+    case "upcoming": return t.nav.upcoming;
+    case "inbox": return t.nav.inbox;
+    case "filters": return short ? t.nav.filtersShort : t.nav.filters;
+    case "search": return t.nav.search;
+    case "workspaces": return short ? t.nav.workspacesShort : t.nav.workspaces;
+    case "settings": return t.nav.settings;
+  }
 }

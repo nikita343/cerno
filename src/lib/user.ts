@@ -53,3 +53,29 @@ function initialsFrom(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+/**
+ * A workspace member as an avatar-shaped profile.
+ *
+ * The roster RPC already resolves name and photo with the same precedence as
+ * `toProfile` (see 0008_member_identity.sql), so this is only reshaping — but
+ * it means `<Avatar>` renders a teammate exactly as it renders you, initials
+ * fallback and all, instead of the roster hand-rolling its own circle.
+ */
+export function memberProfile(member: {
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+}): UserProfile {
+  const raw = member.display_name?.trim() || member.email?.split("@")[0] || "";
+  // Same tidy-up as toProfile: "ada.lovelace" reads better as "Ada Lovelace".
+  const name = raw.replace(/[._-]+/g, " ").trim();
+  const titled = name.replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return {
+    name: titled || "Pending",
+    email: member.email ?? "",
+    initials: initialsFrom(name || "?"),
+    avatarUrl: member.avatar_url,
+  };
+}

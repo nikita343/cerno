@@ -22,3 +22,23 @@ export function totalDuration(minutes: number): string {
 export function pluralize(n: number, one: string, many = `${one}s`): string {
   return n === 1 ? one : many;
 }
+
+/**
+ * Ukrainian plural selection.
+ *
+ * Ukrainian has three forms where English has two: 1 задача, 2–4 задачі,
+ * 5+ задач — and the rule is on the last digits, not the magnitude, so 21 takes
+ * the singular and 11 does not. `Intl.PluralRules` knows this; hand-rolled
+ * `n === 1 ? a : b` does not, which is why counts must not be interpolated into
+ * translated strings directly.
+ */
+export function plural(
+  count: number,
+  language: string,
+  forms: { one: string; few?: string; many: string },
+): string {
+  const category = new Intl.PluralRules(language).select(count);
+  if (category === "one") return forms.one;
+  if (category === "few") return forms.few ?? forms.many;
+  return forms.many;
+}

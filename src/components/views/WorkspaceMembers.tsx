@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { Avatar } from "@/components/auth/Avatar";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import {
@@ -18,6 +19,7 @@ import {
   type WorkspaceInvite,
   type WorkspaceMember,
 } from "@/lib/types";
+import { memberProfile } from "@/lib/user";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./WorkspaceView.module.css";
@@ -163,21 +165,33 @@ export function WorkspaceMembers({
       </div>
 
       <div className={styles.card}>
+        {members.length === 0 && (
+          <p className={styles.fieldNote}>
+            Couldn&rsquo;t load the people in this workspace. If this persists,
+            the roster function may not be installed &mdash; see
+            supabase/migrations/0008_member_identity.sql.
+          </p>
+        )}
+
         <ul className={styles.memberList}>
           {members.map((member) => {
             const isSelf = member.user_id === currentUserId;
             const isOwner = member.user_id === workspace.owner_id;
             return (
               <li key={member.user_id} className={styles.memberRow}>
-                <span className={styles.memberGlyph} aria-hidden="true">
-                  {glyph(member)}
-                </span>
+                {/* The same <Avatar> the app uses for you, so a teammate with
+                    a Google photo shows it rather than a grey initial. */}
+                <Avatar
+                  profile={memberProfile(member)}
+                  size="1.75rem"
+                  className={styles.memberAvatar}
+                />
                 <span className={styles.memberText}>
                   <span className={styles.memberName}>
-                    {member.display_name ?? member.email ?? "Unknown"}
+                    {memberProfile(member).name}
                     {isSelf && <span className={styles.you}> you</span>}
                   </span>
-                  {member.display_name && member.email && (
+                  {member.email && (
                     <span className={styles.memberEmail}>{member.email}</span>
                   )}
                 </span>
@@ -221,7 +235,7 @@ export function WorkspaceMembers({
                           // owner can hand it back.
                           if (
                             !window.confirm(
-                              `Make ${member.display_name ?? member.email} the owner? You'll stay an admin, but you can't undo this yourself.`,
+                              `Make ${memberProfile(member).name} the owner? You'll stay an admin, but you can't undo this yourself.`,
                             )
                           ) {
                             return;
@@ -248,7 +262,7 @@ export function WorkspaceMembers({
                       onClick={() => {
                         if (
                           !window.confirm(
-                            `Remove ${member.display_name ?? member.email} from ${workspace.name}?`,
+                            `Remove ${memberProfile(member).name} from ${workspace.name}?`,
                           )
                         ) {
                           return;
@@ -400,11 +414,6 @@ export function WorkspaceMembers({
       </div>
     </section>
   );
-}
-
-function glyph(member: WorkspaceMember): string {
-  const source = member.display_name ?? member.email ?? "?";
-  return source.trim().charAt(0).toUpperCase() || "?";
 }
 
 /**

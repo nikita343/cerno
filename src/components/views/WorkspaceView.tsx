@@ -4,10 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
+import { Avatar } from "@/components/auth/Avatar";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
 import { DASHBOARD_ROOT } from "@/lib/nav";
+import { memberProfile } from "@/lib/user";
 import { pluralize, totalDuration } from "@/lib/format";
 import { formatClock, withStartTimes } from "@/lib/schedule";
 import { createClient } from "@/lib/supabase/client";
@@ -112,16 +114,12 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         <div className={styles.peopleStrip}>
           <span className={styles.faces}>
             {members.slice(0, 5).map((member) => (
-              <span
+              <Avatar
                 key={member.user_id}
+                profile={memberProfile(member)}
+                size="1.625rem"
                 className={styles.face}
-                title={member.display_name ?? member.email ?? undefined}
-              >
-                {(member.display_name ?? member.email ?? "?")
-                  .trim()
-                  .charAt(0)
-                  .toUpperCase()}
-              </span>
+              />
             ))}
             {members.length > 5 && (
               <span className={styles.face} data-more>

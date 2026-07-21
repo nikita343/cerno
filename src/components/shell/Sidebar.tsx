@@ -20,6 +20,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { DASHBOARD_ROOT, NAV_ITEMS, screenFromPath } from "@/lib/nav";
 import { isEntitled, type ScreenKey } from "@/lib/types";
 import { inboxTasks } from "@/store/createAppStore";
+import { useT } from "@/lib/i18n";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import styles from "./Sidebar.module.css";
@@ -47,6 +48,7 @@ export function Sidebar() {
   const menuOpen = useAppStore((s) => s.menuOpen);
   const inboxCount = useAppStore((s) => inboxTasks(s.tasks).length);
   const setSearchQuery = useAppStore((s) => s.setSearchQuery);
+  const t = useT();
   const labels = useAppStoreShallow((s) => s.labels);
   const workspaces = useAppStoreShallow((s) => s.workspaces);
   // Only decides what to *offer*. Creating one is gated by the database.
@@ -94,7 +96,7 @@ export function Sidebar() {
               aria-current={active ? "page" : undefined}
             >
               <Icon size="1.1875rem" />
-              <span>{item.label}</span>
+              <span>{navLabel(t, item.key)}</span>
               {item.key === "inbox" && inboxCount > 0 && (
                 <span className={styles.badge}>{inboxCount}</span>
               )}
@@ -104,7 +106,7 @@ export function Sidebar() {
       </nav>
 
       <div className={styles.labels}>
-        <span className={styles.labelsHeading}>Labels</span>
+        <span className={styles.labelsHeading}>{t.nav.labels}</span>
         {labels.map((label) => (
           <Link
             key={label.id}
@@ -133,7 +135,7 @@ export function Sidebar() {
       <div className={styles.labels}>
         {entitled || workspaces.length > 0 ? (
           <>
-            <span className={styles.labelsHeading}>Workspaces</span>
+            <span className={styles.labelsHeading}>{t.nav.workspaces}</span>
             {workspaces.map((workspace) => (
               <Link
                 key={workspace.id}
@@ -164,11 +166,29 @@ export function Sidebar() {
             href={`${DASHBOARD_ROOT}/settings`}
             className={styles.upsellRow}
           >
-            <span className={styles.labelName}>Workspaces</span>
+            <span className={styles.labelName}>{t.nav.workspaces}</span>
             <span className={styles.upsellBadge}>Team</span>
           </Link>
         )}
       </div>
     </aside>
   );
+}
+
+/**
+ * Translated nav label.
+ *
+ * Keyed off `ScreenKey` rather than the English string, so a wording change in
+ * `NAV_ITEMS` can't silently break the lookup.
+ */
+function navLabel(t: ReturnType<typeof useT>, key: ScreenKey, short = false): string {
+  switch (key) {
+    case "today": return t.nav.today;
+    case "upcoming": return t.nav.upcoming;
+    case "inbox": return t.nav.inbox;
+    case "filters": return short ? t.nav.filtersShort : t.nav.filters;
+    case "search": return t.nav.search;
+    case "workspaces": return short ? t.nav.workspacesShort : t.nav.workspaces;
+    case "settings": return t.nav.settings;
+  }
 }

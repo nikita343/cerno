@@ -171,6 +171,7 @@ export interface UserSettingsRow {
   model: ModelChoice;
   reminder_lead_hours: number;
   reminders_enabled: boolean;
+  onboarded?: boolean | null;
   display_name: string | null;
   avatar_url: string | null;
   feed_token: string | null;
@@ -192,6 +193,9 @@ export function toSettings(row: Partial<UserSettingsRow> | null): UserSettings {
       row.reminder_lead_hours ?? DEFAULT_SETTINGS.reminder_lead_hours,
     reminders_enabled:
       row.reminders_enabled ?? DEFAULT_SETTINGS.reminders_enabled,
+    // Absent column (migration 0010 not yet applied) reads as false, so the
+    // dialog appears rather than being silently skipped for everyone.
+    onboarded: row.onboarded ?? false,
     display_name: row.display_name ?? null,
     avatar_url: row.avatar_url ?? null,
     feed_token: row.feed_token ?? null,

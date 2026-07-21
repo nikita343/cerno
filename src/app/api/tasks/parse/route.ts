@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import * as z from "zod";
 
-import { describeError, DEFAULT_MODEL, getClient } from "@/lib/ai/client";
+import { describeError } from "@/lib/ai/client";
+import { generateStructured } from "@/lib/ai/generate";
 import { smartAddSystemPrompt } from "@/lib/ai/prompt";
 import { buildSmartTaskSchema } from "@/lib/ai/schema";
 import { todayISO } from "@/lib/date";
@@ -11,6 +11,7 @@ import { parseSingleTask } from "@/lib/planner";
 import { upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
+  loadModelChoice,
   resolveRequestUser,
   type RequestUser,
 } from "@/lib/supabase/request";
@@ -65,38 +66,40 @@ export async function POST(request: Request) {
   }
 
   const today = body.today ?? todayISO();
-  const client = getClient();
-
   const caller = await resolveRequestUser();
-  const labelNames = await loadLabelNames(caller);
+  const [labelNames, modelChoice] = await Promise.all([
+    loadLabelNames(caller),
+    loadModelChoice(caller),
+  ]);
 
-  if (!client) {
-    const task: Task = {
-      ...parseSingleTask(body.text, today, labelNames),
-      workspace_id: body.workspaceId ?? null,
-    };
-    await persist(task, caller);
-    return NextResponse.json({ task, planner: "heuristic" });
-  }
+  const heuristic = (): Task => ({
+    ...parseSingleTask(body.text, today, labelNames),
+    workspace_id: body.workspaceId ?? null,
+  });
 
   try {
-    const response = await client.messages.parse({
-      model: DEFAULT_MODEL,
-      max_tokens: 1_500,
+    const generated = await generateStructured({
+      choice: modelChoice,
+      schema: buildSmartTaskSchema(labelNames),
+      schemaName: "smart_task",
+      maxTokens: 1_500,
       // A single short phrase — no deliberation needed, and thinking here would
       // only add latency to what should feel instant.
-      thinking: { type: "disabled" },
-      output_config: { format: zodOutputFormat(buildSmartTaskSchema(labelNames)) },
+      thinking: false,
       system: smartAddSystemPrompt({
         now: today,
         timezone: body.timezone,
         labelNames,
       }),
-      messages: [{ role: "user", content: body.text }],
+      user: body.text,
     });
 
-    const parsed = response.parsed_output;
-    if (!parsed) throw new Error("empty parsed output");
+    if (!generated) {
+      const task = heuristic();
+      await persist(task, caller);
+      return NextResponse.json({ task, planner: "heuristic" });
+    }
+    const parsed = generated.parsed;
 
     const createdAt = new Date().toISOString();
     const task: Task = {

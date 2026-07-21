@@ -11,6 +11,8 @@ import {
   settingsHref,
 } from "@/lib/settingsNav";
 
+import { useT } from "@/lib/i18n";
+
 import styles from "./SettingsNav.module.css";
 
 /**
@@ -25,11 +27,12 @@ import styles from "./SettingsNav.module.css";
 export function SettingsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const active = sectionFromPath(pathname);
+  const t = useT();
 
   return (
     <div className={styles.shell}>
       <nav className={styles.nav} aria-label="Settings">
-        <span className={styles.navHeading}>Settings</span>
+        <span className={styles.navHeading}>{t.settings.title}</span>
         {SETTINGS_SECTIONS.map((section) => (
           <Link
             key={section.slug}
@@ -38,7 +41,7 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
             data-active={active?.slug === section.slug || undefined}
             aria-current={active?.slug === section.slug ? "page" : undefined}
           >
-            {section.label}
+            {sectionLabel(t, section.slug)}
           </Link>
         ))}
       </nav>
@@ -50,12 +53,12 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
         {active && (
           <Link href={SETTINGS_ROOT} className={styles.back}>
             <ChevronLeft size="0.875rem" />
-            Settings
+            {t.settings.title}
           </Link>
         )}
         {active && (
           <header className={styles.sectionHead}>
-            <h1 className={styles.sectionTitle}>{active.label}</h1>
+            <h1 className={styles.sectionTitle}>{sectionLabel(t, active.slug)}</h1>
             {active.hint && <p className={styles.sectionHint}>{active.hint}</p>}
           </header>
         )}
@@ -63,4 +66,22 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Translated section heading, keyed off the slug.
+ *
+ * The English `label` in SETTINGS_SECTIONS stays as the source of the URL and
+ * as a fallback for anything outside React (page metadata).
+ */
+function sectionLabel(t: ReturnType<typeof useT>, slug: string): string {
+  switch (slug) {
+    case "profile": return t.settings.profile;
+    case "plan": return t.settings.plan;
+    case "reminders": return t.settings.reminders;
+    case "language": return t.settings.language;
+    case "calendar": return t.settings.calendar;
+    case "model": return t.settings.model;
+    default: return slug;
+  }
 }

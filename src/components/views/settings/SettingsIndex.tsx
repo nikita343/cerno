@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { ChevronRight } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { SETTINGS_SECTIONS, settingsHref } from "@/lib/settingsNav";
 
 import { SettingsView } from "../SettingsView";
@@ -23,10 +24,12 @@ import view from "../View.module.css";
  * wide the screen is.
  */
 export function SettingsIndex() {
+  const t = useT();
+
   return (
     <>
       <nav className={styles.indexList} aria-label="Settings sections">
-        <h1 className={`${view.h1} ${styles.indexTitle}`}>Settings</h1>
+        <h1 className={`${view.h1} ${styles.indexTitle}`}>{t.settings.title}</h1>
         {SETTINGS_SECTIONS.map((section) => (
           <Link
             key={section.slug}

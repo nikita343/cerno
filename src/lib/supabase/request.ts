@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { DEFAULT_LABELS } from "@/lib/types";
+import { DEFAULT_LABELS, type ModelChoice } from "@/lib/types";
 
 import { hasSupabaseConfig } from "./env";
 import { createClient } from "./server";
@@ -56,4 +56,28 @@ export async function loadLabelNames(
 
   if (error || !data || data.length === 0) return fallback;
   return (data as { name: string }[]).map((row) => row.name);
+}
+
+/**
+ * The caller's planning-model preference.
+ *
+ * Read server-side rather than sent from the browser: a client-supplied model
+ * id is a request to spend our money on a model of the caller's choosing, and
+ * the picker's value would then be a suggestion rather than a setting.
+ *
+ * Null when signed out or unset, which `resolveModel` turns into the default.
+ */
+export async function loadModelChoice(
+  caller: RequestUser | null,
+): Promise<ModelChoice | null> {
+  if (!caller) return null;
+
+  const { data, error } = await caller.supabase
+    .from("user_settings")
+    .select("model")
+    .eq("user_id", caller.userId)
+    .maybeSingle();
+
+  if (error || !data?.model) return null;
+  return data.model as ModelChoice;
 }

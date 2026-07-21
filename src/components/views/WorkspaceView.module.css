@@ -487,3 +487,8 @@
   font-size: 0.78125rem;
   color: var(--text-muted);
 }
+
+/* Avatar renders its own circle; these only position it in the row/stack. */
+.memberAvatar {
+  flex: none;
+}
