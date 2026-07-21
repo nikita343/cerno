@@ -1,6 +1,6 @@
 "use client";
 
-import type { Task } from "@/lib/types";
+import type { Task, UserProfile } from "@/lib/types";
 
 import { useTaskDrag } from "@/components/dnd/useDrag";
 import { SwipeRow } from "./SwipeRow";
@@ -33,6 +33,8 @@ export interface TaskRowProps {
   onMenuOpenChange: (open: boolean) => void;
   /** Workspace name to badge the card with; omit inside a workspace screen. */
   workspaceName?: string | null;
+  /** Who the task is assigned to, shown as an avatar. Workspace rows only. */
+  assignee?: UserProfile | null;
   /** Shows Cerno's reasoning under the title. Inbox is where you check it. */
   showReasoning?: boolean;
   /**
@@ -85,6 +87,7 @@ export function TaskRow({
   menuOpen,
   onMenuOpenChange,
   workspaceName = null,
+  assignee = null,
   showReasoning = false,
   action,
   removing = false,
@@ -132,6 +135,7 @@ export function TaskRow({
             today={today}
             overdue={overdue}
             workspaceName={workspaceName}
+            assignee={assignee}
             showReasoning={showReasoning}
             onToggleComplete={onToggle}
           />

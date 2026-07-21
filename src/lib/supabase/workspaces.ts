@@ -44,9 +44,24 @@ interface MembershipRow {
 export async function loadWorkspaces(
   supabase: SupabaseClient,
 ): Promise<Workspace[]> {
+  // Filtered to the caller's *own* membership, and that filter is load-bearing.
+  //
+  // The RLS policy lets a member read every member row of a workspace they
+  // belong to — that's how the roster is populated. Without this `eq`, a
+  // workspace with N members returns N rows here, so it appeared in the sidebar
+  // once per teammate: joining a second person duplicated it. Worse, `row.role`
+  // would then be some *other* member's role, so you could see yourself as an
+  // admin because a co-member is one. One row per membership is the invariant
+  // this list depends on, and only the caller's own row provides it.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
     .from("workspace_members")
     .select("workspace_id, role, workspaces(id, owner_id, name, description, created_at)")
+    .eq("user_id", user.id)
     .order("joined_at", { ascending: true });
   if (error) throw error;
 

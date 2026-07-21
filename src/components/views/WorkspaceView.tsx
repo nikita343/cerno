@@ -7,7 +7,8 @@ import Link from "next/link";
 import { Avatar } from "@/components/auth/Avatar";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
-import { eyebrowDate } from "@/lib/date";
+import { eyebrowDate, relativeDayTitle } from "@/lib/date";
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { memberProfile } from "@/lib/user";
 import { pluralize, totalDuration } from "@/lib/format";
@@ -36,6 +37,7 @@ import view from "./View.module.css";
  */
 export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   const today = useAppStore((s) => s.today);
+  const t = useT();
   const userId = useAppStore((s) => s.userId);
   const workspace = useAppStore((s) =>
     s.workspaces.find((w) => w.id === workspaceId),
@@ -66,6 +68,20 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   useEffect(() => {
     void loadRoster();
   }, [loadRoster]);
+
+  // assignee_id -> member, so each row can show whose task it is. Built once
+  // per roster change rather than scanning `members` inside every row.
+  const membersById = useMemo(
+    () => new Map(members.map((m) => [m.user_id, m])),
+    [members],
+  );
+  const assigneeFor = useCallback(
+    (id: string | null | undefined) => {
+      const member = id ? membersById.get(id) : undefined;
+      return member ? memberProfile(member) : null;
+    },
+    [membersById],
+  );
 
   const todays = useMemo(
     () => tasks.filter((t) => t.plan_date === today),
@@ -141,6 +157,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
           workspace_id, so it stayed permanently empty. */}
       <SmartAddBar
         workspaceId={workspaceId}
+        members={members}
         placeholder={`Add to ${workspace.name} — everyone here sees it`}
       />
 
@@ -187,6 +204,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
                     isDone ? uncompleteTask(task.id) : completeTask(task.id)
                   }
                   onDelete={(id) => void deleteTask(id)}
+                  assignee={assigneeFor(task.assignee_id)}
                   menuOpen={menuTaskId === task.id}
                   onMenuOpenChange={(next) =>
                     setMenuTaskId(next ? task.id : null)
@@ -217,12 +235,19 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
                   task={task}
                   today={today}
                   // Dated rather than clocked: on this list the useful
-                  // distinction is which day, not which minute.
-                  clock={task.plan_date}
+                  // distinction is which day, not which minute. Phrased
+                  // relatively ("Tomorrow") rather than as a raw ISO date, which
+                  // read as a database value leaking into the UI.
+                  clock={
+                    task.plan_date
+                      ? relativeDayTitle(task.plan_date, today, t.date)
+                      : null
+                  }
                   onToggle={() =>
                     isDone ? uncompleteTask(task.id) : completeTask(task.id)
                   }
                   onDelete={(id) => void deleteTask(id)}
+                  assignee={assigneeFor(task.assignee_id)}
                   menuOpen={menuTaskId === task.id}
                   onMenuOpenChange={(next) =>
                     setMenuTaskId(next ? task.id : null)

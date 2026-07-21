@@ -170,6 +170,8 @@ export interface AppActions {
     date?: string,
     /** Adds into a workspace's shared list rather than your own. */
     workspaceId?: string | null,
+    /** Assigns the task to a workspace member. Null / omitted is unassigned. */
+    assigneeId?: string | null,
   ) => Promise<void>;
   /** Roll unfinished tasks from past days onto today. */
   carryOver: () => Promise<void>;
@@ -585,7 +587,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         );
       },
 
-      addTaskSmart: async (text, date, workspaceId = null) => {
+      addTaskSmart: async (text, date, workspaceId = null, assigneeId = null) => {
         const { today } = get();
         try {
           // Persisted server-side by /api/tasks/parse; the returned task
@@ -595,6 +597,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             today,
             get().labels.map((l) => l.name),
             workspaceId,
+            assigneeId,
           );
 
           // An explicit day wins over whatever the parser inferred. Added from

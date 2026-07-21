@@ -230,6 +230,13 @@
   flex: 1;
 }
 
+/* The assignee avatar sits flush at the end of the row's meta cluster. */
+.assignee {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
 .time {
   font-size: 0.8125rem;
   color: var(--text-muted);

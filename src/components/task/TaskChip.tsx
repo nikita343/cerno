@@ -1,11 +1,12 @@
 "use client";
 
+import { Avatar } from "@/components/auth/Avatar";
 import { AlertIcon, CheckIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
 
 import { useT } from "@/lib/i18n";
 import { labelColor } from "@/lib/labels";
-import type { Task } from "@/lib/types";
+import type { Task, UserProfile } from "@/lib/types";
 import { useAppStoreShallow } from "@/store/StoreProvider";
 
 import styles from "./TaskChip.module.css";
@@ -40,6 +41,11 @@ export interface TaskChipProps {
    * task is distinguishable from a personal one.
    */
   workspaceName?: string | null;
+  /**
+   * Who the task is assigned to, shown as a small avatar. Only meaningful on a
+   * workspace task; personal rows pass nothing and show no avatar.
+   */
+  assignee?: UserProfile | null;
 }
 
 
@@ -61,6 +67,7 @@ export function TaskChip({
   overdue = false,
   showDescription = true,
   workspaceName = null,
+  assignee = null,
 }: TaskChipProps) {
   // Label colours are per-user data now, so the chip has to read them rather
   // than look them up in a constant. Subscribed shallowly: a recolour should
@@ -165,6 +172,15 @@ export function TaskChip({
               style={{ background: labelColor(labels, tag) }}
             />
             {tag}
+          </span>
+        )}
+
+        {/* The assignee, as a bare avatar at the end of the row. A name pill
+            here would compete with the title on a phone; the face is enough to
+            answer "whose is this" and the full name is in its tooltip. */}
+        {assignee && (
+          <span className={styles.assignee} title={`Assigned to ${assignee.name}`}>
+            <Avatar profile={assignee} size="1.375rem" />
           </span>
         )}
       </div>

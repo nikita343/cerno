@@ -618,6 +618,8 @@ export async function smartAddTask(
   labelNames: string[] = [],
   /** Adds to a workspace rather than the caller's own list. */
   workspaceId: string | null = null,
+  /** Who the task is for, when it's a workspace task. Null means unassigned. */
+  assigneeId: string | null = null,
 ): Promise<Task> {
   try {
     const response = await fetch("/api/tasks/parse", {
@@ -628,15 +630,20 @@ export async function smartAddTask(
         today,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC",
         workspaceId,
+        assigneeId,
       }),
     });
     if (!response.ok) throw new ServerUnavailableError();
     const body = (await response.json()) as { task: Task };
     return body.task;
   } catch {
-    // Offline fallback. The workspace is still carried so the task lands in
-    // the right list once it syncs.
-    return { ...parseSingleTask(text, today, labelNames), workspace_id: workspaceId };
+    // Offline fallback. The workspace and assignee are still carried so the
+    // task lands in the right list, for the right person, once it syncs.
+    return {
+      ...parseSingleTask(text, today, labelNames),
+      workspace_id: workspaceId,
+      assignee_id: assigneeId,
+    };
   }
 }
 

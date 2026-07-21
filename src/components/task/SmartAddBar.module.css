@@ -1,3 +1,8 @@
+/* Relative so the mention menu can hang beneath the bar. */
+.wrap {
+  position: relative;
+}
+
 .bar {
   display: flex;
   align-items: center;
@@ -99,4 +104,101 @@
 
 .dot:nth-child(3) {
   animation-delay: 0.32s;
+}
+
+/* The chosen assignee, sitting inside the bar before the text — a pill you can
+   see and dismiss, so the assignment is never a hidden state. */
+.assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  flex: none;
+  padding: 0.1875rem 0.375rem 0.1875rem 0.1875rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  max-width: 40%;
+}
+
+.assigneeName {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assigneeClear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1;
+  flex: none;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.assigneeClear:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* The @mention picker. Anchored to the bar, above surrounding content. */
+.mentionMenu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--surface);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-tile, 0.625rem);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.3);
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+.mentionItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4375rem 0.5rem;
+  border-radius: 0.5rem;
+  text-align: left;
+  transition: background var(--dur) var(--ease);
+}
+
+.mentionItem[data-active] {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.mentionText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mentionName {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mentionEmail {
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

@@ -47,6 +47,13 @@ const requestSchema = z.object({
    * second place to get multi-tenant isolation wrong.
    */
   workspaceId: z.string().uuid().nullish(),
+  /**
+   * Who the task is for, inside a workspace. Not verified here for the same
+   * reason as `workspaceId`: the row is inserted with the caller's client, so
+   * the tasks insert policy is the check that counts. A non-member id would at
+   * worst be a dangling assignee, never a tenant-isolation break.
+   */
+  assigneeId: z.string().uuid().nullish(),
 });
 
 /**
@@ -75,6 +82,7 @@ export async function POST(request: Request) {
   const heuristic = (): Task => ({
     ...parseSingleTask(body.text, today, labelNames),
     workspace_id: body.workspaceId ?? null,
+    assignee_id: body.assigneeId ?? null,
   });
 
   try {
@@ -108,6 +116,7 @@ export async function POST(request: Request) {
       // Set before persisting so the insert is checked against the workspace
       // policy, not written as personal and moved afterwards.
       workspace_id: body.workspaceId ?? null,
+      assignee_id: body.assigneeId ?? null,
       title: parsed.title,
       // A quick-add has no note yet; the user writes one if they want it.
       description: null,
