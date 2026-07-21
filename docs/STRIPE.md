@@ -30,9 +30,9 @@ Everything below in order. Steps 1–3 are the ones nothing works without.
 **When you deploy** (not needed for local testing):
 
 - [ ] Developers → Webhooks → Add endpoint → `https://your-domain/api/stripe/webhook`
-- [ ] Subscribe it to: `checkout.session.completed`,
-      `customer.subscription.created`, `customer.subscription.updated`,
-      `customer.subscription.deleted`, `invoice.payment_failed`
+- [ ] Subscribe it to exactly these four — the set the route handles:
+      `checkout.session.completed`, `customer.subscription.created`,
+      `customer.subscription.updated`, `customer.subscription.deleted`
 - [ ] Copy **that endpoint's** signing secret — it differs from the CLI's, and
       using the wrong one rejects every event with a 400
 - [ ] **Set `NEXT_PUBLIC_SITE_URL` to your real domain** (Vercel → Settings →
@@ -105,14 +105,26 @@ forwarding need different values.
 **Deployed** — Developers → **Webhooks → + Add endpoint**:
 
 - URL: `https://your-domain/api/stripe/webhook`
-- Events:
-  - `checkout.session.completed`
-  - `customer.subscription.created`
-  - `customer.subscription.updated`
-  - `customer.subscription.deleted`
-  - `invoice.payment_failed`
+- Events — exactly these four, and no more:
+
+| Event | Why we need it |
+|---|---|
+| `checkout.session.completed` | The upgrade itself. Carries `client_reference_id`, which is the only thing linking a Stripe customer to a Cerno account. |
+| `customer.subscription.created` | Belt and braces. Fires for subscriptions made in the dashboard or by CLI, which never produce a checkout session. |
+| `customer.subscription.updated` | Every later status change: renewal, cancellation scheduled, `past_due` after a failed card, recovery after a retry. |
+| `customer.subscription.deleted` | The end of a subscription. Access stops; nothing is deleted. |
 
 Reveal the signing secret and set `STRIPE_WEBHOOK_SECRET`.
+
+**Do not add `invoice.payment_failed`.** It looks necessary and isn't: when a
+payment fails Stripe *also* moves the subscription to `past_due`, which arrives
+as `customer.subscription.updated` and is what `has_active_plan()` reads.
+Subscribing to it just sends the route events it acknowledges and ignores.
+
+The same goes for the rest of the catalogue — `payment_intent.*`,
+`invoice.created`, `charge.succeeded`. Every one is noise here. Selecting
+"receive all events" is the common mistake: it works, and then every debugging
+session is spent scrolling past events nothing consumes.
 
 ### Verify the signature, and read the raw body
 

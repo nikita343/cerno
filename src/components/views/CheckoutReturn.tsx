@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { isEntitled } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
 
+import { UpgradeCelebration } from "./UpgradeCelebration";
 import styles from "./SettingsView.module.css";
 
 /**
@@ -28,6 +29,15 @@ const ATTEMPT_DELAYS_MS = [0, 1000, 2000, 3000, 4000, 5000, 5000];
 
 type Phase = "idle" | "waiting" | "confirmed" | "timedOut";
 
+/**
+ * Remembers that this upgrade was already celebrated.
+ *
+ * sessionStorage, not state: the confirmation can arrive on a page that then
+ * navigates, and nobody wants the confetti again every time they open Settings.
+ * Keyed per tab, so it clears itself.
+ */
+const CELEBRATED_KEY = "cerno.upgrade.celebrated";
+
 export function CheckoutReturn() {
   const params = useSearchParams();
   const outcome = params.get("checkout");
@@ -36,7 +46,19 @@ export function CheckoutReturn() {
   const refreshSubscription = useAppStore((s) => s.refreshSubscription);
 
   const [phase, setPhase] = useState<Phase>("idle");
+  const [celebrating, setCelebrating] = useState(false);
   const started = useRef(false);
+
+  const celebrate = () => {
+    try {
+      if (sessionStorage.getItem(CELEBRATED_KEY)) return;
+      sessionStorage.setItem(CELEBRATED_KEY, "1");
+    } catch {
+      // Private browsing can throw on sessionStorage. Showing the celebration
+      // twice is a far smaller problem than not showing it at all.
+    }
+    setCelebrating(true);
+  };
 
   useEffect(() => {
     if (outcome !== "success" || started.current) return;
@@ -45,6 +67,7 @@ export function CheckoutReturn() {
     // Already recorded — the webhook beat the redirect, which does happen.
     if (isEntitled(subscription)) {
       setPhase("confirmed");
+      celebrate();
       cleanUrl();
       return;
     }
@@ -59,6 +82,7 @@ export function CheckoutReturn() {
         if (await refreshSubscription()) {
           if (cancelled) return;
           setPhase("confirmed");
+          celebrate();
           cleanUrl();
           return;
         }
@@ -89,9 +113,14 @@ export function CheckoutReturn() {
 
   if (phase === "confirmed") {
     return (
-      <p className={styles.checkoutNote} data-good role="status">
-        You&rsquo;re on Team. Workspaces are unlocked.
-      </p>
+      <>
+        {celebrating && (
+          <UpgradeCelebration onClose={() => setCelebrating(false)} />
+        )}
+        <p className={styles.checkoutNote} data-good role="status">
+          You&rsquo;re on Team. Workspaces are unlocked.
+        </p>
+      </>
     );
   }
 
