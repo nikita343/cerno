@@ -4,14 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
-import {
-  BellIcon,
-  CalendarIcon,
-  GlobeIcon,
-  SparkIcon,
-  UploadIcon,
-  UserIcon,
-} from "@/components/icons";
+import { CalendarIcon, UploadIcon } from "@/components/icons";
 import { AVATAR_MAX_BYTES } from "@/lib/supabase/data";
 import {
   browserTimezone,
@@ -27,6 +20,8 @@ import {
 import { useAppStore } from "@/store/StoreProvider";
 
 import { BillingCard } from "./BillingCard";
+import type { SettingsSlug } from "@/lib/settingsNav";
+
 import styles from "./SettingsView.module.css";
 import view from "./View.module.css";
 
@@ -39,47 +34,45 @@ import view from "./View.module.css";
  */
 const LEAD_OPTIONS = [1, 2, 4, 8];
 
-export function SettingsView() {
+/**
+ * One section of Settings, chosen by route.
+ *
+ * This was a single scrolling page holding six unrelated preferences, so
+ * changing a timezone meant scrolling past an avatar and a billing plan. Each
+ * section now has its own URL — see `lib/settingsNav.ts`.
+ *
+ * Deliberately still one component rather than six files. The sections share
+ * `settings` and `updateSettings`, and the two that carry real local state
+ * (the profile form, the timezone list) are extracted below. Splitting the
+ * rest into files would duplicate the same three store selectors six times to
+ * no benefit.
+ */
+export function SettingsView({ section }: { section: SettingsSlug }) {
+  const syncError = useAppStore((s) => s.syncError);
+
+  return (
+    <div className={`${view.view} ${view.viewWide}`}>
+      {syncError && <p className={styles.error}>{syncError}</p>}
+      {section === "profile" && <ProfileSection />}
+      {section === "reminders" && <RemindersSection />}
+      {section === "language" && <LanguageSection />}
+      {section === "plan" && <PlanSection />}
+      {section === "calendar" && <CalendarSection />}
+      {section === "model" && <ModelSection />}
+    </div>
+  );
+}
+
+function ProfileSection() {
   const user = useUser();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const uploadAvatarFile = useAppStore((s) => s.uploadAvatarFile);
-  const syncError = useAppStore((s) => s.syncError);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [name, setName] = useState(settings.display_name ?? user.name);
-
-  // The browser's zone is only a *default* for someone who has never chosen
-  // one. Overwriting a saved preference on every mount would make the picker
-  // impossible to change from a different machine.
-  useEffect(() => {
-    if (settings.timezone !== "UTC") return;
-    const local = browserTimezone();
-    if (local !== "UTC") void updateSettings({ timezone: local });
-    // Runs once: this is a one-time migration of an unset value, not a sync.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /**
-   * Built after mount, never during render.
-   *
-   * The list is derived from the *browser's* Intl data and the current instant:
-   * the server resolves offsets in its own zone (UTC on Vercel) and the client
-   * in the viewer's, so computing it in render makes the two disagree and React
-   * throws a hydration mismatch. Until the effect runs, the select holds only
-   * the stored value — which is what both sides can agree on.
-   *
-   * Also kept out of render because it walks 400+ zones and formats an offset
-   * for each; redoing that on every keystroke in the name field above would be
-   * wasteful even if it were correct.
-   */
-  const [zoneGroups, setZoneGroups] = useState<ZoneGroup[]>([]);
-
-  useEffect(() => {
-    setZoneGroups(timezoneGroups(settings.timezone));
-  }, [settings.timezone]);
 
   const onPickFile = async (file: File | undefined) => {
     if (!file) return;
@@ -104,15 +97,8 @@ export function SettingsView() {
   };
 
   return (
-    <div className={`${view.view} ${view.viewWide}`}>
-      <h1 className={view.h1}>Settings</h1>
-
-      {syncError && <p className={styles.error}>{syncError}</p>}
-
-      {/* ------------------------------------------------------------ profile */}
-
+    <>
       <section className={view.section}>
-        <SectionHead Icon={UserIcon} label="Profile" />
 
         <div className={styles.card}>
           <div className={styles.avatarRow}>
@@ -163,15 +149,16 @@ export function SettingsView() {
           </label>
         </div>
       </section>
+    </>
+  );
+}
 
-      {/* ---------------------------------------------------------- reminders */}
-
+function RemindersSection() {
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  return (
+    <>
       <section className={view.section}>
-        <SectionHead
-          Icon={BellIcon}
-          label="Reminders"
-          note="Warns you about high-priority work before it starts"
-        />
 
         <div className={styles.card}>
           <ToggleRow
@@ -205,15 +192,46 @@ export function SettingsView() {
           </div>
         </div>
       </section>
+    </>
+  );
+}
 
-      {/* --------------------------------------------------------- language */}
+function LanguageSection() {
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
 
+  // The browser's zone is only a *default* for someone who has never chosen
+  // one. Overwriting a saved preference on every mount would make the picker
+  // impossible to change from a different machine.
+  useEffect(() => {
+    if (settings.timezone !== "UTC") return;
+    const local = browserTimezone();
+    if (local !== "UTC") void updateSettings({ timezone: local });
+    // Runs once: this is a one-time migration of an unset value, not a sync.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Built after mount, never during render.
+   *
+   * The list is derived from the *browser's* Intl data and the current instant:
+   * the server resolves offsets in its own zone (UTC on Vercel) and the client
+   * in the viewer's, so computing it in render makes the two disagree and React
+   * throws a hydration mismatch. Until the effect runs, the select holds only
+   * the stored value — which is what both sides can agree on.
+   *
+   * Also kept out of render because it walks 400+ zones and formats an offset
+   * for each.
+   */
+  const [zoneGroups, setZoneGroups] = useState<ZoneGroup[]>([]);
+
+  useEffect(() => {
+    setZoneGroups(timezoneGroups(settings.timezone));
+  }, [settings.timezone]);
+
+  return (
+    <>
       <section className={view.section}>
-        <SectionHead
-          Icon={GlobeIcon}
-          label="Language & region"
-          note="Language is saved but not applied yet"
-        />
 
         <div className={styles.card}>
           <label className={styles.field}>
@@ -269,39 +287,38 @@ export function SettingsView() {
           </label>
         </div>
       </section>
+    </>
+  );
+}
 
-      {/* --------------------------------------------------------- billing */}
-
+function PlanSection() {
+  return (
+    <>
       <section className={view.section}>
-        <SectionHead
-          Icon={SparkIcon}
-          label="Plan"
-          note="Workspaces need Team"
-        />
         <BillingCard />
       </section>
+    </>
+  );
+}
 
-      {/* -------------------------------------------------------- calendar */}
-
+function CalendarSection() {
+  return (
+    <>
       <section className={view.section}>
-        <SectionHead
-          Icon={CalendarIcon}
-          label="Calendar feed"
-          note="Subscribe from Google, Apple or Outlook"
-        />
         <div className={styles.card}>
           <CalendarFeed />
         </div>
       </section>
+    </>
+  );
+}
 
-      {/* ------------------------------------------------------------- model */}
-
+function ModelSection() {
+  const settings = useAppStore((s) => s.settings);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+  return (
+    <>
       <section className={view.section}>
-        <SectionHead
-          Icon={SparkIcon}
-          label="Planning model"
-          note="Saved but not applied yet"
-        />
 
         <div className={styles.card}>
           <div className={styles.modelList}>
@@ -326,18 +343,10 @@ export function SettingsView() {
           </div>
         </div>
       </section>
-    </div>
+    </>
   );
 }
 
-/**
- * The iCal subscribe URL.
- *
- * Treated as a credential throughout: it is hidden until revealed, the copy
- * action is the primary affordance rather than reading it off the screen, and
- * the warning about what the link exposes sits next to the button that hands it
- * out — not buried in docs nobody opens.
- */
 function CalendarFeed() {
   const feedToken = useAppStore((s) => s.settings.feed_token);
   const rotateFeedToken = useAppStore((s) => s.rotateFeedToken);
@@ -446,24 +455,6 @@ function CalendarFeed() {
           Turn off
         </button>
       </div>
-    </div>
-  );
-}
-
-function SectionHead({
-  Icon,
-  label,
-  note,
-}: {
-  Icon: typeof BellIcon;
-  label: string;
-  note?: string;
-}) {
-  return (
-    <div className={styles.head}>
-      <Icon size="1rem" className={styles.headIcon} />
-      <h2 className={view.sectionLabelMuted}>{label}</h2>
-      {note && <span className={view.sectionNote}>{note}</span>}
     </div>
   );
 }

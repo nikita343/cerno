@@ -53,6 +53,8 @@ export function WorkspaceMembers({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  /** What just happened, in the admin's terms — sent, or created but not sent. */
+  const [notice, setNotice] = useState<string | null>(null);
 
   const seatsLeft = MAX_WORKSPACE_MEMBERS - workspace.member_count;
   const full = seatsLeft <= 0;
@@ -81,6 +83,7 @@ export function WorkspaceMembers({
   const run = async (work: () => Promise<void>) => {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       await work();
       onChanged();
@@ -105,11 +108,36 @@ export function WorkspaceMembers({
         currentUserId,
         addressed ? email : null,
       );
+      const recipient = email;
       setEmail("");
       await refreshInvites();
-      // The link is the deliverable in both cases. An addressed invite still
-      // needs sending by hand today — see the note under the form.
+
+      if (!addressed) {
+        await copyLink(created.token);
+        setNotice("Link copied. Send it to whoever should join.");
+        return;
+      }
+
+      // The invite exists either way; only delivery can fail. So the link is
+      // copied first, and the email is a bonus on top — an admin whose mail
+      // provider is down still has something to paste.
       await copyLink(created.token);
+      const response = await fetch("/api/workspaces/invite", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ inviteId: created.id }),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        sent?: boolean;
+        error?: string;
+        detail?: string;
+      } | null;
+
+      setNotice(
+        body?.sent
+          ? `Invite emailed to ${recipient}. The link is also on your clipboard.`
+          : `Invite created and the link is on your clipboard — ${body?.error ?? "the email didn't send"}.`,
+      );
     });
 
   const copyLink = async (token: string) => {
@@ -301,15 +329,23 @@ export function WorkspaceMembers({
                     Copy link
                   </button>
                 </div>
-                {/* Said out loud rather than implied: we do not send the email
-                    yet, and an admin who assumes we did would sit waiting for
-                    someone who was never contacted. */}
+                {/* The distinction that matters: "Invite" emails them AND
+                    copies the link; "Copy link" only copies. Both are stated
+                    because an admin who assumes an email went out would sit
+                    waiting for someone who was never contacted. */}
                 <p className={styles.fieldNote}>
-                  Both create a link and copy it to your clipboard &mdash; send
-                  it yourself. An addressed invite can only be accepted by that
-                  email; a plain link works for whoever opens it first. Both
-                  expire in 7 days.
+                  <strong>Invite</strong> emails the link to that address, and
+                  only that address can accept it. <strong>Copy link</strong>{" "}
+                  works for whoever opens it first. Both expire in 7 days, and
+                  both put the link on your clipboard so you can send it
+                  yourself.
                 </p>
+
+                {notice && (
+                  <p className={styles.notice} role="status">
+                    {notice}
+                  </p>
+                )}
               </>
             )}
 

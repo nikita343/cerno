@@ -514,3 +514,28 @@
   font-size: 0.8125rem;
   color: var(--overdue);
 }
+
+/* The post-checkout reconciliation banner. Sits above the plan summary because
+   it explains why that summary may not have caught up yet. */
+.checkoutNote {
+  margin-bottom: 0.875rem;
+  padding: 0.5rem 0.6875rem;
+  border-radius: var(--r-tile);
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.checkoutNote[data-good] {
+  border-color: var(--label-errand);
+  color: var(--text);
+}
+
+.checkoutNote[data-warn] {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+  color: var(--text);
+}

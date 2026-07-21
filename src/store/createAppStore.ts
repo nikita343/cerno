@@ -19,6 +19,7 @@ import {
 import {
   createWorkspaceRow,
   deleteWorkspaceRow,
+  loadSubscription,
   loadWorkspaces,
   removeMember,
   updateWorkspaceRow,
@@ -28,6 +29,7 @@ import {
   DEFAULT_LABELS,
   DEFAULT_SETTINGS,
   FREE_PLAN,
+  isEntitled,
   type CaptureMode,
   type DayPlan,
   type Dump,
@@ -163,6 +165,15 @@ export interface AppActions {
   /** Removing yourself; the same call an admin uses to remove someone else. */
   leaveWorkspace: (id: string) => Promise<void>;
   refreshWorkspaces: () => Promise<void>;
+  /**
+   * Re-reads the plan from the server.
+   *
+   * Needed because entitlement is granted by a Stripe *webhook*, which is a
+   * separate request from the one that redirects the customer back. The two
+   * race, and the redirect usually wins — so the page that says "thanks for
+   * paying" is often rendered before the payment has been recorded.
+   */
+  refreshSubscription: () => Promise<boolean>;
 
   /* labels */
   addLabel: (name: string, color: string) => Promise<void>;
@@ -693,6 +704,19 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         } catch (error) {
           console.error("[store] leave workspace failed", error);
           set({ workspaces: previous, tasks: previousTasks, syncError: SYNC_FAILED });
+        }
+      },
+
+      refreshSubscription: async () => {
+        const db = getDb();
+        if (!db) return false;
+        try {
+          const subscription = await loadSubscription(db);
+          set({ subscription });
+          return isEntitled(subscription);
+        } catch (error) {
+          console.error("[store] subscription refresh failed", error);
+          return false;
         }
       },
 

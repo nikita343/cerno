@@ -364,3 +364,17 @@
     padding-left: 2.375rem;
   }
 }
+
+/* Outcome of an invite. Not an error style: the common "created but not
+   emailed" case is a partial success, and colouring it red would tell an admin
+   the invite failed when the link on their clipboard works perfectly. */
+.notice {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-tile);
+  padding: 0.4375rem 0.625rem;
+  text-wrap: pretty;
+}
