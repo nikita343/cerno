@@ -91,6 +91,8 @@ export async function POST(request: Request) {
       id: newId(),
       dump_id: null,
       title: parsed.title,
+      // A quick-add has no note yet; the user writes one if they want it.
+      description: null,
       priority: parsed.priority,
       estimated_minutes: Math.min(
         480,

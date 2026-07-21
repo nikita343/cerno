@@ -89,8 +89,28 @@ export interface AppActions {
   deleteTask: (id: string) => Promise<void>;
   updateTask: (
     id: string,
-    patch: Partial<Pick<Task, "title" | "priority" | "estimated_minutes" | "deadline">>,
+    patch: Partial<
+      Pick<
+        Task,
+        | "title"
+        | "description"
+        | "priority"
+        | "estimated_minutes"
+        | "deadline"
+      >
+    >,
   ) => Promise<void>;
+  /**
+   * Moves a task to a day. `null` sends it to the Inbox.
+   *
+   * Separate from `updateTask` because it also has to fix `status`: a task
+   * moved off the calendar has to leave the timeline, and one moved onto a day
+   * has to rejoin it. Patching `plan_date` alone would leave a "deferred" task
+   * rendering on a day it was explicitly rescheduled to.
+   */
+  rescheduleTask: (id: string, date: string | null) => Promise<void>;
+  /** Same, for every id at once — the bulk overdue action. */
+  rescheduleMany: (ids: string[], date: string | null) => Promise<void>;
   /** Parse one phrase into a structured task and drop it on today. */
   addTaskSmart: (text: string) => Promise<void>;
   /** Roll unfinished tasks from past days onto today. */
@@ -168,6 +188,28 @@ export function buildInitialData(today: string): InitialData {
 export type DbGetter = () => SupabaseClient | null;
 
 const SYNC_FAILED = "That didn't save. Check your connection and try again.";
+
+/**
+ * The fields a reschedule touches.
+ *
+ * `status` moves with the date, which is the whole reason this isn't a plain
+ * `plan_date` patch:
+ *
+ *   - A date makes the task scheduled work again, so a previously deferred or
+ *     inboxed task rejoins the timeline. Without this, rescheduling a deferred
+ *     task to today would set the date and leave it sitting in Deferred.
+ *   - No date means it has no day at all, which is exactly what `inbox`
+ *     already means. Reusing that state keeps the task visible in Inbox rather
+ *     than inventing a fourth place for work to hide.
+ *
+ * A completed task is deliberately not special-cased: rescheduling one is a
+ * reasonable way to reopen it, and `status` moving to `today` does that.
+ */
+function reschedulePatch(date: string | null): TaskPatch {
+  return date === null
+    ? { plan_date: null, status: "inbox" }
+    : { plan_date: date, status: "today" };
+}
 
 export function createAppStore(initial: InitialData, getDb: DbGetter = () => null) {
   return createStore<AppStore>()((set, get) => {
@@ -412,6 +454,32 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           (tasks) => tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
           (db) => updateTaskRow(db, id, patch as TaskPatch),
         ),
+
+      rescheduleTask: (id, date) => {
+        const patch = reschedulePatch(date);
+        return writeThrough(
+          (tasks) => tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+          (db) => updateTaskRow(db, id, patch),
+        );
+      },
+
+      rescheduleMany: (ids, date) => {
+        if (ids.length === 0) return Promise.resolve();
+        const patch = reschedulePatch(date);
+        const target = new Set(ids);
+        return writeThrough(
+          (tasks) => tasks.map((t) => (target.has(t.id) ? { ...t, ...patch } : t)),
+          async (db) => {
+            // Sequential, not Promise.all: a bulk reschedule of a badly
+            // overdue day can be a dozen rows, and firing them together makes
+            // a partial failure much harder to reason about — the rollback
+            // restores everything, so a burst buys nothing.
+            for (const id of ids) {
+              await updateTaskRow(db, id, patch);
+            }
+          },
+        );
+      },
 
       addTaskSmart: async (text) => {
         const { today } = get();

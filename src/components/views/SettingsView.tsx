@@ -7,6 +7,11 @@ import { useUser } from "@/components/auth/UserProvider";
 import { BellIcon, GlobeIcon, SparkIcon, UploadIcon, UserIcon } from "@/components/icons";
 import { AVATAR_MAX_BYTES } from "@/lib/supabase/data";
 import {
+  browserTimezone,
+  timezoneGroups,
+  type ZoneGroup,
+} from "@/lib/timezones";
+import {
   LANGUAGES,
   MODEL_CHOICES,
   type AppLanguage,
@@ -26,24 +31,6 @@ import view from "./View.module.css";
  */
 const LEAD_OPTIONS = [1, 2, 4, 8];
 
-/**
- * Timezones offered in the picker.
- *
- * `Intl.supportedValuesOf("timeZone")` returns 400+ entries, which is a scroll
- * nobody wants. The browser's own zone is always included and preselected, so
- * the common case needs no interaction at all.
- */
-const COMMON_ZONES = [
-  "Europe/Kyiv",
-  "Europe/London",
-  "Europe/Berlin",
-  "Europe/Warsaw",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Asia/Tokyo",
-  "UTC",
-];
-
 export function SettingsView() {
   const user = useUser();
   const settings = useAppStore((s) => s.settings);
@@ -61,19 +48,30 @@ export function SettingsView() {
   // impossible to change from a different machine.
   useEffect(() => {
     if (settings.timezone !== "UTC") return;
-    const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (local && local !== "UTC") void updateSettings({ timezone: local });
+    const local = browserTimezone();
+    if (local !== "UTC") void updateSettings({ timezone: local });
     // Runs once: this is a one-time migration of an unset value, not a sync.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const zones = Array.from(
-    new Set([
-      Intl.DateTimeFormat().resolvedOptions().timeZone,
-      settings.timezone,
-      ...COMMON_ZONES,
-    ].filter(Boolean) as string[]),
-  );
+  /**
+   * Built after mount, never during render.
+   *
+   * The list is derived from the *browser's* Intl data and the current instant:
+   * the server resolves offsets in its own zone (UTC on Vercel) and the client
+   * in the viewer's, so computing it in render makes the two disagree and React
+   * throws a hydration mismatch. Until the effect runs, the select holds only
+   * the stored value — which is what both sides can agree on.
+   *
+   * Also kept out of render because it walks 400+ zones and formats an offset
+   * for each; redoing that on every keystroke in the name field above would be
+   * wasteful even if it were correct.
+   */
+  const [zoneGroups, setZoneGroups] = useState<ZoneGroup[]>([]);
+
+  useEffect(() => {
+    setZoneGroups(timezoneGroups(settings.timezone));
+  }, [settings.timezone]);
 
   const onPickFile = async (file: File | undefined) => {
     if (!file) return;
@@ -230,16 +228,31 @@ export function SettingsView() {
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Timezone</span>
+            {/* A native select, deliberately: 400+ options get the OS's own
+                scrollable picker with type-ahead, which beats any listbox worth
+                building here and is a single tap on mobile. */}
             <select
               className={styles.select}
               value={settings.timezone}
               onChange={(e) => void updateSettings({ timezone: e.target.value })}
             >
-              {zones.map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone.replace(/_/g, " ")}
+              {zoneGroups.length === 0 ? (
+                // Pre-hydration: the stored value alone, so the select is never
+                // empty and the server and client render the same markup.
+                <option value={settings.timezone}>
+                  {settings.timezone.replace(/_/g, " ")}
                 </option>
-              ))}
+              ) : (
+                zoneGroups.map((group) => (
+                  <optgroup key={group.region} label={group.region}>
+                    {group.zones.map((zone) => (
+                      <option key={zone.value} value={zone.value}>
+                        {zone.label} ({zone.offset})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              )}
             </select>
             <span className={styles.fieldNote}>
               Used when Cerno resolves &ldquo;tomorrow&rdquo; and

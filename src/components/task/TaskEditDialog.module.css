@@ -1,0 +1,287 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim-menu);
+  z-index: 50;
+  animation: cernoFadeIn var(--dur) var(--ease);
+}
+
+.scrim[data-leaving] {
+  animation: cernoFadeIn var(--dur-fast) var(--ease) reverse forwards;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28rem;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: var(--hairline) solid var(--border-menu);
+  border-radius: var(--r-card-lg);
+  z-index: 51;
+  overflow: hidden;
+  animation: cernoCardIn var(--dur-slow) var(--ease-out);
+}
+
+.dialog[data-leaving] {
+  animation: cernoCardOut var(--dur-fast) var(--ease) forwards;
+}
+
+/* Mobile: a bottom sheet. A centred modal with the keyboard open leaves the
+   fields hidden behind it on a short viewport. */
+@media screen and (max-width: 599px) {
+  .dialog {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    border-radius: var(--r-card-lg) var(--r-card-lg) 0 0;
+    border-bottom: none;
+    max-height: 92vh;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    animation: cernoSheetUp var(--dur-slow) var(--ease-out);
+  }
+
+  .dialog[data-leaving] {
+    animation: cernoSheetUp var(--dur) var(--ease) reverse forwards;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 0.875rem 0.75rem 1.125rem;
+  border-bottom: var(--hairline) solid var(--border);
+  flex: none;
+}
+
+.headTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.close {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-tile);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.body {
+  padding: 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.input,
+.textarea,
+.minutes {
+  width: 100%;
+  padding: 0.5625rem 0.6875rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--bg);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-button);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.input:focus,
+.textarea:focus,
+.minutes:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 5rem;
+  line-height: 1.5;
+}
+
+.counter {
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+  align-self: flex-end;
+}
+
+.split {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.split > .field:first-child {
+  flex: 1;
+}
+
+@media screen and (max-width: 479px) {
+  .split {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .split > .field {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------- segmented */
+
+.segmented {
+  display: inline-flex;
+  gap: 0.1875rem;
+  padding: 0.1875rem;
+  background: var(--bg-sunken);
+  border-radius: var(--r-button);
+}
+
+.segment {
+  flex: 1;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.segment:hover:not([data-active]) {
+  color: var(--text);
+}
+
+.segment[data-active][data-priority="high"] {
+  background: var(--prio-high);
+  color: var(--on-accent);
+}
+
+.segment[data-active][data-priority="medium"] {
+  background: var(--prio-medium);
+  color: var(--on-accent);
+}
+
+.segment[data-active][data-priority="low"] {
+  background: var(--border-strong);
+  color: var(--on-accent);
+}
+
+/* ----------------------------------------------------------------- minutes */
+
+.minutesWrap {
+  position: relative;
+  display: block;
+}
+
+.minutes {
+  /* Room for the unit label sitting inside the field. */
+  padding-right: 2.75rem;
+}
+
+.minutesUnit {
+  position: absolute;
+  right: 0.6875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8125rem;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------- foot */
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.875rem 1.125rem;
+  border-top: var(--hairline) solid var(--border);
+  flex: none;
+}
+
+.cancel,
+.save {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--r-button);
+  cursor: pointer;
+  border: var(--hairline) solid transparent;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.cancel {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.cancel:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.save {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.save:hover {
+  background: var(--accent-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog,
+  .dialog[data-leaving],
+  .scrim,
+  .scrim[data-leaving] {
+    animation-duration: 0.01ms;
+  }
+}

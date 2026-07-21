@@ -369,6 +369,8 @@ export function buildPlan({
       id: newId(),
       dump_id: dumpId,
       title,
+      // The planner never writes a description — it is the user's own note.
+      description: null,
       priority,
       estimated_minutes: minutes,
       deadline,
@@ -524,6 +526,7 @@ export function parseSingleTask(
     id: newId(),
     dump_id: null,
     title,
+    description: null,
     priority,
     estimated_minutes: minutes,
     deadline,

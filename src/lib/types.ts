@@ -67,6 +67,13 @@ export interface Task {
   user_id?: string;
   dump_id: string | null;
   title: string;
+  /**
+   * The user's own note. Distinct from `reasoning`, which is Cerno's
+   * explanation of why the task sits where it does — merging them would mean
+   * an edit destroys the planner's rationale, and a replan overwrites a note
+   * the person typed. Null means never written.
+   */
+  description: string | null;
   priority: Priority;
   estimated_minutes: number;
   /** ISO date `YYYY-MM-DD`, or null. */

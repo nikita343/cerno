@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/components/icons";
 import { TaskChip } from "@/components/task/TaskChip";
+import { TaskMenu } from "@/components/task/TaskMenu";
 import {
   dayLetter,
   dayOfMonth,
@@ -27,6 +28,7 @@ export function UpcomingView() {
   const tasks = useAppStore((s) => s.tasks);
   const stepWeek = useAppStore((s) => s.stepUpcomingWeek);
   const setAnchor = useAppStore((s) => s.setUpcomingAnchor);
+  const deleteTask = useAppStore((s) => s.deleteTask);
   const { overdue } = useReminders();
 
   // Selecting a day scrolls its group into view rather than filtering the
@@ -161,6 +163,14 @@ export function UpcomingView() {
                                 overdue={overdue.has(task.id)}
                               />
                             </div>
+                            {/* Rescheduling a future task is the most natural
+                                action on this screen, so the menu belongs here
+                                as well as on Today. */}
+                            <TaskMenu
+                              task={task}
+                              today={today}
+                              onDelete={(id) => void deleteTask(id)}
+                            />
                           </div>
                         ))}
                       </div>

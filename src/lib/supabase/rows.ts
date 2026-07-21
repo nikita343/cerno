@@ -32,6 +32,7 @@ export interface TaskRow {
   user_id: string;
   dump_id: string | null;
   title: string;
+  description: string | null;
   priority: Priority;
   estimated_minutes: number;
   deadline: string | null;
@@ -74,6 +75,9 @@ export function toTask(row: TaskRow): Task {
     user_id: row.user_id,
     dump_id: row.dump_id,
     title: row.title,
+    // `?? null` because rows written before 0003 have no such column, and
+    // undefined would leak into the domain type as a third empty value.
+    description: row.description ?? null,
     priority: row.priority,
     estimated_minutes: row.estimated_minutes,
     deadline: row.deadline,
@@ -101,6 +105,7 @@ export function toTaskRow(task: Task, userId: string): TaskRow {
     user_id: userId,
     dump_id: task.dump_id,
     title: task.title,
+    description: task.description,
     priority: task.priority,
     estimated_minutes: task.estimated_minutes,
     deadline: task.deadline,

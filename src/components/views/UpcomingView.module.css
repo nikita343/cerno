@@ -228,6 +228,16 @@
   gap: 0.75rem;
 }
 
+/* See TodayView.module.css: an open task menu overlaps the rows below it, and
+   later siblings paint on top, so the whole row has to be lifted — desktop
+   only, or the stacking context it creates traps the mobile sheet. */
+@media screen and (min-width: 600px) {
+  .timedRow:has([aria-expanded="true"]) {
+    position: relative;
+    z-index: 20;
+  }
+}
+
 .rowTime {
   font-size: 0.75rem;
   font-weight: 500;

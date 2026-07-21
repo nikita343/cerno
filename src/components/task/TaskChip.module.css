@@ -189,6 +189,29 @@
 
 /* --------------------------------------------------------------- reasoning */
 
+/* The user's own note. Aligned with the title (past the priority dot), and
+   clamped to two lines: the row is a scannable list item, and the full text is
+   one click away in the edit dialog. */
+.description {
+  padding-left: 1.3125rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* `anywhere` rather than `break-word`: a pasted URL with no spaces would
+     otherwise push the row wider than its container. */
+  overflow-wrap: anywhere;
+}
+
+.description[data-done] {
+  color: var(--text-faint);
+}
+
 .reasoning {
   display: flex;
   gap: 0.5rem;

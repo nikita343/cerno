@@ -23,6 +23,8 @@ export interface TaskChipProps {
   onClick?: () => void;
   /** Past its scheduled finish and still open. Set by the calling view. */
   overdue?: boolean;
+  /** Renders the user's own note under the title. */
+  showDescription?: boolean;
 }
 
 const PRIORITY_LABEL: Record<Task["priority"], string> = {
@@ -46,6 +48,7 @@ export function TaskChip({
   done,
   onClick,
   overdue = false,
+  showDescription = true,
 }: TaskChipProps) {
   // Label colours are per-user data now, so the chip has to read them rather
   // than look them up in a constant. Subscribed shallowly: a recolour should
@@ -106,6 +109,15 @@ export function TaskChip({
           </span>
         )}
       </div>
+
+      {/* The user's own note, above the AI's reasoning: what you wrote outranks
+          what Cerno inferred. Clamped to two lines so a long note can't turn
+          the row into a paragraph — the full text is in the edit dialog. */}
+      {showDescription && task.description && (
+        <p className={styles.description} data-done={isDone || undefined}>
+          {task.description}
+        </p>
+      )}
 
       {reasoning && (
         <div className={styles.reasoning}>

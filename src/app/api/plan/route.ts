@@ -226,6 +226,10 @@ function assemble({
       id: prior?.id ?? newId(),
       dump_id: prior?.dump_id ?? dumpId,
       title: item.title,
+      // Carried forward, never regenerated. The description is the user's own
+      // note; the planner has no opinion on it and a replan must not erase
+      // something they typed.
+      description: prior?.description ?? null,
       priority: item.priority,
       estimated_minutes: minutes,
       deadline: item.deadline,

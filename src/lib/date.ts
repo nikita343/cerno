@@ -122,6 +122,12 @@ export function monthDay(iso: string): string {
   return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
 }
 
+/** "Jul 20" — for rows too narrow for the full month name. */
+export function monthDayShort(iso: string): string {
+  const d = fromISODate(iso);
+  return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+}
+
 /** "Saturday, July 18" — the Today header eyebrow. */
 export function eyebrowDate(iso: string): string {
   const d = fromISODate(iso);

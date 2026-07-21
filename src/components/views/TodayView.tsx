@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CheckIcon, TrashIcon } from "@/components/icons";
+import { CalendarIcon, CheckIcon } from "@/components/icons";
+import { DatePicker } from "@/components/task/DatePicker";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { SwipeRow } from "@/components/task/SwipeRow";
 import { TaskChip } from "@/components/task/TaskChip";
+import { TaskMenu } from "@/components/task/TaskMenu";
 import { eyebrowDate } from "@/lib/date";
 import { taskDuration, totalDuration, pluralize } from "@/lib/format";
 import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
@@ -32,9 +34,36 @@ export function TodayView() {
   const moveToToday = useAppStore((s) => s.moveToToday);
   const openCapture = useAppStore((s) => s.openCapture);
 
+  const rescheduleMany = useAppStore((s) => s.rescheduleMany);
+
   // Same derivation the notification bell uses, so a row's badge and the panel
   // can never disagree about what is late.
   const { overdue } = useReminders();
+
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const bulkRef = useRef<HTMLDivElement>(null);
+
+  // Overdue ids in the order they appear on the timeline, so the bulk action
+  // and the count in its label always describe the same set.
+  const overdueIdList = useMemo(
+    () => scheduled.filter((t) => overdue.has(t.id)).map((t) => t.id),
+    [scheduled, overdue],
+  );
+
+  useEffect(() => {
+    if (!bulkOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!bulkRef.current?.contains(e.target as Node)) setBulkOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [bulkOpen]);
+
+  // The button disappears once nothing is overdue; leaving it open would
+  // strand a picker that no longer has anything to act on.
+  useEffect(() => {
+    if (overdueIdList.length === 0) setBulkOpen(false);
+  }, [overdueIdList.length]);
 
   // Ids mid-exit. The task stays in the store until its animation finishes,
   // otherwise the row vanishes instantly and the rows below snap upward.
@@ -121,6 +150,39 @@ export function TodayView() {
             <span className={view.sectionMeta}>
               {open.length} {pluralize(open.length, "task")}
             </span>
+
+            {overdueIdList.length > 0 && (
+              <div className={styles.bulk} ref={bulkRef}>
+                <button
+                  type="button"
+                  className={styles.bulkButton}
+                  onClick={() => setBulkOpen(!bulkOpen)}
+                  aria-haspopup="dialog"
+                  aria-expanded={bulkOpen}
+                >
+                  <CalendarIcon size="0.875rem" />
+                  Reschedule {overdueIdList.length}
+                </button>
+
+                {bulkOpen && (
+                  <div className={styles.bulkPop}>
+                    <DatePicker
+                      today={today}
+                      title={`Move ${overdueIdList.length} overdue ${pluralize(
+                        overdueIdList.length,
+                        "task",
+                      )}`}
+                      onClose={() => setBulkOpen(false)}
+                      onPick={(date) => {
+                        void rescheduleMany(overdueIdList, date);
+                        setBulkOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <span className={view.sectionMetaRight}>
               &asymp; {totalDuration(remaining)}
             </span>
@@ -192,14 +254,14 @@ export function TodayView() {
                           >
                             <CheckIcon size="1rem" />
                           </button>
-                          <button
-                            type="button"
-                            className={styles.iconButton}
-                            onClick={() => requestDelete(task.id)}
-                            aria-label={`Delete "${task.title}"`}
-                          >
-                            <TrashIcon size="1rem" />
-                          </button>
+                          {/* Delete moved into this menu so it can't be hit
+                              while reaching for the check, and so it can carry
+                              a confirmation. */}
+                          <TaskMenu
+                            task={task}
+                            today={today}
+                            onDelete={requestDelete}
+                          />
                         </div>
                       </li>
                     );

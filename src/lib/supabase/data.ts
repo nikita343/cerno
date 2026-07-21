@@ -242,6 +242,7 @@ export type TaskPatch = Partial<
   Pick<
     Task,
     | "title"
+    | "description"
     | "priority"
     | "estimated_minutes"
     | "deadline"
