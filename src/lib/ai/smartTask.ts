@@ -24,6 +24,7 @@ function futureDate(value: string | null, today: string): string | null {
  * Returns a task with a fresh id and `created_at`; it is not persisted here.
  */
 export async function buildSmartTask({
+  id,
   text,
   today,
   timezone,
@@ -32,6 +33,12 @@ export async function buildSmartTask({
   workspaceId = null,
   assigneeId = null,
 }: {
+  /**
+   * The id to give the task. The quick-add path passes the id the client
+   * already showed and persisted a placeholder under, so this call *updates*
+   * that row rather than minting a second one — see `addTaskSmart`.
+   */
+  id?: string;
   text: string;
   today: string;
   timezone: string;
@@ -44,6 +51,7 @@ export async function buildSmartTask({
 
   const heuristic = (): Task => ({
     ...parseSingleTask(text, today, labelNames),
+    id: id ?? newId(),
     workspace_id: workspaceId,
     assignee_id: assigneeId,
   });
@@ -64,7 +72,7 @@ export async function buildSmartTask({
   const parsed = generated.parsed;
 
   return {
-    id: newId(),
+    id: id ?? newId(),
     dump_id: null,
     workspace_id: workspaceId,
     assignee_id: assigneeId,

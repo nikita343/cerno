@@ -620,6 +620,8 @@ export async function smartAddTask(
   workspaceId: string | null = null,
   /** Who the task is for, when it's a workspace task. Null means unassigned. */
   assigneeId: string | null = null,
+  /** The id the caller already persisted a placeholder under, if any. */
+  taskId: string | null = null,
 ): Promise<Task> {
   try {
     const response = await fetch("/api/tasks/parse", {
@@ -631,16 +633,18 @@ export async function smartAddTask(
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC",
         workspaceId,
         assigneeId,
+        taskId,
       }),
     });
     if (!response.ok) throw new ServerUnavailableError();
     const body = (await response.json()) as { task: Task };
     return body.task;
   } catch {
-    // Offline fallback. The workspace and assignee are still carried so the
-    // task lands in the right list, for the right person, once it syncs.
+    // Offline fallback. The id, workspace and assignee are all carried so the
+    // task keeps its already-persisted row and lands in the right list.
     return {
       ...parseSingleTask(text, today, labelNames),
+      ...(taskId ? { id: taskId } : {}),
       workspace_id: workspaceId,
       assignee_id: assigneeId,
     };

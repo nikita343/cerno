@@ -50,6 +50,14 @@ const requestSchema = z.object({
    * worst be a dangling assignee, never a tenant-isolation break.
    */
   assigneeId: z.string().uuid().nullish(),
+  /**
+   * The id the client already assigned and optimistically persisted. Passing it
+   * makes this an idempotent upsert of that row rather than an insert of a
+   * second one — so a task the client saved a placeholder for keeps its id and
+   * simply gains the parsed detail. Omitted (e.g. the Telegram bot), a fresh id
+   * is minted.
+   */
+  taskId: z.string().uuid().nullish(),
 });
 
 /**
@@ -77,6 +85,7 @@ export async function POST(request: Request) {
 
   try {
     const task = await buildSmartTask({
+      id: body.taskId ?? undefined,
       text: body.text,
       today,
       timezone: body.timezone,

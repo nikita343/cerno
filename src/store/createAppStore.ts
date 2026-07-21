@@ -13,6 +13,7 @@ import {
   saveSettings,
   updateLabelColor,
   updateTaskRow,
+  upsertTasks,
   uploadAvatar,
   type TaskPatch,
 } from "@/lib/supabase/data";
@@ -595,47 +596,68 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         const { today } = get();
         const placeholderDate = date ?? today;
 
-        // A placeholder goes in *before* the parse, so the row appears the
-        // instant you hit enter. The alternative — awaiting the model, which
-        // can take a second or two, before anything shows — clears the input
-        // and leaves the list unchanged, which reads as "did that work?".
-        // Replaced in place when the parse resolves; removed if it fails.
-        const tempId = newId();
+        // The client mints the id, so the same row is what's shown, what's saved
+        // now, and what the parse enriches later. Sharing the id is what makes
+        // the immediate save and the AI result the *same* task rather than two.
+        const taskId = newId();
+        const placeholder: Task = {
+          id: taskId,
+          dump_id: null,
+          workspace_id: workspaceId,
+          assignee_id: assigneeId,
+          title: text,
+          description: null,
+          priority: "medium",
+          estimated_minutes: 30,
+          deadline: null,
+          suggested_start: null,
+          status: "today",
+          plan_date: placeholderDate,
+          tags: [],
+          reasoning: null,
+          sort_order: 0,
+          created_at: new Date().toISOString(),
+          pending: true,
+        };
+
+        // Show it instantly, at the end of its day's list.
         set((state) => {
           const lastOrder = state.tasks
             .filter((t) => t.status === "today" && t.plan_date === placeholderDate)
             .reduce((max, t) => Math.max(max, t.sort_order), -1);
-          const placeholder: Task = {
-            id: tempId,
-            dump_id: null,
-            workspace_id: workspaceId,
-            assignee_id: assigneeId,
-            title: text,
-            description: null,
-            priority: "medium",
-            estimated_minutes: 30,
-            deadline: null,
-            suggested_start: null,
-            status: "today",
-            plan_date: placeholderDate,
-            tags: [],
-            reasoning: null,
-            sort_order: lastOrder + 1,
-            created_at: new Date().toISOString(),
-            pending: true,
+          return {
+            tasks: [...state.tasks, { ...placeholder, sort_order: lastOrder + 1 }],
+            syncError: null,
           };
-          return { tasks: [...state.tasks, placeholder], syncError: null };
         });
 
+        // Persist the placeholder *before* the parse. This is the fix for tasks
+        // vanishing on reload: the AI parse takes a second or two, and a reload
+        // (or a parse failure) in that window used to lose a row that had only
+        // ever existed in memory. Now the basic task is in the database within
+        // ~100ms — the parse only ever upgrades a row that already exists, and
+        // the worst case is a task that keeps your exact words but misses the
+        // inferred priority and timing.
+        const db = getDb();
+        const userId = initial.userId;
+        if (db && userId) {
+          try {
+            await upsertTasks(db, [placeholder], userId);
+          } catch {
+            set({ syncError: SYNC_FAILED });
+          }
+        }
+
         try {
-          // Persisted server-side by /api/tasks/parse; the returned task
-          // already has its database id.
+          // Same id, so the route upserts the row above rather than inserting a
+          // second one.
           const parsed = await smartAddTask(
             text,
             today,
             get().labels.map((l) => l.name),
             workspaceId,
             assigneeId,
+            taskId,
           );
 
           // An explicit day wins over whatever the parser inferred. Added from
@@ -645,18 +667,17 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
               ? parsed
               : { ...parsed, plan_date: date, status: "today" };
 
-          // Swap the placeholder for the real task, keeping its slot so the row
-          // resolves in place rather than jumping to the end.
+          // Swap the placeholder's details for the parsed ones, keeping its slot
+          // so the row resolves in place rather than jumping to the end.
           set((state) => ({
             tasks: state.tasks.map((t) =>
-              t.id === tempId ? { ...task, sort_order: t.sort_order } : t,
+              t.id === taskId ? { ...task, sort_order: t.sort_order } : t,
             ),
             syncError: null,
           }));
 
           // The route already persisted the parser's own date, so a pinned day
           // needs a follow-up write. Skipped when the parser's answer stood.
-          const db = getDb();
           if (db && date !== undefined && parsed.plan_date !== date) {
             try {
               await updateTaskRow(db, task.id, {
@@ -668,11 +689,13 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             }
           }
         } catch {
-          // The task never landed — take the placeholder back out so the list
-          // doesn't show a row that isn't really there.
+          // The parse failed, but the row is already saved — so keep it, just
+          // drop the pending shimmer. Deleting it here is what used to make a
+          // task the user typed disappear on the next reload.
           set((state) => ({
-            tasks: state.tasks.filter((t) => t.id !== tempId),
-            syncError: SYNC_FAILED,
+            tasks: state.tasks.map((t) =>
+              t.id === taskId ? { ...t, pending: false } : t,
+            ),
           }));
         }
       },
