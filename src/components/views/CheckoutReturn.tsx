@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { isEntitled } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
@@ -96,45 +97,61 @@ export function CheckoutReturn() {
   }, [outcome, subscription, refreshSubscription]);
 
   if (outcome === "cancelled") {
-    return (
-      <p className={styles.checkoutNote}>
-        Checkout cancelled — nothing was charged.
-      </p>
-    );
+    return <Toast>Checkout cancelled — nothing was charged.</Toast>;
   }
 
   if (phase === "waiting") {
     return (
-      <p className={styles.checkoutNote} role="status">
-        Payment received. Waiting for Stripe to confirm…
-      </p>
+      <Toast live="status">Payment received. Waiting for Stripe to confirm…</Toast>
     );
   }
 
   if (phase === "confirmed") {
-    return (
-      <>
-        {celebrating && (
-          <UpgradeCelebration onClose={() => setCelebrating(false)} />
-        )}
-        <p className={styles.checkoutNote} data-good role="status">
-          You&rsquo;re on Team. Workspaces are unlocked.
-        </p>
-      </>
-    );
+    // The modal carries the message; a toast underneath would say it twice.
+    return celebrating ? (
+      <UpgradeCelebration onClose={() => setCelebrating(false)} />
+    ) : null;
   }
 
   if (phase === "timedOut") {
     return (
-      <p className={styles.checkoutNote} data-warn role="alert">
+      <Toast tone="warn" live="alert">
         Your payment went through, but we haven&rsquo;t had confirmation from
         Stripe yet. This usually settles within a minute — reload to check. If
         it persists, the billing webhook may not be reaching this site.
-      </p>
+      </Toast>
     );
   }
 
   return null;
+}
+
+/**
+ * A fixed, portalled notice.
+ *
+ * Portalled because this component now mounts in the app shell rather than
+ * inside a card, so it has no layout context to sit in — and because an
+ * ancestor `transform` anywhere would otherwise capture its `position: fixed`.
+ */
+function Toast({
+  children,
+  tone,
+  live,
+}: {
+  children: React.ReactNode;
+  tone?: "warn";
+  live?: "status" | "alert";
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className={styles.toast} data-warn={tone === "warn" || undefined} role={live}>
+      {children}
+    </div>,
+    document.body,
+  );
 }
 
 /**

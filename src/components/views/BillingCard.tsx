@@ -1,11 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 
 import { isEntitled, MAX_WORKSPACE_MEMBERS, type Subscription } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
-
-import { CheckoutReturn } from "./CheckoutReturn";
 
 import styles from "./SettingsView.module.css";
 
@@ -64,12 +62,6 @@ export function BillingCard() {
 
   return (
     <div className={styles.card}>
-      {/* Suspense because useSearchParams opts the subtree into client
-          rendering; without a boundary that would deopt the whole page. */}
-      <Suspense fallback={null}>
-        <CheckoutReturn />
-      </Suspense>
-
       <div className={styles.planHead}>
         <div className={styles.planText}>
           <span className={styles.planName}>

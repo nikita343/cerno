@@ -539,3 +539,41 @@
   background: var(--warn-soft);
   color: var(--text);
 }
+
+/* Post-checkout status, shown app-wide rather than inside the billing card —
+   the customer can land on any screen. Bottom-centre on a phone so it clears
+   the tab bar; bottom-right on a desktop where nothing else lives. */
+.toast {
+  position: fixed;
+  z-index: 80;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 0.6875rem 0.875rem;
+  border-radius: var(--r-chip);
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: var(--hairline) solid var(--border-menu);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+  animation: cernoSheetUp var(--dur) var(--ease-out);
+}
+
+.toast[data-warn] {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+  color: var(--text);
+}
+
+@media screen and (min-width: 960px) {
+  .toast {
+    left: auto;
+    right: 1.25rem;
+    transform: none;
+    bottom: 1.25rem;
+  }
+}

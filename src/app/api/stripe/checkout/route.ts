@@ -64,8 +64,11 @@ export async function POST() {
       // and two accounts can share one.
       client_reference_id: caller.userId,
       subscription_data: { metadata: { supabase_user_id: caller.userId } },
-      success_url: `${siteUrl()}/dashboard/settings?checkout=success`,
-      cancel_url: `${siteUrl()}/dashboard/settings?checkout=cancelled`,
+      // The *plan* section, not the Settings index. Settings is split into
+      // routed sections, and its index renders Profile — so a return to
+      // `/dashboard/settings` lands on a page that shows nothing about billing.
+      success_url: `${siteUrl()}/dashboard/settings/plan?checkout=success`,
+      cancel_url: `${siteUrl()}/dashboard/settings/plan?checkout=cancelled`,
       allow_promotion_codes: true,
     });
 

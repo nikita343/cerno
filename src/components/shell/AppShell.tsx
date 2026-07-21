@@ -2,7 +2,10 @@
 
 import type { ReactNode } from "react";
 
+import { Suspense } from "react";
+
 import { CaptureOverlay } from "@/components/capture/CaptureOverlay";
+import { CheckoutReturn } from "@/components/views/CheckoutReturn";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { SettingsMenuOverlay } from "@/components/settings/SettingsMenuOverlay";
 import { useNowTicker } from "@/lib/useNow";
@@ -49,6 +52,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           bar are both always in the DOM, so a panel next to each trigger would
           exist twice. */}
       <NotificationCenter />
+
+      {/* Mounted here, not in the billing card.
+          It used to live inside BillingCard, which only renders on one Settings
+          section — so a customer returning to any other page (including the
+          Settings index, which is where Stripe was sending them) got no
+          reconciliation at all and sat looking at the old plan. Nothing about
+          "did the payment land" should depend on which screen you happen to be
+          on. */}
+      <Suspense fallback={null}>
+        <CheckoutReturn />
+      </Suspense>
     </div>
   );
 }
