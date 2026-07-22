@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-import styles from '@/app/landing.module.css';
+import styles from "@/app/landing.module.css";
 
 /**
  * Landing-page motion, ported from the old GSAP + ScrollTrigger landing.
@@ -18,11 +18,13 @@ import styles from '@/app/landing.module.css';
  */
 export function LandingMotion() {
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const q = <T extends Element = HTMLElement>(sel: string) =>
       Array.from(document.querySelectorAll<T>(sel));
     const one = <T extends Element = HTMLElement>(sel: string) =>
@@ -37,10 +39,20 @@ export function LandingMotion() {
     // CSS, so there is nothing to reveal. Populate the live-demo placeholders
     // with a static frame so nothing reads as empty.
     if (reduce) {
-      const typed = one('[data-typed]');
-      if (typed) typed.textContent = 'call the plumber about the leak…';
-      const notif = one('[data-notif]');
+      const typed = one("[data-typed]");
+      if (typed) typed.textContent = "call the plumber about the leak…";
+      const notif = one("[data-notif]");
       if (notif) gsap.set(notif, { opacity: 1 });
+      const featureTyped = one(
+        "[data-f1-typed], [data-f3-typed], [data-f6-typed]",
+      );
+      if (featureTyped)
+        featureTyped.textContent = "call the plumber about the leak…";
+      q(
+        "[data-f1-task], [data-f2-deferred], [data-f3-add], [data-f6-avatar], [data-f7-card]",
+      ).forEach((el) => {
+        if (el instanceof HTMLElement) gsap.set(el, { opacity: 1 });
+      });
       return;
     }
 
@@ -51,7 +63,12 @@ export function LandingMotion() {
      */
     const appear = (
       els: Element | Element[] | NodeListOf<Element> | null,
-      opts: { y?: number; trigger?: Element | null; start?: string; stagger?: number } = {},
+      opts: {
+        y?: number;
+        trigger?: Element | null;
+        start?: string;
+        stagger?: number;
+      } = {},
     ) => {
       const arr = (
         els == null ? [] : els instanceof Element ? [els] : Array.from(els)
@@ -61,14 +78,14 @@ export function LandingMotion() {
       gsap.set(arr, { opacity: 0, y });
       const t = ScrollTrigger.create({
         trigger: opts.trigger ?? arr[0],
-        start: opts.start ?? 'top 88%',
+        start: opts.start ?? "top 88%",
         once: true,
         onEnter: () =>
           gsap.to(arr, {
             opacity: 1,
             y: 0,
             duration: 0.8,
-            ease: 'power3.out',
+            ease: "power3.out",
             stagger: opts.stagger ?? 0,
           }),
       });
@@ -76,35 +93,40 @@ export function LandingMotion() {
     };
 
     // ---- nav: solidify after leaving the hero ----------------------------
-    const nav = one('[data-nav]');
+    const nav = one("[data-nav]");
     if (nav) {
       const navTrigger = ScrollTrigger.create({
-        start: 'top top',
-        end: 'max',
-        onUpdate: (self) => nav.classList.toggle(styles.navSolid, self.scroll() > 60),
+        start: "top top",
+        end: "max",
+        onUpdate: (self) =>
+          nav.classList.toggle(styles.navSolid, self.scroll() > 60),
       });
       triggers.push(navTrigger);
       nav.classList.toggle(styles.navSolid, window.scrollY > 60);
     }
 
     // ---- hero intro ------------------------------------------------------
-    const tl = gsap.timeline({ defaults: { ease: 'power4.out' }, delay: 0.1 });
-    const heroCopy = one('[data-hero-copy]');
-    const heroMedia = one('[data-hero-media]');
+    const tl = gsap.timeline({ defaults: { ease: "power4.out" }, delay: 0.1 });
+    const heroCopy = one("[data-hero-copy]");
+    const heroMedia = one("[data-hero-media]");
     if (heroCopy) tl.from(heroCopy, { y: 26, opacity: 0, duration: 0.8 });
     if (heroMedia)
-      tl.from(heroMedia, { y: 56, opacity: 0, scale: 0.96, duration: 1.0 }, '-=0.55');
+      tl.from(
+        heroMedia,
+        { y: 56, opacity: 0, scale: 0.96, duration: 1.0 },
+        "-=0.55",
+      );
 
     // ---- hero floating dots: gentle scrub parallax -----------------------
-    q('[data-floating-dot]').forEach((dot, i) =>
+    q("[data-floating-dot]").forEach((dot, i) =>
       loops.push(
         gsap.to(dot, {
           y: i % 2 ? 120 : -100,
-          ease: 'none',
+          ease: "none",
           scrollTrigger: {
-            trigger: '[data-hero]',
-            start: 'top top',
-            end: 'bottom top',
+            trigger: "[data-hero]",
+            start: "top top",
+            end: "bottom top",
             scrub: true,
           },
         }),
@@ -112,21 +134,21 @@ export function LandingMotion() {
     );
 
     // ---- statement: word-by-word rise, preserving inline accent markup ---
-    const statement = one('[data-statement-text]');
+    const statement = one("[data-statement-text]");
     if (statement && !statement.dataset.split) {
-      statement.dataset.split = 'true';
+      statement.dataset.split = "true";
       const nodes = Array.from(statement.childNodes);
-      statement.innerHTML = '';
+      statement.innerHTML = "";
       const words: HTMLElement[] = [];
       nodes.forEach((node) => {
         if (node.nodeType === Node.TEXT_NODE) {
-          (node.textContent ?? '').split(/(\s+)/).forEach((part) => {
+          (node.textContent ?? "").split(/(\s+)/).forEach((part) => {
             if (!part) return;
             if (/^\s+$/.test(part)) {
               statement.appendChild(document.createTextNode(part));
               return;
             }
-            const s = document.createElement('span');
+            const s = document.createElement("span");
             s.className = styles.statementWord;
             s.textContent = part;
             statement.appendChild(s);
@@ -144,14 +166,14 @@ export function LandingMotion() {
       gsap.set(words, { opacity: 0, y: 14 });
       const stTrigger = ScrollTrigger.create({
         trigger: statement,
-        start: 'top 78%',
+        start: "top 78%",
         once: true,
         onEnter: () =>
           gsap.to(words, {
             opacity: 1,
             y: 0,
             duration: 0.5,
-            ease: 'power3.out',
+            ease: "power3.out",
             stagger: 0.02,
           }),
       });
@@ -159,11 +181,11 @@ export function LandingMotion() {
     }
 
     // ---- generic reveals (steps, feature copy/media, plans) --------------
-    q('[data-reveal]').forEach((el) => appear(el, { y: 40, start: 'top 86%' }));
+    q("[data-reveal]").forEach((el) => appear(el, { y: 40, start: "top 86%" }));
 
     // ---- feature media: subtle scrub parallax ----------------------------
-    q('.' + styles.feature).forEach((feat) => {
-      const media = feat.querySelector('[data-reveal]:last-child');
+    q("." + styles.feature).forEach((feat) => {
+      const media = feat.querySelector("[data-reveal]:last-child");
       if (media)
         loops.push(
           gsap.fromTo(
@@ -171,11 +193,11 @@ export function LandingMotion() {
             { yPercent: 4 },
             {
               yPercent: -4,
-              ease: 'none',
+              ease: "none",
               scrollTrigger: {
                 trigger: feat,
-                start: 'top bottom',
-                end: 'bottom top',
+                start: "top bottom",
+                end: "bottom top",
                 scrub: true,
               },
             },
@@ -186,26 +208,26 @@ export function LandingMotion() {
     // ---- live "watch it think" bento demos -------------------------------
 
     // pulsing planning / command dots
-    const pulseDots = q('[data-think-dot], [data-cmd-dot]');
+    const pulseDots = q("[data-think-dot], [data-cmd-dot]");
     if (pulseDots.length)
       loops.push(
         gsap.to(pulseDots, {
           scale: 1.5,
           opacity: 0.45,
           duration: 0.85,
-          ease: 'sine.inOut',
+          ease: "sine.inOut",
           repeat: -1,
           yoyo: true,
         }),
       );
 
     // breathing status dots
-    q('[data-breathe]').forEach((d, i) =>
+    q("[data-breathe]").forEach((d, i) =>
       loops.push(
         gsap.to(d, {
           scale: 1.18,
           duration: 1.4,
-          ease: 'sine.inOut',
+          ease: "sine.inOut",
           repeat: -1,
           yoyo: true,
           delay: i * 0.5,
@@ -214,7 +236,7 @@ export function LandingMotion() {
     );
 
     // reprioritizing queue ticker — the top row advances, list re-settles
-    const stream = one('[data-stream]');
+    const stream = one("[data-stream]");
     if (stream) {
       const advance = () => {
         if (!alive || !stream.isConnected) return;
@@ -225,7 +247,7 @@ export function LandingMotion() {
           gsap.to(stream, {
             y: -h,
             duration: 0.65,
-            ease: 'power2.inOut',
+            ease: "power2.inOut",
             delay: 2.1,
             onComplete: () => {
               if (!alive) return;
@@ -240,12 +262,12 @@ export function LandingMotion() {
     }
 
     // typewriter brain dump
-    const typed = one('[data-typed]');
+    const typed = one("[data-typed]");
     if (typed) {
       const phrases = [
-        'call the plumber about the leak…',
-        'Karlsson brief due thursday, ~10 min',
-        'dentist, dry cleaning, PR reviews',
+        "call the plumber about the leak…",
+        "Karlsson brief due thursday, ~10 min",
+        "dentist, dry cleaning, PR reviews",
         "mom's birthday gift + book flights",
       ];
       let pi = 0;
@@ -270,26 +292,28 @@ export function LandingMotion() {
             pi = (pi + 1) % phrases.length;
           }
         }
-        timers.push(window.setTimeout(tick, deleting ? 28 : 46 + Math.random() * 55));
+        timers.push(
+          window.setTimeout(tick, deleting ? 28 : 46 + Math.random() * 55),
+        );
       };
       tick();
     }
 
     // caret blink
-    const carets = q('[data-caret]');
+    const carets = q("[data-caret]");
     if (carets.length)
       loops.push(
         gsap.to(carets, {
           opacity: 0,
           duration: 0.5,
-          ease: 'steps(1)',
+          ease: "steps(1)",
           repeat: -1,
           yoyo: true,
         }),
       );
 
     // "plan ready" pop notification, recurring with overshoot
-    const notif = one('[data-notif]');
+    const notif = one("[data-notif]");
     if (notif) {
       const cycle = () => {
         if (!alive || !notif.isConnected) return;
@@ -302,26 +326,307 @@ export function LandingMotion() {
           .fromTo(
             notif,
             { opacity: 0, y: -10, scale: 0.9 },
-            { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(2.2)' },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.5,
+              ease: "back.out(2.2)",
+            },
           )
-          .to(notif, { opacity: 0, y: -8, duration: 0.4, ease: 'power2.in', delay: 2.6 });
+          .to(notif, {
+            opacity: 0,
+            y: -8,
+            duration: 0.4,
+            ease: "power2.in",
+            delay: 2.6,
+          });
         loops.push(tl2);
       };
       timers.push(window.setTimeout(cycle, 1600));
     }
 
+    // feature demos: each panel is bespoke and loops independently
+    const featureDemoBlocks = [
+      () => {
+        const nodes = q("[data-f1-typed]") as HTMLElement[];
+        const tasks = q("[data-f1-task]") as HTMLElement[];
+        if (!nodes.length || !tasks.length) return;
+        const phrases = [
+          "call the plumber about the leak…",
+          "Karlsson brief due thursday, ~10 min",
+          "dentist cleanup, dry cleaning, PR reviews",
+        ];
+        let index = 0;
+        let char = 0;
+        let deleting = false;
+        const type = () => {
+          if (!alive) return;
+          const current = phrases[index];
+          const target = nodes[0];
+          if (!target || !target.isConnected) return;
+          if (!deleting) {
+            target.textContent = current.slice(0, char + 1);
+            char += 1;
+            if (char === current.length) {
+              deleting = true;
+              timers.push(window.setTimeout(type, 1300));
+              return;
+            }
+          } else {
+            target.textContent = current.slice(0, char - 1);
+            char -= 1;
+            if (char === 0) {
+              deleting = false;
+              index = (index + 1) % phrases.length;
+            }
+          }
+          timers.push(
+            window.setTimeout(type, deleting ? 28 : 42 + Math.random() * 45),
+          );
+        };
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.6 });
+        tl.fromTo(
+          tasks,
+          { opacity: 0, y: 8 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.35,
+            ease: "power2.out",
+            stagger: 0.12,
+          },
+        )
+          .to(tasks, {
+            opacity: 0,
+            y: -4,
+            duration: 0.24,
+            ease: "power2.in",
+            stagger: 0.08,
+            delay: 1.7,
+          })
+          .set(tasks, { opacity: 0, y: 8 });
+        loops.push(tl);
+        timers.push(window.setTimeout(type, 300));
+      },
+      () => {
+        const bar = one("[data-f2-bar]") as HTMLElement | null;
+        const deferred = one("[data-f2-deferred]") as HTMLElement | null;
+        if (!bar || !deferred) return;
+        const tl = gsap.timeline({ repeat: -1, yoyo: true });
+        tl.to(bar, { width: "108%", duration: 1.1, ease: "power2.inOut" })
+          .to(
+            deferred,
+            { opacity: 1, duration: 0.3, ease: "power2.out" },
+            "-=0.25",
+          )
+          .to(
+            deferred,
+            { opacity: 0, duration: 0.3, ease: "power2.in" },
+            "+=0.9",
+          );
+        loops.push(tl);
+      },
+      () => {
+        const typed = one("[data-f3-typed]") as HTMLElement | null;
+        const add = one("[data-f3-add]") as HTMLElement | null;
+        if (!typed || !add) return;
+        const phrases = [
+          "the task is small, but the timing is weird.",
+          "it needs a human nudge before it can fit.",
+          "it would get in the way of the anchor block.",
+        ];
+        let index = 0;
+        let char = 0;
+        let deleting = false;
+        const tick = () => {
+          if (!alive || !typed.isConnected) return;
+          const current = phrases[index];
+          if (!deleting) {
+            typed.textContent = current.slice(0, char + 1);
+            char += 1;
+            if (char === current.length) {
+              deleting = true;
+              timers.push(window.setTimeout(tick, 1400));
+              return;
+            }
+          } else {
+            typed.textContent = current.slice(0, char - 1);
+            char -= 1;
+            if (char === 0) {
+              deleting = false;
+              index = (index + 1) % phrases.length;
+            }
+          }
+          timers.push(
+            window.setTimeout(tick, deleting ? 24 : 36 + Math.random() * 35),
+          );
+        };
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.4 });
+        tl.fromTo(
+          add,
+          { opacity: 0, y: 6 },
+          { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.6)" },
+        ).to(
+          add,
+          { opacity: 0, y: -6, duration: 0.25, ease: "power2.in" },
+          "+=1.6",
+        );
+        loops.push(tl);
+        timers.push(window.setTimeout(tick, 400));
+      },
+      () => {
+        const chips = q("[data-f4-chip]") as HTMLElement[];
+        const underline = one("[data-f4-underline]") as HTMLElement | null;
+        const segs = q("[data-f4-seg]") as HTMLElement[];
+        if (!chips.length || !underline || !segs.length) return;
+        const positions = [0, 1, 2];
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.3 });
+        positions.forEach((pos, index) => {
+          tl.to(chips[index % chips.length], {
+            opacity: 0.35,
+            scale: 0.98,
+            duration: 0.15,
+          })
+            .to(chips[index % chips.length], {
+              opacity: 1,
+              scale: 1,
+              duration: 0.15,
+            })
+            .to(
+              underline,
+              { x: pos * 100, duration: 0.4, ease: "power2.out" },
+              "<",
+            )
+            .to(segs, { color: "#9b9ba1", duration: 0.16 }, "<")
+            .to(segs[index], { color: "#0a0a0b", duration: 0.16 }, "<")
+            .to({}, { duration: 1.2 });
+        });
+        loops.push(tl);
+      },
+      () => {
+        const rows = q("[data-f5-row]") as HTMLElement[];
+        const badge = one("[data-f5-badge]") as HTMLElement | null;
+        if (!rows.length) return;
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.2 });
+        tl.to(rows[0], { opacity: 0.2, duration: 0.3, ease: "power2.inOut" })
+          .to(
+            rows[0],
+            { opacity: 1, duration: 0.2, ease: "power2.inOut" },
+            "+=0.35",
+          )
+          .to(rows[0], { y: 56, duration: 0.4, ease: "power2.inOut" }, "<")
+          .to(rows[0], { y: 0, duration: 0.01 }, "+=0.01");
+        if (badge) tl.to(badge, { textContent: "2", duration: 0.01 }, "<");
+        loops.push(tl);
+      },
+      () => {
+        const typed = one("[data-f6-typed]") as HTMLElement | null;
+        const mention = one("[data-f6-mention]") as HTMLElement | null;
+        const avatar = q("[data-f6-avatar]") as HTMLElement[];
+        const seats = one("[data-f6-seats]") as HTMLElement | null;
+        if (!typed || !mention || !avatar.length || !seats) return;
+        const phrase = "@mara schedule kickoff call";
+        let char = 0;
+        const tick = () => {
+          if (!alive || !typed.isConnected) return;
+          typed.textContent = phrase.slice(0, char + 1);
+          char += 1;
+          if (char === phrase.length) {
+            const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.6 });
+            tl.to(mention, {
+              opacity: 1,
+              y: 0,
+              duration: 0.25,
+              ease: "back.out(1.6)",
+            })
+              .to(
+                avatar,
+                {
+                  opacity: 1,
+                  duration: 0.2,
+                  ease: "power2.out",
+                  stagger: 0.12,
+                },
+                "-=0.05",
+              )
+              .to(
+                seats,
+                { textContent: "3 / 10 seats", duration: 0.01 },
+                "-=0.05",
+              );
+            loops.push(tl);
+            return;
+          }
+          timers.push(window.setTimeout(tick, 36 + Math.random() * 24));
+        };
+        timers.push(window.setTimeout(tick, 300));
+      },
+      () => {
+        const card = one("[data-f7-card]") as HTMLElement | null;
+        const afternoon = one("[data-f7-afternoon]") as HTMLElement | null;
+        if (!card || !afternoon) return;
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.5 });
+        tl.to(card, {
+          y: -20,
+          scale: 1.03,
+          boxShadow: "0 22px 40px -24px rgba(10, 10, 11, 0.28)",
+          duration: 0.45,
+          ease: "back.out(1.6)",
+        })
+          .to(
+            afternoon,
+            { backgroundColor: "#fff8eb", duration: 0.25, ease: "power2.out" },
+            "<",
+          )
+          .to(
+            card,
+            {
+              x: 94,
+              y: -10,
+              scale: 0.98,
+              duration: 0.75,
+              ease: "power2.inOut",
+            },
+            "+=0.1",
+          )
+          .to(card, {
+            x: 0,
+            y: 0,
+            scale: 1,
+            boxShadow: "0 10px 18px -14px rgba(10,10,11,0.2)",
+            duration: 0.45,
+            ease: "back.out(1.2)",
+          })
+          .to(
+            afternoon,
+            { backgroundColor: "#ffffff", duration: 0.25, ease: "power2.out" },
+            "<",
+          );
+        loops.push(tl);
+      },
+    ];
+
+    featureDemoBlocks.forEach((block) => block());
+
     // keep trigger positions honest as fonts/images settle
     const onLoad = () => ScrollTrigger.refresh();
-    window.addEventListener('load', onLoad);
+    window.addEventListener("load", onLoad);
     const refreshTmr = window.setTimeout(() => ScrollTrigger.refresh(), 500);
 
     // ---- safety net: force anything still hidden back to visible ---------
     const safetyTmr = window.setTimeout(() => {
-      q('[data-reveal], [data-hero-copy], [data-hero-media]').forEach((el) => {
+      q("[data-reveal], [data-hero-copy], [data-hero-media]").forEach((el) => {
         if (parseFloat(getComputedStyle(el).opacity) < 0.05)
           gsap.set(el, { opacity: 1, y: 0, scale: 1 });
       });
-      q('.' + styles.statementWord).forEach((el) => {
+      q(
+        "[data-f1-task], [data-f2-deferred], [data-f3-add], [data-f6-avatar], [data-f7-card]",
+      ).forEach((el) => {
+        if (parseFloat(getComputedStyle(el).opacity) < 0.05)
+          gsap.set(el, { opacity: 1, y: 0, scale: 1 });
+      });
+      q("." + styles.statementWord).forEach((el) => {
         if (parseFloat(getComputedStyle(el).opacity) < 0.05)
           gsap.set(el, { opacity: 1, y: 0 });
       });
@@ -332,13 +637,15 @@ export function LandingMotion() {
 
     return () => {
       alive = false;
-      window.removeEventListener('load', onLoad);
+      window.removeEventListener("load", onLoad);
       window.clearTimeout(refreshTmr);
       window.clearTimeout(safetyTmr);
       timers.forEach((id) => window.clearTimeout(id));
       tl.kill();
       loops.forEach((t) => {
-        const st = (t as gsap.core.Animation & { scrollTrigger?: ScrollTrigger }).scrollTrigger;
+        const st = (
+          t as gsap.core.Animation & { scrollTrigger?: ScrollTrigger }
+        ).scrollTrigger;
         st?.kill();
         t.kill();
       });

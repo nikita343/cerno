@@ -1,21 +1,19 @@
 import type { Metadata } from "next";
-import Image, { type StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Logo, LogoMark } from "@/components/brand/Logo";
+import {
+  FeatureDemo,
+  type DemoVariant,
+} from "@/components/landing/FeatureDemo";
 import { HeroSpline } from "@/components/landing/HeroSpline";
 import { LandingMotion } from "@/components/landing/LandingMotion";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { getUser } from "@/lib/supabase/server";
 
-import addTaskImg from "@/assets/addnewtaskwithai.png";
 import upcomingImg from "@/assets/upcoming.png";
-import inboxImg from "@/assets/inbox.png";
-import dragImg from "@/assets/draganddrop.png";
-import filtersImg from "@/assets/filterslabels.png";
-import notificationsImg from "@/assets/notifications.png";
-import teamImg from "@/assets/workspaceteam.png";
 
 import styles from "./landing.module.css";
 
@@ -53,8 +51,7 @@ interface Feature {
   eyebrow: string;
   title: string;
   body: string;
-  image: StaticImageData;
-  alt: string;
+  demo: DemoVariant;
 }
 
 const FEATURES: Feature[] = [
@@ -62,58 +59,63 @@ const FEATURES: Feature[] = [
     eyebrow: "Capture",
     title: "One box. It untangles the rest.",
     body: "Write or speak a stream of everything you owe the day. Cerno turns it into titled tasks, each with a priority, an effort estimate, a deadline and a one-line reason — no key required to try it.",
-    image: addTaskImg,
-    alt: "Cerno parsing a brain dump into structured tasks",
+    demo: "capture",
   },
   {
     eyebrow: "The plan",
     title: "A realistic day, not a wish list.",
     body: "A capacity guard runs after the model: anything that pushes past your working hours is moved to tomorrow, whatever it was labelled. The top of Today explains the shape of the day in one honest line.",
-    image: upcomingImg,
-    alt: "A day laid on a clock, bucketed into morning, afternoon and evening",
+    demo: "plan",
   },
   {
     eyebrow: "Inbox",
     title: "Nothing waits without a reason.",
     body: "Whatever Cerno parses but doesn't schedule lands in the inbox, each row showing why it wasn't planned — and a single tap to put it on today.",
-    image: inboxImg,
-    alt: "The inbox, each task showing Cerno's reasoning",
+    demo: "inbox",
   },
   {
     eyebrow: "Drag & drop",
     title: "Move anything, anywhere.",
     body: "Drag a task to another day, drop it into a time block, or postpone it to tomorrow. On a phone, press-and-hold — it never fights the swipe.",
-    image: dragImg,
-    alt: "Dragging a task between days and time blocks",
+    demo: "drag",
   },
   {
     eyebrow: "Labels & filters",
     title: "Tags and views that build themselves.",
     body: "Cerno labels new tasks automatically — errand, comms, health, work. Filter by priority, deadline or label; search scans titles, labels and reasoning.",
-    image: filtersImg,
-    alt: "Smart labels and filtered views",
+    demo: "labels",
   },
   {
     eyebrow: "Reminders",
     title: "Nudges only when they count.",
     body: "The bell collects what's overdue and what's coming up within your lead time. Overdue warnings don't dismiss — they clear when the task is done or moved.",
-    image: notificationsImg,
-    alt: "The notification bell with overdue and upcoming reminders",
+    demo: "reminders",
   },
   {
     eyebrow: "Teams",
     title: "One shared day for the team.",
     body: "A workspace is a shared list — up to 10 people. Assign tasks to teammates, invite by email or link, and let roles keep it tidy. You pay; the people you invite don't.",
-    image: teamImg,
-    alt: "A shared workspace with assigned tasks",
+    demo: "teams",
   },
 ];
 
 const MORE = [
-  { title: "Calendar feed", body: "Subscribe from Google, Apple or Outlook. A private, revocable iCal link." },
-  { title: "Your model", body: "Plan with Claude or GPT — your choice, stored as a preference." },
-  { title: "English & Ukrainian", body: "The whole app, in either language, switchable any time." },
-  { title: "Private by design", body: "Every row is scoped to your account by the database, not the interface." },
+  {
+    title: "Calendar feed",
+    body: "Subscribe from Google, Apple or Outlook. A private, revocable iCal link.",
+  },
+  {
+    title: "Your model",
+    body: "Plan with Claude or GPT — your choice, stored as a preference.",
+  },
+  {
+    title: "English & Ukrainian",
+    body: "The whole app, in either language, switchable any time.",
+  },
+  {
+    title: "Private by design",
+    body: "Every row is scoped to your account by the database, not the interface.",
+  },
 ];
 
 const FREE_POINTS = [
@@ -211,8 +213,16 @@ export default async function LandingPage({
       {/* ----------------------------------------------------------- hero */}
       <section id="top" className={styles.hero} data-hero>
         <span className={styles.heroDot} aria-hidden="true" data-floating-dot />
-        <span className={styles.heroDotSecondary} aria-hidden="true" data-floating-dot />
-        <span className={styles.heroDotTertiary} aria-hidden="true" data-floating-dot />
+        <span
+          className={styles.heroDotSecondary}
+          aria-hidden="true"
+          data-floating-dot
+        />
+        <span
+          className={styles.heroDotTertiary}
+          aria-hidden="true"
+          data-floating-dot
+        />
         <div className={styles.heroCopy} data-hero-copy>
           <p className={styles.eyebrow}>AI daily planner</p>
           <h1 className={styles.title}>
@@ -279,7 +289,11 @@ export default async function LandingPage({
             <div className={styles.bentoRowHead}>
               <span className={styles.bentoLabel}>today, reprioritized</span>
               <span className={styles.thinking}>
-                <span className={styles.thinkDot} data-think-dot aria-hidden="true" />
+                <span
+                  className={styles.thinkDot}
+                  data-think-dot
+                  aria-hidden="true"
+                />
                 cerno is planning
               </span>
             </div>
@@ -317,7 +331,11 @@ export default async function LandingPage({
             <span className={styles.bentoLabelDark}>just start typing</span>
             <div className={styles.cmdBox}>
               <div className={styles.cmdBar}>
-                <span className={styles.cmdDot} data-cmd-dot aria-hidden="true" />
+                <span
+                  className={styles.cmdDot}
+                  data-cmd-dot
+                  aria-hidden="true"
+                />
                 <span className={styles.cmdEyebrow}>brain dump</span>
               </div>
               <div className={styles.cmdText}>
@@ -345,7 +363,9 @@ export default async function LandingPage({
                   style={{ background: "var(--l-accent)" }}
                   aria-hidden="true"
                 />
-                <span className={styles.statusLabel}>deep work — planning doc</span>
+                <span className={styles.statusLabel}>
+                  deep work — planning doc
+                </span>
                 <span className={styles.statusTime}>now</span>
               </div>
               <div className={styles.statusRow}>
@@ -355,7 +375,9 @@ export default async function LandingPage({
                   style={{ background: "#C77F17" }}
                   aria-hidden="true"
                 />
-                <span className={`${styles.statusLabel} ${styles.statusLabelMuted}`}>
+                <span
+                  className={`${styles.statusLabel} ${styles.statusLabelMuted}`}
+                >
                   quick wins — 3 tasks
                 </span>
                 <span className={styles.statusTime}>11:00</span>
@@ -366,7 +388,9 @@ export default async function LandingPage({
                   style={{ background: "#D6D6D2" }}
                   aria-hidden="true"
                 />
-                <span className={`${styles.statusLabel} ${styles.statusLabelParked}`}>
+                <span
+                  className={`${styles.statusLabel} ${styles.statusLabelParked}`}
+                >
                   parked — 4 deferred
                 </span>
                 <span className={styles.statusTime}>later</span>
@@ -419,14 +443,7 @@ export default async function LandingPage({
                 <p className={styles.featureBody}>{f.body}</p>
               </div>
               <div className={styles.featureMedia} data-reveal>
-                <div className={styles.shotFrame}>
-                  <Image
-                    src={f.image}
-                    alt={f.alt}
-                    className={styles.shot}
-                    sizes="(max-width: 900px) 100vw, 560px"
-                  />
-                </div>
+                <FeatureDemo variant={f.demo} />
               </div>
             </article>
           ))}
@@ -447,8 +464,8 @@ export default async function LandingPage({
         <div className={styles.sectionHead}>
           <h2 className={styles.h2}>simple, honest pricing.</h2>
           <p className={styles.sectionLede}>
-            Everything personal is free, forever. Pay only when you want a shared
-            day with your team.
+            Everything personal is free, forever. Pay only when you want a
+            shared day with your team.
           </p>
         </div>
 
@@ -526,8 +543,8 @@ export default async function LandingPage({
             get your day back.
           </h2>
           <p className={styles.ctaLede}>
-            Free to start, no credit card. Dump what&rsquo;s on your mind and see
-            your day in under a minute.
+            Free to start, no credit card. Dump what&rsquo;s on your mind and
+            see your day in under a minute.
           </p>
           <Link href="/signup" className={styles.ctaButton}>
             Get started
