@@ -4,7 +4,10 @@ import type Stripe from "stripe";
 import { sendEmail, hasEmailConfig } from "@/lib/email/send";
 import {
   paymentIssueEmail,
+  subscriptionCancelScheduledEmail,
   subscriptionEndedEmail,
+  teamWelcomeEmail,
+  type Email,
 } from "@/lib/email/templates";
 import { siteUrl, stripe } from "@/lib/stripe";
 import { createAdminClient, hasAdminConfig } from "@/lib/supabase/admin";
@@ -103,6 +106,19 @@ export async function POST(request: Request) {
       const subscription =
         await stripe().subscriptions.retrieve(subscriptionId);
       await write(admin, userId, subscription);
+
+      // The reliable "you just upgraded" signal — checkout.session.completed
+      // fires exactly once per successful checkout, so the welcome can't double
+      // up the way triggering on subscription.created (which retries) might.
+      // After the write and non-blocking: a mail outage must never fail the
+      // event, or Stripe replays it and re-records entitlement needlessly.
+      await mail(
+        admin,
+        userId,
+        teamWelcomeEmail({ url: planUrl() }),
+      ).catch((error) =>
+        console.error("[stripe/webhook] welcome mail failed", error),
+      );
       return NextResponse.json({ received: true });
     }
 
@@ -121,8 +137,8 @@ export async function POST(request: Request) {
     // not stop entitlement being recorded — and because Stripe retries on a
     // non-2xx, throwing here would replay the whole event and could send the
     // same message repeatedly.
-    await notify(admin, userId, event.type, subscription).catch((error) =>
-      console.error("[stripe/webhook] notify failed", error),
+    await mail(admin, userId, pickNotification(event, subscription)).catch(
+      (error) => console.error("[stripe/webhook] notify failed", error),
     );
 
     return NextResponse.json({ received: true });
@@ -134,39 +150,88 @@ export async function POST(request: Request) {
   }
 }
 
+/** The plan-settings page, where every billing email points. */
+function planUrl(): string {
+  return `${siteUrl()}/dashboard/settings/plan`;
+}
+
 /**
- * Tells the customer what just changed, where it is worth telling them.
+ * Which message a subscription event warrants, or null for the many that
+ * warrant none. Pure so the decision is readable in one place; the actual send
+ * is `mail`.
  *
- * Only the two states a person needs to act on or be reassured about. A mail on
- * every renewal would train people to ignore all of them, and the ones that
- * matter would go unread with the rest.
+ * Only the moments a person needs to act on or be reassured about:
+ *  - **cancel scheduled** — they hit cancel; the plan runs to the period end.
+ *    Detected by the flag flipping true in `previous_attributes`, so a plain
+ *    renewal (which also arrives as `updated`) doesn't trigger it.
+ *  - **payment problem** — a card failed and Stripe is retrying.
+ *  - **ended** — the plan actually lapsed.
+ *
+ * A mail on every renewal would train people to ignore all of them, so those
+ * stay silent.
  */
-async function notify(
+function pickNotification(
+  event: Stripe.Event,
+  subscription: Stripe.Subscription,
+): Email | null {
+  const url = planUrl();
+
+  if (event.type === "customer.subscription.deleted") {
+    return subscriptionEndedEmail({ url });
+  }
+
+  if (event.type === "customer.subscription.updated") {
+    const previous = event.data.previous_attributes as
+      | Partial<Stripe.Subscription>
+      | undefined;
+
+    // The flag just flipped on — a cancellation was scheduled this update, not
+    // one that was already in effect and merely re-saved by some other change.
+    if (
+      subscription.cancel_at_period_end === true &&
+      previous?.cancel_at_period_end === false
+    ) {
+      return subscriptionCancelScheduledEmail({ url, endsOn: periodEndLabel(subscription) });
+    }
+
+    if (subscription.status === "past_due" || subscription.status === "unpaid") {
+      return paymentIssueEmail({ url });
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Sends a billing email to the account's address, or does nothing when mail is
+ * unconfigured / there's nothing to send.
+ *
+ * The address comes from auth, not from Stripe: the Stripe customer email is
+ * editable by the customer and may not be the account we would be talking to.
+ */
+async function mail(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
-  type: Stripe.Event.Type,
-  subscription: Stripe.Subscription,
+  email: Email | null,
 ): Promise<void> {
-  if (!hasEmailConfig()) return;
+  if (!email || !hasEmailConfig()) return;
 
-  const isPaymentProblem =
-    type === "customer.subscription.updated" &&
-    (subscription.status === "past_due" || subscription.status === "unpaid");
-  const hasEnded = type === "customer.subscription.deleted";
-
-  if (!isPaymentProblem && !hasEnded) return;
-
-  // The address comes from auth, not from Stripe: the Stripe customer email is
-  // editable by the customer and may not be the account we would be talking to.
   const { data } = await admin.auth.admin.getUserById(userId);
   const to = data.user?.email;
   if (!to) return;
 
-  const url = `${siteUrl()}/dashboard/settings/plan`;
-  await sendEmail(
-    to,
-    isPaymentProblem ? paymentIssueEmail({ url }) : subscriptionEndedEmail({ url }),
-  );
+  await sendEmail(to, email);
+}
+
+/** Human date for the period end, e.g. "22 July 2026", or null if unknown. */
+function periodEndLabel(subscription: Stripe.Subscription): string | null {
+  const end = subscription.items.data[0]?.current_period_end;
+  if (!end) return null;
+  return new Date(end * 1000).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /**

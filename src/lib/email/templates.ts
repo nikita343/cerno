@@ -115,6 +115,38 @@ export function subscriptionEndedEmail(params: { url: string }): Email {
   });
 }
 
+/**
+ * The customer scheduled a cancellation — the plan is still active but will not
+ * renew.
+ *
+ * Distinct from `subscriptionEndedEmail`, which is sent when the plan actually
+ * lapses. This is the "you cancelled, here's what happens and when" note, so it
+ * leads with the end date and the fact that nothing changes until then. Naming
+ * the date is the point: a cancellation without one reads as "cut off now".
+ */
+export function subscriptionCancelScheduledEmail(params: {
+  url: string;
+  endsOn: string | null;
+}): Email {
+  const when = params.endsOn
+    ? `on ${params.endsOn}`
+    : "at the end of your billing period";
+
+  return build("Your Cerno Team plan is set to end", {
+    preheader: `Team stays active until ${
+      params.endsOn ?? "your period ends"
+    }. Nothing is deleted.`,
+    heading: "Your Team plan is winding down",
+    body: [
+      `You've cancelled Cerno Team. It stays fully active until ${when}, so nothing changes before then — your workspaces, their tasks and everyone in them stay exactly as they are.`,
+      "After that you can still read and edit everything; you just can't create new workspaces until Team is active again. Everything personal stays free.",
+    ],
+    cta: { label: "Keep Team", url: params.url },
+    footnote:
+      "Changed your mind? Reactivating before the end date keeps everything running without interruption.",
+  });
+}
+
 /** Sent to the payer once Stripe confirms. Receipts come from Stripe itself. */
 export function teamWelcomeEmail(params: { url: string }): Email {
   return build("You're on Cerno Team", {
