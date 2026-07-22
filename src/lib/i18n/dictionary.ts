@@ -444,6 +444,13 @@ export const en = {
     light: "Light",
     logOut: "Log out",
   },
+  tzNudge: {
+    msgPrefix: "This device is in",
+    msgMid: ", but Cerno is set to",
+    switchTo: "Switch to",
+    dontShow: "Don’t show again",
+    dismiss: "Dismiss",
+  },
   celebration: {
     team: "Team",
     onTeam: "You’re on Team",
@@ -882,6 +889,13 @@ export const uk: Dictionary = {
     dark: "Темна",
     light: "Світла",
     logOut: "Вийти",
+  },
+  tzNudge: {
+    msgPrefix: "Цей пристрій у зоні",
+    msgMid: ", а Cerno налаштовано на",
+    switchTo: "Перейти на",
+    dontShow: "Більше не показувати",
+    dismiss: "Закрити",
   },
   celebration: {
     team: "Team",

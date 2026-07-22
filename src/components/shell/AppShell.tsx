@@ -18,6 +18,7 @@ import { MobileTabBar } from "./MobileTabBar";
 import { MobileTopBar } from "./MobileTopBar";
 import { PageTransition } from "./PageTransition";
 import { Sidebar } from "./Sidebar";
+import { TimezoneNudge } from "./TimezoneNudge";
 import styles from "./AppShell.module.css";
 
 /**
@@ -66,6 +67,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* First-run language choice. Renders nothing once `onboarded` is true,
           which is the common case, so it costs a boolean check per mount. */}
       <LanguageOnboarding />
+
+      {/* Offers to align the saved timezone with this device's when they differ
+          — the day boundary depends on it. Self-hides when they match or once
+          the user says "don't show again". */}
+      <TimezoneNudge />
 
       {/* Mounted here, not in the billing card.
           It used to live inside BillingCard, which only renders on one Settings

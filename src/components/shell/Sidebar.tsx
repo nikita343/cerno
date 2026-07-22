@@ -94,7 +94,7 @@ export function Sidebar() {
 
       <button type="button" className={styles.dumpButton} onClick={openCapture}>
         <EditIcon size="1.125rem" />
-        What&rsquo;s on your mind?
+        {t.today.whatsOnYourMind}
       </button>
 
       <nav className={styles.nav} aria-label="Primary">

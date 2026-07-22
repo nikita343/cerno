@@ -29,6 +29,11 @@ const REMOVE_MS = 260;
 export function TodayView() {
   const today = useAppStore((s) => s.today);
   const t = useT();
+  const nowMinutes = useAppStore((s) => s.nowMinutes);
+  // The clock is client-only: `nowMinutes` is 0 on the server, so rendering it
+  // during SSR would print 00:00 and mismatch the real time on hydration.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const dayPlan = useAppStore((s) => s.dayPlans[s.today]);
   const scheduled = useAppStoreShallow((s) => scheduledFor(s.tasks, s.today));
   const deferred = useAppStoreShallow((s) => deferredFor(s.tasks, s.today));
@@ -128,7 +133,14 @@ export function TodayView() {
   return (
     <div className={`${view.view} ${view.viewWide}`}>
       <header className={styles.header}>
-        <span className={view.eyebrow}>{eyebrowDate(today)}</span>
+        <span className={view.eyebrow}>
+          {eyebrowDate(today)}
+          {mounted && (
+            <time className={styles.clock} aria-live="off">
+              {formatClock(nowMinutes)}
+            </time>
+          )}
+        </span>
         <h1 className={`${view.h1} ${view.h1Long}`}>
           {dayPlan?.summary ?? "Nothing planned yet."}
         </h1>

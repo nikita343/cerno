@@ -1,0 +1,96 @@
+/* A quiet bottom banner. Bottom-centre on a phone so it clears the tab bar;
+   bottom-right on desktop where nothing else lives — mirrors the checkout
+   toast so the two read as the same kind of message. */
+.banner {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  width: min(28rem, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--r-chip);
+  background: var(--surface);
+  border: var(--hairline) solid var(--border-strong, var(--border));
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.35);
+  animation: cernoSheetUp var(--dur) var(--ease-out);
+}
+
+@media screen and (min-width: 960px) {
+  .banner {
+    left: auto;
+    right: 1.25rem;
+    transform: none;
+    bottom: 1.25rem;
+  }
+}
+
+.text {
+  margin: 0;
+  padding-right: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.primary {
+  padding: 0.4375rem 0.75rem;
+  border-radius: var(--r-button);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.primary:hover {
+  background: var(--accent-hover);
+}
+
+.ghost {
+  padding: 0.4375rem 0.5rem;
+  border-radius: var(--r-button);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.ghost:hover {
+  color: var(--text);
+}
+
+.close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  color: var(--text-faint);
+  transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.close:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}

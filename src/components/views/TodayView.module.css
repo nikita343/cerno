@@ -4,6 +4,20 @@
   gap: 0.625rem;
 }
 
+/* The live clock, tucked in beside the date. A middot separates it, and tabular
+   figures keep it from jittering as the minute ticks over. */
+.clock {
+  margin-left: 0.5rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock::before {
+  content: "·";
+  margin-right: 0.5rem;
+  color: var(--text-faint);
+}
+
 .emptyAction {
   margin-top: 0.5rem;
   padding: 0.625rem 1.125rem;
