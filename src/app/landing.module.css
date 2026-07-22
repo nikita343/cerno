@@ -119,13 +119,14 @@
 
 .hero {
   position: relative;
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: clamp(2rem, 5vw, 3.5rem);
-  max-width: 1500px;
+  text-align: center;
+  gap: clamp(2.5rem, 5vw, 4rem);
+  max-width: 1140px;
   margin: 0 auto;
-  padding: clamp(3rem, 8vw, 6.5rem) clamp(1.25rem, 5vw, 3.5rem) clamp(3rem, 6vw, 5rem);
+  padding: clamp(3rem, 8vw, 6rem) clamp(1.25rem, 5vw, 3.5rem) clamp(3rem, 6vw, 5rem);
   overflow: hidden;
 }
 
@@ -194,15 +195,44 @@
 }
 
 .heroCopy {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1.75rem;
 }
 
+/* The framed screenshot sits below the copy, with the Spline scene bleeding
+   out behind it as an ambient 3D backdrop. */
 .heroMedia {
-  justify-self: end;
+  position: relative;
   width: 100%;
-  max-width: 40rem;
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.heroSpline {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: 148%;
+  height: 156%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s var(--l-ease);
+}
+
+.heroSpline[data-ready] {
+  opacity: 1;
+}
+
+.heroSpline > * {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .eyebrow {
@@ -224,8 +254,8 @@
 }
 
 .lede {
-  margin: 0;
-  max-width: 30rem;
+  margin: 0 auto;
+  max-width: 34rem;
   font-size: clamp(1.0625rem, 1.4vw, 1.3125rem);
   line-height: 1.55;
   color: var(--l-secondary);
@@ -236,6 +266,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.875rem 1.5rem;
 }
 
@@ -273,6 +304,8 @@
 
 /* Browser-chrome frame around the hero screenshot. */
 .frame {
+  position: relative;
+  z-index: 1;
   border: 1px solid var(--l-line);
   border-radius: 1rem;
   overflow: hidden;
@@ -725,7 +758,7 @@
 .features .sectionHead,
 .features .featureList,
 .features .moreGrid {
-  max-width: 1240px;
+  max-width: 1340px;
   margin-left: auto;
   margin-right: auto;
   padding-left: clamp(1.25rem, 5vw, 3.5rem);
@@ -744,9 +777,9 @@
 
 .feature {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
+  grid-template-columns: 0.82fr 1.45fr;
   align-items: center;
-  gap: clamp(1.75rem, 5vw, 4rem);
+  gap: clamp(1.75rem, 5vw, 4.5rem);
 }
 
 /* Alternate the image side on odd rows for the zig-zag rhythm. */
@@ -849,8 +882,8 @@
 .plans {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(1rem, 2.5vw, 1.5rem);
-  max-width: 56rem;
+  gap: clamp(1rem, 2.5vw, 1.75rem);
+  max-width: 72rem;
 }
 
 .plan {
@@ -1191,13 +1224,11 @@
 
 @media (max-width: 960px) {
   .hero {
-    grid-template-columns: 1fr;
     gap: clamp(2rem, 8vw, 3rem);
   }
 
   .heroMedia {
-    justify-self: stretch;
-    max-width: 34rem;
+    max-width: 44rem;
     margin: 0 auto;
     width: 100%;
   }

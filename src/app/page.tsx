@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Logo, LogoMark } from "@/components/brand/Logo";
+import { HeroSpline } from "@/components/landing/HeroSpline";
 import { LandingMotion } from "@/components/landing/LandingMotion";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { getUser } from "@/lib/supabase/server";
@@ -235,6 +236,7 @@ export default async function LandingPage({
         </div>
 
         <div className={styles.heroMedia} data-hero-media>
+          <HeroSpline />
           <div className={styles.frame}>
             <div className={styles.frameBar}>
               <span />
