@@ -318,6 +318,9 @@
 }
 
 .modelName {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text);
@@ -326,6 +329,28 @@
 .modelNote {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+/* Locked (Team-only) model on a free plan. The radio and name dim to read as
+   unavailable, but the row stays clickable — it routes to the upgrade page
+   rather than selecting. */
+.modelRow[data-locked] .radio {
+  opacity: 0.4;
+}
+
+.modelRow[data-locked] .modelName {
+  color: var(--text-muted);
+}
+
+.modelTeamTag {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 @media (prefers-reduced-motion: reduce) {

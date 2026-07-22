@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ModelChoice } from "@/lib/types";
+import { DEFAULT_MODEL_CHOICE, type ModelChoice } from "@/lib/types";
 
 /**
  * The model catalogue, and how a stored preference becomes a request.
@@ -47,7 +47,7 @@ export const MODELS: Record<ModelChoice, ModelSpec> = {
 };
 
 /** The fallback, and what an unrecognised stored value resolves to. */
-export const DEFAULT_CHOICE: ModelChoice = "sonnet";
+export const DEFAULT_CHOICE: ModelChoice = DEFAULT_MODEL_CHOICE;
 
 /**
  * Resolves a stored preference to a model.

@@ -39,6 +39,8 @@ export const en = {
   },
   settings: {
     title: "Settings",
+    teamOnly: "Team",
+    upgradeToUnlock: "Upgrade to Team to use this model",
     profile: "Profile",
     profileNote: "Name and photo",
     plan: "Plan & billing",
@@ -505,6 +507,8 @@ export const uk: Dictionary = {
   },
   settings: {
     title: "Налаштування",
+    teamOnly: "Team",
+    upgradeToUnlock: "Перейдіть на Team, щоб використати цю модель",
     profile: "Профіль",
     profileNote: "Ім’я та фото",
     plan: "Тариф і оплата",

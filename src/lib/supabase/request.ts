@@ -66,6 +66,14 @@ export async function loadLabelNames(
  * the picker's value would then be a suggestion rather than a setting.
  *
  * Null when signed out or unset, which `resolveModel` turns into the default.
+ *
+ * Team gate: Opus and GPT-5 are paid-only. If the stored preference is one of
+ * them and the caller isn't currently entitled — a preference set while
+ * subscribed and kept after cancelling, or one forced past the locked picker in
+ * devtools — it is treated as unset (→ the free default) rather than run. This
+ * is where the money decision is actually made; the picker's lock is only
+ * cosmetic. Entitlement is `has_active_plan()`, the same SQL that gates
+ * workspace creation, so "paid" has one definition.
  */
 export async function loadModelChoice(
   caller: RequestUser | null,
@@ -79,7 +87,16 @@ export async function loadModelChoice(
     .maybeSingle();
 
   if (error || !data?.model) return null;
-  return data.model as ModelChoice;
+  const choice = data.model as ModelChoice;
+
+  if (isPaidModel(choice)) {
+    const { data: entitled } = await caller.supabase.rpc("has_active_plan");
+    // Null (RPC error) is treated as not-entitled: fail closed, never bill for a
+    // paid model on an unverified plan.
+    if (entitled !== true) return null;
+  }
+
+  return choice;
 }
 
 /**

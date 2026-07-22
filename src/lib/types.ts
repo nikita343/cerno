@@ -236,6 +236,13 @@ export function isPaidModel(choice: ModelChoice): boolean {
   return PAID_MODELS.has(choice);
 }
 
+/**
+ * The free default, and what a locked/unset preference resolves to. Shared so
+ * the server's `resolveModel` fallback and the picker's "what's really running"
+ * highlight agree on one value.
+ */
+export const DEFAULT_MODEL_CHOICE: ModelChoice = "sonnet";
+
 export interface UserSettings {
   language: AppLanguage;
   /** IANA name, e.g. "Europe/Kyiv". */

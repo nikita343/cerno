@@ -12,6 +12,9 @@ import {
   type ZoneGroup,
 } from "@/lib/timezones";
 import {
+  DEFAULT_MODEL_CHOICE,
+  isEntitled,
+  isPaidModel,
   LANGUAGES,
   MODEL_CHOICES,
   type AppLanguage,
@@ -19,6 +22,7 @@ import {
 } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
+import { useRouter } from "next/navigation";
 
 import { BillingCard } from "./BillingCard";
 import type { SettingsSlug } from "@/lib/settingsNav";
@@ -316,15 +320,35 @@ function CalendarSection() {
 }
 
 function ModelSection() {
+  const t = useT();
+  const router = useRouter();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
+  const subscription = useAppStore((s) => s.subscription);
+  const entitled = isEntitled(subscription);
+
+  // What actually runs. A stored paid model on a free plan is downgraded to the
+  // default server-side, so the picker highlights the default rather than a
+  // locked row — showing the truth about which model plans the day.
+  const effectiveModel =
+    !entitled && isPaidModel(settings.model)
+      ? DEFAULT_MODEL_CHOICE
+      : settings.model;
+
   return (
     <>
       <section className={view.section}>
 
         <div className={styles.card}>
           <div className={styles.modelList}>
-            {MODEL_CHOICES.map((choice, i) => (
+            {MODEL_CHOICES.map((choice, i) => {
+              // Opus and GPT-5 are Team-only. For a free user they don't select
+              // — they route to the upgrade page. The server enforces this too
+              // (see loadModelChoice); the lock is just so the picker doesn't
+              // offer something that would silently fall back to the default.
+              const locked = choice.paid && !entitled;
+              const active = !locked && effectiveModel === choice.value;
+              return (
               <Fragment key={choice.value}>
               {/* Vendor heading before the first model of each group — two
                   providers in one flat list reads as five interchangeable
@@ -335,20 +359,33 @@ function ModelSection() {
               <button
                 type="button"
                 className={styles.modelRow}
-                data-active={settings.model === choice.value || undefined}
+                data-active={active || undefined}
+                data-locked={locked || undefined}
                 onClick={() =>
-                  void updateSettings({ model: choice.value as ModelChoice })
+                  locked
+                    ? router.push("/dashboard/settings/plan")
+                    : void updateSettings({ model: choice.value as ModelChoice })
                 }
-                aria-pressed={settings.model === choice.value}
+                aria-pressed={active}
               >
                 <span className={styles.radio} aria-hidden="true" />
                 <span className={styles.modelText}>
-                  <span className={styles.modelName}>{choice.label}</span>
-                  <span className={styles.modelNote}>{choice.note}</span>
+                  <span className={styles.modelName}>
+                    {choice.label}
+                    {locked && (
+                      <span className={styles.modelTeamTag}>
+                        {t.settings.teamOnly}
+                      </span>
+                    )}
+                  </span>
+                  <span className={styles.modelNote}>
+                    {locked ? t.settings.upgradeToUnlock : choice.note}
+                  </span>
                 </span>
               </button>
               </Fragment>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

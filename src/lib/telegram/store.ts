@@ -117,6 +117,10 @@ export async function loadUserContext(userId: string): Promise<UserContext> {
 
   return {
     timezone: settingsRow?.timezone ?? "UTC",
+    // NOTE: unlike the web path (loadModelChoice), this does not gate Opus/GPT-5
+    // behind the Team plan — Telegram is hidden for now. If it ships, downgrade
+    // a paid model here for users without has_active_plan(), or this is a way to
+    // run a paid model on a free account.
     modelChoice: settingsRow?.model ?? null,
     labelNames:
       labelRows.length > 0
