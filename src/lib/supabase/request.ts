@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { DEFAULT_LABELS, type ModelChoice } from "@/lib/types";
+import { DEFAULT_LABELS, isPaidModel, type ModelChoice } from "@/lib/types";
 
 import { hasSupabaseConfig } from "./env";
 import { createClient } from "./server";

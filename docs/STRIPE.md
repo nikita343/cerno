@@ -8,11 +8,14 @@ here is test mode — no real money, no business verification.
 Everything below in order. Steps 1–3 are the ones nothing works without.
 
 - [ ] **1.** Confirm the dashboard is in **Test mode** (banner top-right)
-- [ ] **2.** Create product `Cerno Team`, $12/month recurring → copy the
-      **price ID** (`price_...`, not `prod_...`)
+- [ ] **2.** Create product `Cerno Team` and add its recurring prices → copy
+      each **price ID** (`price_...`, not `prod_...`). Add a **monthly** price, a
+      **yearly** price, or both — the upgrade card shows whichever you configure
 - [ ] **3.** Copy the **secret key** (`sk_test_...`) from Developers → API keys
-- [ ] **4.** Put both in `.env.local` as `STRIPE_PRICE_TEAM` and
-      `STRIPE_SECRET_KEY` — **not** `.env.example`, which is committed
+- [ ] **4.** Put them in `.env.local` as `STRIPE_PRICE_TEAM_MONTHLY` /
+      `STRIPE_PRICE_TEAM_YEARLY` (and `STRIPE_SECRET_KEY`) — **not**
+      `.env.example`, which is committed. A single legacy `STRIPE_PRICE_TEAM`
+      still works and is treated as the yearly price
 - [ ] **5.** `brew install stripe/stripe-cli/stripe && stripe login`
 - [ ] **6.** `stripe listen --forward-to localhost:3000/api/stripe/webhook`
       → copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET`
@@ -57,13 +60,16 @@ banner should say so). Then:
 
 1. **Product catalog → + Add product**
    - Name: `Cerno Team`
-   - Price: `12.00 USD`, **Recurring**, **Monthly**
-2. Save, then copy the **price ID** — `price_...`, *not* the product ID
+   - Add one **Recurring** price for each cadence you sell — e.g. `8.00 USD`
+     **Monthly** and `80.00 USD` **Yearly**. One product, two prices.
+2. Save, then copy each **price ID** — `price_...`, *not* the product ID
    (`prod_...`). The API takes the price.
 
-Because the model is **$12/month per paying user, unlimited workspaces**, this
-is a flat recurring price with quantity 1. No metered billing, no quantity sync
-on invite — that only becomes necessary if you move to per-seat.
+Because the model is **per paying user, unlimited workspaces**, each is a flat
+recurring price with quantity 1. No metered billing, no quantity sync on invite
+— that only becomes necessary if you move to per-seat. The Monthly/Yearly toggle
+on the upgrade card sends the chosen cadence to `/api/stripe/checkout`, which
+maps it to the matching price id; yearly is the default.
 
 ## 2. Keys
 
@@ -77,7 +83,9 @@ on invite — that only becomes necessary if you move to per-seat.
 ```bash
 # .env.local — gitignored. NEVER .env.example, which is committed.
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PRICE_TEAM=price_...
+STRIPE_PRICE_TEAM_MONTHLY=price_...   # the $/month price (optional)
+STRIPE_PRICE_TEAM_YEARLY=price_...    # the $/year price (optional)
+# STRIPE_PRICE_TEAM=price_...         # legacy single price = treated as yearly
 STRIPE_WEBHOOK_SECRET=whsec_...   # from step 3
 ```
 

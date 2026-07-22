@@ -28,6 +28,8 @@ export function BillingCard() {
 
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Yearly preselected — the cheaper per-month deal and the Stripe default.
+  const [interval, setInterval] = useState<"month" | "year">("year");
 
   const entitled = isEntitled(subscription);
 
@@ -35,7 +37,14 @@ export function BillingCard() {
     setBusy(kind);
     setError(null);
     try {
-      const response = await fetch(`/api/stripe/${kind}`, { method: "POST" });
+      const response = await fetch(`/api/stripe/${kind}`, {
+        method: "POST",
+        // Only checkout needs a body; the portal ignores it. The chosen billing
+        // interval rides along so the server picks the matching Stripe price.
+        headers:
+          kind === "checkout" ? { "content-type": "application/json" } : undefined,
+        body: kind === "checkout" ? JSON.stringify({ interval }) : undefined,
+      });
       const body = (await response.json().catch(() => null)) as {
         url?: string;
         error?: string;
@@ -115,9 +124,42 @@ export function BillingCard() {
               </span>
             )}
           </div>
+          {/* Only shown pre-upgrade: once entitled, the interval is whatever
+              Stripe holds and is changed in the portal, not picked here. */}
+          {!entitled && (
+            <div
+              className={styles.intervalToggle}
+              role="group"
+              aria-label={t.billing.billingPeriod}
+            >
+              <button
+                type="button"
+                data-selected={interval === "month" || undefined}
+                onClick={() => setInterval("month")}
+              >
+                {t.billing.monthly}
+              </button>
+              <button
+                type="button"
+                data-selected={interval === "year" || undefined}
+                onClick={() => setInterval("year")}
+              >
+                {t.billing.yearly}
+                <span className={styles.intervalSave}>{t.billing.yearlySave}</span>
+              </button>
+            </div>
+          )}
           <div className={styles.planPrice}>
-            <span className={styles.planPriceAmount}>{t.billing.teamPrice}</span>
-            <span className={styles.planPricePeriod}>{t.billing.period}</span>
+            <span className={styles.planPriceAmount}>
+              {interval === "month"
+                ? t.billing.teamPriceMonthly
+                : t.billing.teamPriceYearly}
+            </span>
+            <span className={styles.planPricePeriod}>
+              {interval === "month"
+                ? t.billing.periodMonth
+                : t.billing.periodYear}
+            </span>
           </div>
           <p className={styles.planPlus}>{t.billing.everythingInFree}</p>
           <ul className={styles.planFeatures} data-accent>

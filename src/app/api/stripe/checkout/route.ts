@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { devDetail } from "@/lib/apiError";
-import { hasStripeConfig, siteUrl, stripe } from "@/lib/stripe";
+import {
+  hasStripeConfig,
+  siteUrl,
+  stripe,
+  teamPriceId,
+  type BillingInterval,
+} from "@/lib/stripe";
 import { resolveRequestUser } from "@/lib/supabase/request";
 
 export const runtime = "nodejs";
@@ -18,7 +24,7 @@ export const dynamic = "force-dynamic";
  * webhook is what writes `subscriptions`. If this route wrote entitlement, a
  * user could get a plan by starting a checkout and closing the tab.
  */
-export async function POST() {
+export async function POST(request: Request) {
   if (!hasStripeConfig()) {
     return NextResponse.json(
       { error: "Billing isn't configured." },
@@ -29,6 +35,22 @@ export async function POST() {
   const caller = await resolveRequestUser();
   if (!caller) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  }
+
+  // Yearly is the default: it's the Stripe "Default" price and the better deal,
+  // so a body-less request (older clients sent none) still resolves to a valid
+  // price rather than 400ing. Anything but a literal "month" means yearly.
+  const body = (await request.json().catch(() => null)) as {
+    interval?: string;
+  } | null;
+  const interval: BillingInterval = body?.interval === "month" ? "month" : "year";
+
+  const price = teamPriceId(interval);
+  if (!price) {
+    return NextResponse.json(
+      { error: "That billing period isn't available." },
+      { status: 400 },
+    );
   }
 
   try {
@@ -58,7 +80,7 @@ export async function POST() {
     const session = await stripe().checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: process.env.STRIPE_PRICE_TEAM!, quantity: 1 }],
+      line_items: [{ price, quantity: 1 }],
       // How the webhook maps the payment back to an account. Matching on email
       // instead is tempting and wrong: a customer can change their Stripe email
       // and two accounts can share one.

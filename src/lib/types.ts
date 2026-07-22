@@ -182,38 +182,59 @@ export const MODEL_CHOICES: ReadonlyArray<{
   note: string;
   /** Shown as a group heading in the picker. */
   vendor: "Claude" | "OpenAI";
+  /** Team-only. Free users see it locked; the server refuses to run it. */
+  paid: boolean;
 }> = [
   {
     value: "opus",
     label: "Opus 4.8",
     note: "Best judgement about what to cut. Slower.",
     vendor: "Claude",
+    paid: true,
   },
   {
     value: "sonnet",
     label: "Sonnet 5",
     note: "Balanced, and the default.",
     vendor: "Claude",
+    paid: false,
   },
   {
     value: "haiku",
     label: "Haiku 4.5",
     note: "Fastest. Good for short dumps.",
     vendor: "Claude",
+    paid: false,
   },
   {
     value: "gpt-5",
     label: "GPT-5",
     note: "Capable and even-handed.",
     vendor: "OpenAI",
+    paid: true,
   },
   {
     value: "gpt-5-mini",
     label: "GPT-5 mini",
     note: "Quick and cheap.",
     vendor: "OpenAI",
+    paid: false,
   },
 ] as const;
+
+/**
+ * The Team-only planning models, derived from MODEL_CHOICES so the two can't
+ * drift. Opus and GPT-5 are the expensive, high-judgement models; the rest are
+ * free. Enforced server-side in `loadModelChoice` (the source of truth) and
+ * mirrored by the picker only to decide what to lock.
+ */
+export const PAID_MODELS: ReadonlySet<ModelChoice> = new Set(
+  MODEL_CHOICES.filter((m) => m.paid).map((m) => m.value),
+);
+
+export function isPaidModel(choice: ModelChoice): boolean {
+  return PAID_MODELS.has(choice);
+}
 
 export interface UserSettings {
   language: AppLanguage;

@@ -23,8 +23,36 @@ export function stripe(): Stripe {
   return client;
 }
 
+/** The two billing cadences Team is sold on. */
+export type BillingInterval = "month" | "year";
+
+/**
+ * The Stripe price id for a billing interval, or null if that interval has no
+ * price configured.
+ *
+ * Yearly falls back to the legacy single-price variable, so an existing
+ * `STRIPE_PRICE_TEAM` keeps working as the annual plan without a rename — add
+ * `STRIPE_PRICE_TEAM_MONTHLY` to light up the monthly option, and optionally
+ * `STRIPE_PRICE_TEAM_YEARLY` to name the annual one explicitly.
+ */
+export function teamPriceId(interval: BillingInterval): string | null {
+  if (interval === "month") {
+    return process.env.STRIPE_PRICE_TEAM_MONTHLY ?? null;
+  }
+  return (
+    process.env.STRIPE_PRICE_TEAM_YEARLY ??
+    process.env.STRIPE_PRICE_TEAM ??
+    null
+  );
+}
+
 export function hasStripeConfig(): boolean {
-  return Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_TEAM);
+  // Configured if the secret is present and at least one cadence has a price —
+  // a monthly-only or yearly-only setup is valid, the UI shows what exists.
+  return Boolean(
+    process.env.STRIPE_SECRET_KEY &&
+      (teamPriceId("month") || teamPriceId("year")),
+  );
 }
 
 /**
