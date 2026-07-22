@@ -168,7 +168,7 @@ export function Sidebar() {
           </>
         ) : (
           <Link
-            href={`${DASHBOARD_ROOT}/settings`}
+            href={`${DASHBOARD_ROOT}/settings/plan`}
             className={styles.upsellRow}
           >
             <span className={styles.labelName}>{t.nav.workspaces}</span>

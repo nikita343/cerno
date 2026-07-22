@@ -8,6 +8,7 @@ import { upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
   loadModelChoice,
+  loadTimezone,
   resolveRequestUser,
   type RequestUser,
 } from "@/lib/supabase/request";
@@ -78,17 +79,20 @@ export async function POST(request: Request) {
 
   const today = body.today ?? todayISO();
   const caller = await resolveRequestUser();
-  const [labelNames, modelChoice] = await Promise.all([
+  const [labelNames, modelChoice, savedTimezone] = await Promise.all([
     loadLabelNames(caller),
     loadModelChoice(caller),
+    loadTimezone(caller),
   ]);
+  // The saved setting wins over the browser's timezone in the request body.
+  const timezone = savedTimezone ?? body.timezone;
 
   try {
     const task = await buildSmartTask({
       id: body.taskId ?? undefined,
       text: body.text,
       today,
-      timezone: body.timezone,
+      timezone,
       labelNames,
       modelChoice,
       // Set before persisting so the insert is checked against the workspace

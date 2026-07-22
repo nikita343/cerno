@@ -37,8 +37,12 @@ export function SettingsIndex() {
             className={styles.indexRow}
           >
             <span className={styles.indexText}>
-              <span className={styles.indexLabel}>{section.label}</span>
-              <span className={styles.indexNote}>{section.note}</span>
+              <span className={styles.indexLabel}>
+                {sectionLabel(t, section.slug)}
+              </span>
+              <span className={styles.indexNote}>
+                {sectionNote(t, section.slug)}
+              </span>
             </span>
             <ChevronRight size="1rem" className={styles.indexChevron} />
           </Link>
@@ -50,4 +54,30 @@ export function SettingsIndex() {
       </div>
     </>
   );
+}
+
+function sectionLabel(t: ReturnType<typeof useT>, slug: string): string {
+  switch (slug) {
+    case "profile": return t.settings.profile;
+    case "plan": return t.settings.plan;
+    case "reminders": return t.settings.reminders;
+    case "language": return t.settings.language;
+    case "calendar": return t.settings.calendar;
+    case "telegram": return t.settings.telegram;
+    case "model": return t.settings.model;
+    default: return slug;
+  }
+}
+
+function sectionNote(t: ReturnType<typeof useT>, slug: string): string {
+  switch (slug) {
+    case "profile": return t.settings.profileNote;
+    case "plan": return t.settings.planNote;
+    case "reminders": return t.settings.remindersNote;
+    case "language": return t.settings.languageNote;
+    case "calendar": return t.settings.calendarNote;
+    case "telegram": return t.settings.telegramNote;
+    case "model": return t.settings.modelNote;
+    default: return "";
+  }
 }

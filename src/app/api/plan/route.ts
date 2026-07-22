@@ -13,6 +13,7 @@ import { insertDump, upsertDayPlan, upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
   loadModelChoice,
+  loadTimezone,
   resolveRequestUser,
   type RequestUser,
 } from "@/lib/supabase/request";
@@ -72,10 +73,14 @@ export async function POST(request: Request) {
   // Resolved once and reused for persistence below: verifying the session is a
   // round trip to the auth server, and doing it twice per dump is wasteful.
   const caller = await resolveRequestUser();
-  const [labelNames, modelChoice] = await Promise.all([
+  const [labelNames, modelChoice, savedTimezone] = await Promise.all([
     loadLabelNames(caller),
     loadModelChoice(caller),
+    loadTimezone(caller),
   ]);
+  // The Settings → Language & region choice wins over the browser's timezone,
+  // so the planner resolves "tomorrow"/"Friday" in the zone the user picked.
+  const timezone = savedTimezone ?? body.timezone;
 
   // Whether *any* vendor is configured is decided inside generateStructured,
   // which falls back across providers before giving up. This local helper is
@@ -103,7 +108,7 @@ export async function POST(request: Request) {
       thinking: true,
       system: planSystemPrompt({
         now: today,
-        timezone: body.timezone,
+        timezone,
         capacityMinutes,
         labelNames,
       }),

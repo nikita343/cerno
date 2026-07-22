@@ -59,7 +59,9 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
         {active && (
           <header className={styles.sectionHead}>
             <h1 className={styles.sectionTitle}>{sectionLabel(t, active.slug)}</h1>
-            {active.hint && <p className={styles.sectionHint}>{active.hint}</p>}
+            {sectionHint(t, active.slug) && (
+              <p className={styles.sectionHint}>{sectionHint(t, active.slug)}</p>
+            )}
           </header>
         )}
         {children}
@@ -84,5 +86,17 @@ function sectionLabel(t: ReturnType<typeof useT>, slug: string): string {
     case "telegram": return t.settings.telegram;
     case "model": return t.settings.model;
     default: return slug;
+  }
+}
+
+/** Translated caveat under the heading, or "" for sections without one. */
+function sectionHint(t: ReturnType<typeof useT>, slug: string): string {
+  switch (slug) {
+    case "plan": return t.settings.planHint;
+    case "reminders": return t.settings.remindersHint;
+    case "language": return t.settings.languageHint;
+    case "calendar": return t.settings.calendarHint;
+    case "model": return t.settings.modelHint;
+    default: return "";
   }
 }

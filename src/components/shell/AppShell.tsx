@@ -30,10 +30,13 @@ import styles from "./AppShell.module.css";
 export function AppShell({ children }: { children: ReactNode }) {
   const captureOpen = useAppStore((s) => s.captureOpen);
   const setNowMinutes = useAppStore((s) => s.setNowMinutes);
+  const setToday = useAppStore((s) => s.setToday);
+  const timezone = useAppStore((s) => s.settings.timezone);
 
   // Mounted once here rather than per view, so navigating between Today and
-  // Upcoming doesn't restart the clock.
-  useNowTicker(setNowMinutes);
+  // Upcoming doesn't restart the clock. Reads the clock and the day boundary
+  // through the user's chosen timezone.
+  useNowTicker({ timezone, setNowMinutes, setToday });
 
   return (
     <div className={styles.shell}>

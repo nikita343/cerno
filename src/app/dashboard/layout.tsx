@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { UserProvider } from "@/components/auth/UserProvider";
 import { AppShell } from "@/components/shell/AppShell";
-import { todayISO } from "@/lib/date";
+import { todayInZone, todayISO } from "@/lib/date";
 import { loadDashboard, seedDefaultLabels } from "@/lib/supabase/data";
 import { loadSubscription, loadWorkspaces } from "@/lib/supabase/workspaces";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
@@ -75,7 +75,11 @@ export default async function DashboardLayout({
       ]);
 
       initialData = {
-        today,
+        // "Today" in the user's chosen timezone, so the first paint already
+        // has the right day boundary — the query cutoff above can stay UTC-ish
+        // since it only bounds the done-history window. The client re-anchors
+        // this on the same zone, so there's no hydration flip.
+        today: todayInZone(data.settings.timezone, new Date()),
         ...data,
         labels,
         workspaces,

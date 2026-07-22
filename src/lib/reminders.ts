@@ -20,6 +20,29 @@ export function minutesNow(date: Date = new Date()): number {
 }
 
 /**
+ * Minutes since midnight in a specific IANA timezone.
+ *
+ * Pairs with `todayInZone`: overdue badges and reminders read the clock through
+ * the user's chosen zone rather than the device's. Falls back to the device
+ * clock on an invalid zone.
+ */
+export function minutesNowInZone(timezone: string, date: Date = new Date()): number {
+  try {
+    // en-GB gives a 24-hour HH:MM.
+    const hhmm = date.toLocaleTimeString("en-GB", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  } catch {
+    return minutesNow(date);
+  }
+}
+
+/**
  * A task is only late once it was actually supposed to have *finished*.
  *
  * Flagging at the start time would mark a task overdue the moment it comes up,

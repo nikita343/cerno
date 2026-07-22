@@ -67,6 +67,23 @@ export function todayISO(): string {
   return toISODate(new Date());
 }
 
+/**
+ * Today's date (`YYYY-MM-DD`) in a specific IANA timezone.
+ *
+ * The whole point of the timezone setting: a user in Kyiv at 00:30 is already
+ * on tomorrow even though it's still yesterday in UTC. Computed from the same
+ * absolute instant on server and client, so both agree and there's no hydration
+ * flip. Falls back to the device date on an invalid zone.
+ */
+export function todayInZone(timezone: string, now: Date = new Date()): string {
+  try {
+    // en-CA formats as YYYY-MM-DD.
+    return now.toLocaleDateString("en-CA", { timeZone: timezone });
+  } catch {
+    return toISODate(now);
+  }
+}
+
 export function addDays(iso: string, days: number): string {
   const d = fromISODate(iso);
   d.setDate(d.getDate() + days);

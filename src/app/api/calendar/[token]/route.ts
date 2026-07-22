@@ -45,18 +45,26 @@ export async function GET(
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data, error } = await supabase.rpc("tasks_for_feed", { token });
+  // Tasks and the owner's timezone in parallel — both resolve the token
+  // server-side through SECURITY DEFINER functions, so neither leans on RLS.
+  const [tasksResult, tzResult] = await Promise.all([
+    supabase.rpc("tasks_for_feed", { token }),
+    supabase.rpc("feed_timezone", { token }),
+  ]);
 
-  if (error) {
-    console.error("[calendar feed]", error);
+  if (tasksResult.error) {
+    console.error("[calendar feed]", tasksResult.error);
     return new Response("Unable to build calendar", { status: 500 });
   }
 
-  const tasks = (data ?? []) as FeedTask[];
+  const tasks = (tasksResult.data ?? []) as FeedTask[];
+  // A missing function (migration 0012 not yet applied) or unknown token leaves
+  // this null, and the feed falls back to floating times — never an error.
+  const timezone = (tzResult.data as string | null) ?? null;
 
   // An empty feed and an unknown token are indistinguishable from the outside,
   // which is intentional — see the note above about not confirming tokens.
-  const body = buildCalendar({ tasks });
+  const body = buildCalendar({ tasks, timezone });
 
   return new Response(body, {
     status: 200,

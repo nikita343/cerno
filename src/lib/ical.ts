@@ -74,15 +74,59 @@ function dateOnly(iso: string): string {
 /**
  * Local date+time as a floating value: `20260721T103000`.
  *
- * Deliberately without a `Z` and without a TZID. A floating time means "10:30
- * wherever the viewer is", which is what a planner wants — a task planned for
- * 10:30 should read 10:30 after you fly somewhere, not shift by the offset.
- * Anchoring to UTC would require knowing the user's zone at write time and
- * would silently move every entry when they travel.
+ * Without a `Z` and without a TZID: "10:30 wherever the viewer is". Used only
+ * when no timezone is known; with one, `zonedStamp` pins the event instead.
  */
 function localDateTime(iso: string, clock: string): string {
   const [h = "00", m = "00"] = clock.split(":");
   return `${dateOnly(iso)}T${h.padStart(2, "0")}${m.padStart(2, "0")}00`;
+}
+
+/**
+ * The UTC offset of a zone at a given instant, in milliseconds.
+ *
+ * Read off `Intl` rather than a timezone database: format the instant *in* the
+ * zone, read the wall-clock fields back, and the gap between that and the same
+ * fields interpreted as UTC is the offset. Handles DST because it's evaluated
+ * at the specific instant.
+ */
+function zoneOffsetMs(timezone: string, at: Date): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const map: Record<string, number> = {};
+  for (const p of dtf.formatToParts(at)) {
+    if (p.type !== "literal") map[p.type] = Number(p.value);
+  }
+  const hour = map.hour === 24 ? 0 : map.hour;
+  const asUTC = Date.UTC(map.year, map.month - 1, map.day, hour, map.minute, map.second);
+  return asUTC - at.getTime();
+}
+
+/**
+ * A wall-clock time in `timezone`, converted to an absolute UTC instant.
+ *
+ * "10:30 in Europe/Kyiv" is a fixed moment; this finds it. One offset lookup is
+ * enough for every case except the rare hour that DST skips or repeats, which a
+ * planner doesn't need to be exact about.
+ */
+function zonedToUtc(iso: string, clock: string, timezone: string): Date {
+  const [y, mo, d] = iso.split("-").map(Number);
+  const [h, m] = clock.split(":").map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h || 0, m || 0, 0);
+  return new Date(guess - zoneOffsetMs(timezone, new Date(guess)));
+}
+
+/** `YYYYMMDDTHHMMSSZ` from a Date. */
+function absoluteStamp(date: Date): string {
+  return `${date.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
 }
 
 function addMinutes(iso: string, clock: string, minutes: number): string {
@@ -115,10 +159,18 @@ export function buildCalendar({
   tasks,
   name = "Cerno",
   now = new Date(),
+  timezone = null,
 }: {
   tasks: FeedTask[];
   name?: string;
   now?: Date;
+  /**
+   * The owner's IANA timezone. When set, timed events are anchored to an
+   * absolute UTC instant computed in that zone — a task at 10:30 shows at 10:30
+   * in that timezone and shifts correctly when viewed elsewhere. When null
+   * (unknown zone), events stay floating: "10:30 wherever you are".
+   */
+  timezone?: string | null;
 }): string {
   const stamp = utcStamp(now);
 
@@ -144,10 +196,19 @@ export function buildCalendar({
 
     if (task.suggested_start) {
       const clock = task.suggested_start.slice(0, 5);
-      lines.push(`DTSTART:${localDateTime(task.plan_date, clock)}`);
-      lines.push(
-        `DTEND:${addMinutes(task.plan_date, clock, task.estimated_minutes)}`,
-      );
+      if (timezone) {
+        // Anchored to the owner's zone: emit absolute UTC instants, so the
+        // event lands at the right moment in any calendar that reads it.
+        const start = zonedToUtc(task.plan_date, clock, timezone);
+        const end = new Date(start.getTime() + task.estimated_minutes * 60_000);
+        lines.push(`DTSTART:${absoluteStamp(start)}`);
+        lines.push(`DTEND:${absoluteStamp(end)}`);
+      } else {
+        lines.push(`DTSTART:${localDateTime(task.plan_date, clock)}`);
+        lines.push(
+          `DTEND:${addMinutes(task.plan_date, clock, task.estimated_minutes)}`,
+        );
+      }
     } else {
       // No time of day: an all-day entry. DTEND is exclusive in the DATE form,
       // so it is the following day — using the same date yields a zero-length

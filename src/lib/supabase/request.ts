@@ -81,3 +81,26 @@ export async function loadModelChoice(
   if (error || !data?.model) return null;
   return data.model as ModelChoice;
 }
+
+/**
+ * The caller's saved timezone (IANA name, e.g. "Europe/Kyiv").
+ *
+ * Read server-side so the Settings → Language & region choice is what the
+ * planner actually uses to resolve "tomorrow" and "Friday", rather than
+ * whatever timezone the browser making the request happens to be in. Null when
+ * signed out or unset; the caller falls back to the browser value it was sent.
+ */
+export async function loadTimezone(
+  caller: RequestUser | null,
+): Promise<string | null> {
+  if (!caller) return null;
+
+  const { data, error } = await caller.supabase
+    .from("user_settings")
+    .select("timezone")
+    .eq("user_id", caller.userId)
+    .maybeSingle();
+
+  if (error || !data?.timezone) return null;
+  return data.timezone as string;
+}
