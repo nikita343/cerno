@@ -10,6 +10,7 @@ import {
   type Email,
 } from "@/lib/email/templates";
 import { siteUrl, stripe } from "@/lib/stripe";
+import { writeSubscriptionRow } from "@/lib/stripe/subscriptions";
 import { createAdminClient, hasAdminConfig } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
       // id, and we want the subscription's actual status and period end.
       const subscription =
         await stripe().subscriptions.retrieve(subscriptionId);
-      await write(admin, userId, subscription);
+      await writeSubscriptionRow(admin, userId, subscription);
 
       // The reliable "you just upgraded" signal — checkout.session.completed
       // fires exactly once per successful checkout, so the welcome can't double
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
       });
       return NextResponse.json({ received: true });
     }
-    await write(admin, userId, subscription);
+    await writeSubscriptionRow(admin, userId, subscription);
 
     // Notifications come after the write and never block it. A mail outage must
     // not stop entitlement being recorded — and because Stripe retries on a
@@ -258,39 +259,3 @@ async function resolveUserId(
   return customer.metadata?.supabase_user_id ?? null;
 }
 
-/**
- * Copies Stripe's state onto our row.
- *
- * `status` is stored verbatim. Deciding what each status *means* belongs in
- * `has_active_plan()` in SQL, so there is one definition of "paid" and it is
- * the one that actually gates workspace creation.
- */
-async function write(
-  admin: ReturnType<typeof createAdminClient>,
-  userId: string,
-  subscription: Stripe.Subscription,
-): Promise<void> {
-  // The period end lives on the subscription item in current Stripe API
-  // versions, not on the subscription itself.
-  const periodEnd = subscription.items.data[0]?.current_period_end;
-
-  const { error } = await admin.from("subscriptions").upsert(
-    {
-      user_id: userId,
-      stripe_customer_id:
-        typeof subscription.customer === "string"
-          ? subscription.customer
-          : subscription.customer?.id,
-      stripe_subscription_id: subscription.id,
-      status: subscription.status,
-      current_period_end: periodEnd
-        ? new Date(periodEnd * 1000).toISOString()
-        : null,
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (error) throw error;
-}

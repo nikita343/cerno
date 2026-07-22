@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useT } from "@/lib/i18n";
 import { isEntitled, MAX_WORKSPACE_MEMBERS, type Subscription } from "@/lib/types";
@@ -25,6 +25,29 @@ import styles from "./SettingsView.module.css";
 export function BillingCard() {
   const t = useT();
   const subscription = useAppStore((s) => s.subscription);
+  const refreshSubscription = useAppStore((s) => s.refreshSubscription);
+
+  // Reconcile against Stripe whenever the billing screen opens. The webhook is
+  // the real-time path, but if it ever missed an event — the endpoint wasn't
+  // subscribed to it, a deploy dropped it — the stored row would be stale and
+  // the user would see the wrong plan state here, of all places. Pulling Stripe's
+  // truth on open makes this screen self-correct. Fire-and-forget: a sync outage
+  // just leaves the already-loaded state as-is.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/stripe/sync", { method: "POST" });
+        if (!cancelled && res.ok) await refreshSubscription();
+      } catch {
+        // Offline or server hiccup — the displayed state is still the last
+        // known good one, which is the right thing to fall back to.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshSubscription]);
 
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
   const [error, setError] = useState<string | null>(null);
