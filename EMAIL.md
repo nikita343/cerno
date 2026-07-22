@@ -38,7 +38,7 @@ fix is configuration, not code.
    | Username | `resend` |
    | Password | the Resend API key |
    | Sender email | the same address as `EMAIL_FROM` |
-   | Sender name | `Cerno` |
+   | Sender name | `Cerno Team` |
 
    Port 465 is implicit TLS. Use 587 only if 465 is blocked; `2465`/`2587` exist
    for hosts that block both.

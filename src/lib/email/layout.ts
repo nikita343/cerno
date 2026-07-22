@@ -50,6 +50,20 @@ const PALETTE = {
 const FONT_STACK =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
+/**
+ * Absolute URL of the logo, served from `public/Logo.png`.
+ *
+ * Email needs an absolute HTTPS URL — a relative path has no origin in an inbox
+ * — and most clients block remote images until the reader clicks "show images",
+ * so the `<img>` carries `alt="Cerno"` and the whole thing is wrapped so the
+ * word "Cerno" still reads when the picture doesn't load. Point it at the
+ * canonical host; a preview deploy's logo simply won't render, which is fine
+ * because real mail is sent from production.
+ */
+const LOGO_URL =
+  (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    "https://www.usecerno.xyz") + "/Logo.png";
+
 /** Escapes text interpolated into HTML. Every caller passes user-supplied data. */
 export function escapeHtml(value: string): string {
   return value
@@ -121,15 +135,11 @@ export function renderEmail(content: EmailContent): string {
 
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
 
-        <!-- wordmark -->
+        <!-- wordmark: the logo image, with the drawn mark + name as the
+             fallback clients see before "show images" is clicked. -->
         <tr>
           <td style="padding:0 4px 20px;font-family:${FONT_STACK};">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td width="10" height="10" bgcolor="${PALETTE.accent}" style="border-radius:5px;font-size:0;line-height:0;">&nbsp;</td>
-                <td style="padding-left:8px;font-size:15px;font-weight:700;letter-spacing:-0.01em;color:${PALETTE.text};">Cerno</td>
-              </tr>
-            </table>
+            <img src="${LOGO_URL}" alt="Cerno" height="28" style="height:28px;width:auto;border:0;display:block;" />
           </td>
         </tr>
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { siteUrl } from "@/lib/stripe";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -120,4 +121,77 @@ export async function signOut() {
   }
   revalidatePath("/", "layout");
   redirect("/login");
+}
+
+/**
+ * Sends a password-reset link.
+ *
+ * The link lands on `/auth/callback`, which exchanges its code for a session
+ * and forwards to `/reset-password` — so by the time the user sees the new
+ * form they're authenticated with a short-lived recovery session and can call
+ * `updateUser` below.
+ *
+ * The response is always the same whether or not the address has an account.
+ * Confirming "no such user" here would turn this into an oracle for which
+ * emails are registered.
+ */
+export async function requestPasswordReset(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  if (!hasSupabaseConfig()) return NOT_CONFIGURED;
+
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Enter your email.", notice: null };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl()}/auth/callback?next=/reset-password`,
+  });
+  // Logged, never surfaced: the notice is identical either way.
+  if (error) console.error("[auth/requestPasswordReset]", error);
+
+  return {
+    error: null,
+    notice: "If that email has an account, a reset link is on its way.",
+  };
+}
+
+/**
+ * Sets a new password for the recovery session established by the reset link.
+ *
+ * Requires a live session — the one the callback created from the emailed code.
+ * If it's expired (an old link, or a direct visit), there's no user and we say
+ * so rather than silently doing nothing.
+ */
+export async function updatePassword(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  if (!hasSupabaseConfig()) return NOT_CONFIGURED;
+
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) {
+    return { error: "Use at least 8 characters.", notice: null };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      error: "This reset link has expired. Request a new one.",
+      notice: null,
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    console.error("[auth/updatePassword]", error);
+    return { error: describeAuthError(error.message), notice: null };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/dashboard");
 }

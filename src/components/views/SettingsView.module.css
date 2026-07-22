@@ -388,6 +388,136 @@
 
 /* ----------------------------------------------------------------- billing */
 
+/* -------------------------------------------------------- plan comparison */
+
+.planGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* One plan column. The featured (Team) one gets the accent border; the one the
+   user is on gets a filled tint so "where am I" is answered before "what's the
+   difference". */
+.planCol {
+  display: flex;
+  flex-direction: column;
+  padding: 1.125rem;
+  border-radius: var(--r-chip);
+  border: var(--hairline) solid var(--border);
+  background: var(--surface);
+}
+
+.planCol[data-featured] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.planCol[data-current] {
+  background: var(--bg-sunken);
+  border-color: var(--border-strong, var(--border));
+}
+
+.planColHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.planColName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.planColTag {
+  margin-left: auto;
+  flex: none;
+  padding: 0.1875rem 0.4375rem;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  border: var(--hairline) solid var(--border);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.planColTag[data-accent] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent);
+}
+
+.planPrice {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin: 0.625rem 0 0.125rem;
+}
+
+.planPriceAmount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.planPricePeriod {
+  font-size: 0.8125rem;
+  color: var(--text-faint);
+}
+
+.planPlus {
+  margin: 0.75rem 0 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.planFeatures {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.planFeatures li {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* A tick for included features — this is a comparison, so what's in each tier
+   is exactly the checklist a tick is for. */
+.planFeatures li::before {
+  content: "✓";
+  flex: none;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.planFeatures[data-accent] li::before {
+  color: var(--accent);
+}
+
+.planStatus {
+  margin: 0.875rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+/* Stack the two plans on a narrow phone rather than squeezing them. */
+@media screen and (max-width: 560px) {
+  .planGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .planHead {
   display: flex;
   align-items: flex-start;

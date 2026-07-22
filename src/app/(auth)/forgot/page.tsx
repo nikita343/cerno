@@ -1,0 +1,9 @@
+import type { Metadata } from "next";
+
+import { ForgotForm } from "@/components/auth/ForgotForm";
+
+export const metadata: Metadata = { title: "Reset password · Cerno" };
+
+export default function ForgotPage() {
+  return <ForgotForm />;
+}

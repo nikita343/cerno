@@ -125,7 +125,14 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Password</span>
+          <span className={styles.labelRow}>
+            <span className={styles.label}>Password</span>
+            {mode === "login" && (
+              <Link href="/forgot" className={styles.forgot}>
+                Forgot password?
+              </Link>
+            )}
+          </span>
           <input
             className={styles.input}
             type="password"

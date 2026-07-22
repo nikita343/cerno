@@ -25,7 +25,6 @@ import styles from "./SettingsView.module.css";
 export function BillingCard() {
   const t = useT();
   const subscription = useAppStore((s) => s.subscription);
-  const workspaces = useAppStore((s) => s.workspaces);
 
   const [busy, setBusy] = useState<"checkout" | "portal" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,40 +62,75 @@ export function BillingCard() {
     }
   };
 
+  const freeFeatures = [
+    t.billing.freeFeat1,
+    t.billing.freeFeat2,
+    t.billing.freeFeat3,
+    t.billing.freeFeat4,
+  ];
+  const teamFeatures = [
+    t.billing.teamFeat1,
+    t.billing.teamFeat2,
+    t.billing.teamFeat3,
+  ];
+
   return (
-    <div className={styles.card}>
-      <div className={styles.planHead}>
-        <div className={styles.planText}>
-          <span className={styles.planName}>
-            {entitled ? t.billing.team : t.billing.free}
-          </span>
-          <span className={styles.fieldNote}>{describe(subscription, t)}</span>
+    <div>
+      {/* Two plans side by side so the difference reads at a glance rather than
+          as a paragraph. The one you're on is marked "Current plan"; the other
+          carries the action. */}
+      <div className={styles.planGrid}>
+        {/* -------------------------------------------------- Free */}
+        <div className={styles.planCol} data-current={!entitled || undefined}>
+          <div className={styles.planColHead}>
+            <span className={styles.planColName}>{t.billing.free}</span>
+            {!entitled && (
+              <span className={styles.planColTag}>{t.billing.currentPlan}</span>
+            )}
+          </div>
+          <div className={styles.planPrice}>
+            <span className={styles.planPriceAmount}>{t.billing.freePrice}</span>
+            <span className={styles.planPricePeriod}>{t.billing.period}</span>
+          </div>
+          <ul className={styles.planFeatures}>
+            {freeFeatures.map((feat) => (
+              <li key={feat}>{feat}</li>
+            ))}
+          </ul>
         </div>
-        <span className={styles.planBadge} data-paid={entitled || undefined}>
-          {entitled ? t.billing.perMonth : t.billing.current}
-        </span>
+
+        {/* -------------------------------------------------- Team */}
+        <div
+          className={styles.planCol}
+          data-featured
+          data-current={entitled || undefined}
+        >
+          <div className={styles.planColHead}>
+            <span className={styles.planColName}>{t.billing.team}</span>
+            {entitled ? (
+              <span className={styles.planColTag}>{t.billing.currentPlan}</span>
+            ) : (
+              <span className={styles.planColTag} data-accent>
+                {MAX_WORKSPACE_MEMBERS} {t.workspace.seatsWord}
+              </span>
+            )}
+          </div>
+          <div className={styles.planPrice}>
+            <span className={styles.planPriceAmount}>{t.billing.teamPrice}</span>
+            <span className={styles.planPricePeriod}>{t.billing.period}</span>
+          </div>
+          <p className={styles.planPlus}>{t.billing.everythingInFree}</p>
+          <ul className={styles.planFeatures} data-accent>
+            {teamFeatures.map((feat) => (
+              <li key={feat}>{feat}</li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <ul className={styles.planPoints}>
-        {entitled ? (
-          <>
-            <li>{t.billing.unlimitedWorkspaces} &mdash; {workspaces.length} {t.billing.soFar}</li>
-            <li>{MAX_WORKSPACE_MEMBERS} {t.billing.upToPeople}</li>
-            <li>{t.billing.sharedLists}</li>
-          </>
-        ) : (
-          <>
-            <li>{t.billing.freeForever}</li>
-            <li>
-              {t.billing.teamAddsPrefix} {MAX_WORKSPACE_MEMBERS}{" "}
-              {t.billing.teamAddsWorkspaces}
-            </li>
-            {/* Said plainly and up front, because discovering it at the invite
-                screen is how people end up annoyed. */}
-            <li>{t.billing.inviterPays}</li>
-          </>
-        )}
-      </ul>
+      {/* One line on the current subscription's real state, straight from
+          Stripe — renewal date, a failed payment, a pending cancellation. */}
+      <p className={styles.planStatus}>{describe(subscription, t)}</p>
 
       {error && (
         <p className={styles.planError} role="alert">

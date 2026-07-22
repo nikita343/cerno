@@ -24,6 +24,17 @@ HTML/source view and replace the body with the matching file:
 never escape or wrap it. (Other Supabase variables, if you want them:
 `{{ .Token }}`, `{{ .SiteURL }}`, `{{ .Email }}`.)
 
+### Where the name and logo live
+
+- **Logo**: each template's header is
+  `<img src="https://www.usecerno.xyz/Logo.png" alt="Cerno" height="28" ...>`.
+  It loads `public/Logo.png` — swap that file (keep the name) to change the
+  logo, or edit the `src`. Most clients block remote images until the reader
+  clicks "show images", so the `alt="Cerno"` is the fallback.
+- **Sender name** (`Cerno Team`): set in the **SMTP Settings** (step 2), field
+  **Sender name** — *not* in the template. The template controls the body; the
+  SMTP config controls who it's from.
+
 ## 2. Sender (the "from") — custom SMTP
 
 Even with branded HTML, the **sender** is still `noreply@mail.app.supabase.io`
