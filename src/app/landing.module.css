@@ -197,25 +197,12 @@
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
-  opacity: 0;
-  transform: translate3d(0, 2rem, 0);
-  transition: opacity 0.8s var(--l-ease), transform 0.8s var(--l-ease);
-}
-
-.heroCopy.isVisible,
-.heroMedia.isVisible,
-[data-reveal].isVisible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
 }
 
 .heroMedia {
   justify-self: end;
   width: 100%;
   max-width: 40rem;
-  opacity: 0;
-  transform: translate3d(0, 2.5rem, 0) scale(0.98);
-  transition: opacity 0.9s var(--l-ease), transform 0.9s var(--l-ease);
 }
 
 .eyebrow {
@@ -347,14 +334,6 @@
 
 .statementWord {
   display: inline-block;
-  opacity: 0;
-  transform: translate3d(0, 1.2rem, 0);
-  transition: opacity 0.45s var(--l-ease), transform 0.45s var(--l-ease);
-}
-
-.statementWord.isVisible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
 }
 
 /* ------------------------------------------------------- generic section */
@@ -403,18 +382,11 @@
   border-radius: 1.25rem;
   border: 1px solid var(--l-line);
   background: var(--l-surface);
-  transform: translate3d(0, 2rem, 0);
-  opacity: 0;
-  transition: opacity 0.75s var(--l-ease), transform 0.75s var(--l-ease), border-color 0.25s var(--l-ease);
+  transition: border-color 0.25s var(--l-ease);
 }
 
 .step:hover {
   border-color: color-mix(in srgb, var(--l-accent) 28%, var(--l-line));
-}
-
-.step.isVisible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
 }
 
 .stepN {
@@ -473,17 +445,6 @@
   grid-template-columns: 1fr 1.15fr;
   align-items: center;
   gap: clamp(1.75rem, 5vw, 4rem);
-}
-
-.page [data-reveal] {
-  opacity: 0;
-  transform: translate3d(0, 2rem, 0);
-  transition: opacity 0.8s var(--l-ease), transform 0.8s var(--l-ease);
-}
-
-.page [data-reveal].isVisible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
 }
 
 /* Alternate the image side on odd rows for the zig-zag rhythm. */
@@ -597,14 +558,7 @@
   border-radius: 1.5rem;
   border: 1px solid var(--l-line);
   background: var(--l-surface);
-  opacity: 0;
-  transform: translate3d(0, 1.5rem, 0);
-  transition: opacity 0.7s var(--l-ease), transform 0.7s var(--l-ease), border-color 0.25s var(--l-ease);
-}
-
-.plan.isVisible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
+  transition: border-color 0.25s var(--l-ease);
 }
 
 .plan[data-featured] {
