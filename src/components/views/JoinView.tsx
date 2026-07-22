@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
@@ -27,6 +28,7 @@ type State = "working" | "failed";
  */
 export function JoinView({ token }: { token: string }) {
   const router = useRouter();
+  const t = useT();
   const refreshWorkspaces = useAppStore((s) => s.refreshWorkspaces);
 
   const [state, setState] = useState<State>("working");
@@ -43,7 +45,7 @@ export function JoinView({ token }: { token: string }) {
 
     void (async () => {
       if (!hasSupabaseConfig()) {
-        setError("This app isn't connected to a backend.");
+        setError(t.workspace.notConnected);
         setState("failed");
         return;
       }
@@ -58,7 +60,7 @@ export function JoinView({ token }: { token: string }) {
         setError(
           caught instanceof Error && caught.message
             ? caught.message
-            : "That invite didn't work.",
+            : t.workspace.inviteFailed,
         );
         setState("failed");
       }
@@ -68,15 +70,15 @@ export function JoinView({ token }: { token: string }) {
   if (state === "working") {
     return (
       <div className={view.view}>
-        <h1 className={view.h1}>Joining…</h1>
-        <p className={view.subline}>One moment.</p>
+        <h1 className={view.h1}>{t.workspace.joining}</h1>
+        <p className={view.subline}>{t.workspace.oneMoment}</p>
       </div>
     );
   }
 
   return (
     <div className={view.view}>
-      <h1 className={view.h1}>That invite didn&rsquo;t work</h1>
+      <h1 className={view.h1}>{t.workspace.inviteFailed}</h1>
       {/*
         Every server-side rejection returns the same wording on purpose —
         distinguishing "expired" from "no such invite" from "wrong email" tells
@@ -85,7 +87,7 @@ export function JoinView({ token }: { token: string }) {
       */}
       <p className={view.subline}>
         {error === "invalid or expired invite"
-          ? "It may have expired, already been used, been revoked, or been meant for a different email address. Ask whoever invited you for a fresh link."
+          ? t.workspace.inviteFailedHelper
           : error}
       </p>
       <div className={styles.formActions}>
@@ -94,7 +96,7 @@ export function JoinView({ token }: { token: string }) {
           className={styles.primary}
           onClick={() => router.replace(DASHBOARD_ROOT)}
         >
-          Go to Today
+          {t.workspace.goToToday}
         </button>
       </div>
     </div>

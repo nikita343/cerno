@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { isEntitled, MAX_WORKSPACE_MEMBERS } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
@@ -20,6 +21,7 @@ import view from "./View.module.css";
  */
 export function NewWorkspaceView() {
   const router = useRouter();
+  const t = useT();
   const entitled = useAppStore((s) => isEntitled(s.subscription));
   const createWorkspace = useAppStore((s) => s.createWorkspace);
 
@@ -32,10 +34,10 @@ export function NewWorkspaceView() {
   if (!entitled) {
     return (
       <div className={view.view}>
-        <h1 className={view.h1}>Workspaces are part of Team</h1>
+        <h1 className={view.h1}>{t.workspace.partOfTeam}</h1>
         <p className={view.subline}>
-          Share a task list with up to {MAX_WORKSPACE_MEMBERS} people for $12 a
-          month. You pay; the people you invite don&rsquo;t.
+          {t.workspace.partOfTeamPrefix} {MAX_WORKSPACE_MEMBERS}{" "}
+          {t.workspace.partOfTeamSuffix}
         </p>
         <div className={styles.card}>
           <button
@@ -47,7 +49,7 @@ export function NewWorkspaceView() {
             // which has nothing to do with what was clicked.
             onClick={() => router.push(`${DASHBOARD_ROOT}/settings/plan`)}
           >
-            See the plan
+            {t.workspace.seeThePlan}
           </button>
         </div>
       </div>
@@ -85,7 +87,7 @@ export function NewWorkspaceView() {
       setError(
         caught instanceof Error
           ? caught.message
-          : "Couldn't create that workspace.",
+          : t.workspace.couldntCreate,
       );
       setBusy(false);
       // Only released on failure. On success we navigate away, and re-enabling
@@ -96,14 +98,12 @@ export function NewWorkspaceView() {
 
   return (
     <div className={view.view}>
-      <h1 className={view.h1}>New workspace</h1>
-      <p className={view.subline}>
-        A shared list for one team or project. You can rename it later.
-      </p>
+      <h1 className={view.h1}>{t.workspace.newWorkspace}</h1>
+      <p className={view.subline}>{t.workspace.newWorkspaceSubline}</p>
 
       <div className={styles.card}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Name</span>
+          <span className={styles.fieldLabel}>{t.workspace.nameLabel}</span>
           <input
             className={styles.input}
             value={name}
@@ -111,7 +111,7 @@ export function NewWorkspaceView() {
             onKeyDown={(e) => {
               if (e.key === "Enter") void submit();
             }}
-            placeholder="Design team"
+            placeholder={t.workspace.namePlaceholder}
             maxLength={60}
             autoFocus
           />
@@ -119,13 +119,13 @@ export function NewWorkspaceView() {
 
         <label className={styles.field}>
           <span className={styles.fieldLabel}>
-            Description <span className={styles.optional}>optional</span>
+            {t.workspace.descriptionLabel} <span className={styles.optional}>{t.workspace.optional}</span>
           </span>
           <textarea
             className={styles.textarea}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What this workspace is for."
+            placeholder={t.workspace.descriptionPlaceholder}
             maxLength={500}
             rows={3}
           />
@@ -144,7 +144,7 @@ export function NewWorkspaceView() {
             onClick={() => router.back()}
             disabled={busy}
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -152,7 +152,7 @@ export function NewWorkspaceView() {
             onClick={() => void submit()}
             disabled={busy || name.trim() === ""}
           >
-            {busy ? "Creating…" : "Create workspace"}
+            {busy ? t.workspace.creating : t.workspace.createWorkspace}
           </button>
         </div>
       </div>

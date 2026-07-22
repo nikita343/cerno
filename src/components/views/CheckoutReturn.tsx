@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { isEntitled } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { UpgradeCelebration } from "./UpgradeCelebration";
@@ -43,6 +44,7 @@ export function CheckoutReturn() {
   const params = useSearchParams();
   const outcome = params.get("checkout");
 
+  const t = useT();
   const subscription = useAppStore((s) => s.subscription);
   const refreshSubscription = useAppStore((s) => s.refreshSubscription);
 
@@ -97,12 +99,12 @@ export function CheckoutReturn() {
   }, [outcome, subscription, refreshSubscription]);
 
   if (outcome === "cancelled") {
-    return <Toast>Checkout cancelled — nothing was charged.</Toast>;
+    return <Toast>{t.billing.checkoutCancelled}</Toast>;
   }
 
   if (phase === "waiting") {
     return (
-      <Toast live="status">Payment received. Waiting for Stripe to confirm…</Toast>
+      <Toast live="status">{t.billing.checkoutWaiting}</Toast>
     );
   }
 

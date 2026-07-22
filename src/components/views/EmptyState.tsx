@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { SparkIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 
 import styles from "./EmptyState.module.css";
 
@@ -11,7 +12,7 @@ import styles from "./EmptyState.module.css";
  * icon tile → headline → helper line, with an optional action.
  */
 export function EmptyState({
-  title = "Nothing to plan yet",
+  title,
   helper,
   action,
   icon,
@@ -21,10 +22,11 @@ export function EmptyState({
   action?: ReactNode;
   icon?: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className={styles.empty}>
       <div className={styles.tile}>{icon ?? <SparkIcon size="1.25rem" />}</div>
-      <p className={styles.title}>{title}</p>
+      <p className={styles.title}>{title ?? t.today.nothingToPlan}</p>
       {helper && <p className={styles.helper}>{helper}</p>}
       {action}
     </div>

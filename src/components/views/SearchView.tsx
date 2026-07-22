@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { ClockIcon, SearchIcon } from "@/components/icons";
 import { TaskChip } from "@/components/task/TaskChip";
 import { relativeDayTitle, relativeDaySub } from "@/lib/date";
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT, NAV_ITEMS } from "@/lib/nav";
 import { pluralize } from "@/lib/format";
 import type { Task } from "@/lib/types";
@@ -20,6 +21,7 @@ const JUMP_TARGETS = NAV_ITEMS.filter((n) =>
 
 export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
   const router = useRouter();
+  const t = useT();
   const today = useAppStore((s) => s.today);
   const query = useAppStore((s) => s.searchQuery);
   const setQuery = useAppStore((s) => s.setSearchQuery);
@@ -77,7 +79,7 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
       <div className={styles.field}>
         <SearchIcon size="1.1875rem" className={styles.fieldIcon} />
         <label htmlFor="search" className="srOnly">
-          Search tasks
+          {t.search.searchTasks}
         </label>
         <input
           id="search"
@@ -86,7 +88,7 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Search tasks, labels, reasoning…"
+          placeholder={t.search.placeholder}
           autoComplete="off"
           spellCheck={false}
           type="search"
@@ -101,8 +103,8 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
               <section key={date} className={view.section}>
                 <h2 className={view.sectionLabelSmall}>
                   {date === "unplanned"
-                    ? "Task results · Unplanned"
-                    : `Task results · ${relativeDayTitle(date, today)} · ${relativeDaySub(date, today)}`}
+                    ? `${t.search.taskResults} · ${t.search.unplanned}`
+                    : `${t.search.taskResults} · ${relativeDayTitle(date, today, t.date)} · ${relativeDaySub(date, today)}`}
                 </h2>
                 <div className={view.listTight}>
                   {dayTasks.map((task) => (
@@ -113,7 +115,7 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
             ))
           ) : (
             <p className={view.emptyDashed}>
-              Nothing matches &ldquo;{query.trim()}&rdquo;.
+              {t.search.noResults} &ldquo;{query.trim()}&rdquo;.
             </p>
           )}
         </>
@@ -121,10 +123,10 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
 
       {query.trim() === "" && (
         <section className={view.section}>
-          <h2 className={view.sectionLabelSmall}>Recently viewed</h2>
+          <h2 className={view.sectionLabelSmall}>{t.search.recentlyViewed}</h2>
           <div className={styles.recentList}>
             <RecentRow
-              title="Today's plan"
+              title={t.search.todaysPlan}
               meta={`${tasks.filter((t) => t.plan_date === today && t.status === "today").length} ${pluralize(
                 tasks.filter((t) => t.plan_date === today && t.status === "today").length,
                 "task",
@@ -132,13 +134,13 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
               href={DASHBOARD_ROOT}
             />
             <RecentRow
-              title="Inbox"
-              meta={`${tasks.filter((t) => t.status !== "done").length} open`}
+              title={t.search.inbox}
+              meta={`${tasks.filter((task) => task.status !== "done").length} ${t.search.open}`}
               href={`${DASHBOARD_ROOT}/inbox`}
             />
             <RecentRow
-              title="Upcoming"
-              meta="this week"
+              title={t.search.upcoming}
+              meta={t.search.thisWeek}
               href={`${DASHBOARD_ROOT}/upcoming`}
             />
           </div>

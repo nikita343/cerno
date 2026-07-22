@@ -6,6 +6,7 @@ import { ChevronDown, SearchIcon } from "@/components/icons";
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -13,6 +14,7 @@ import styles from "./MobileTopBar.module.css";
 
 export function MobileTopBar() {
   const user = useUser();
+  const t = useT();
   const menuOpen = useAppStore((s) => s.menuOpen);
   const setMenuOpen = useAppStore((s) => s.setMenuOpen);
 
@@ -40,7 +42,7 @@ export function MobileTopBar() {
       <Link
         href={`${DASHBOARD_ROOT}/search`}
         className={styles.iconLink}
-        aria-label="Search"
+        aria-label={t.nav.search}
       >
         <SearchIcon size="1.25rem" />
       </Link>

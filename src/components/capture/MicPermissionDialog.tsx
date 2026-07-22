@@ -3,32 +3,10 @@
 import { useEffect } from "react";
 
 import { MicIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import type { MicStatus } from "@/lib/speech";
 
 import styles from "./MicPermissionDialog.module.css";
-
-/**
- * Shown when dictation can't start. A browser will not re-prompt once the user
- * has blocked the microphone, so the only useful thing to do is explain where
- * the setting lives — the copy is per-reason rather than one generic error.
- */
-const COPY: Record<
-  Exclude<MicStatus, "granted">,
-  { title: string; body: string }
-> = {
-  denied: {
-    title: "Microphone is blocked",
-    body: "Your browser is blocking the mic for this site. Open the padlock in the address bar, allow microphone access, then try again. You can keep typing in the meantime.",
-  },
-  "no-device": {
-    title: "No microphone found",
-    body: "Nothing is plugged in that Cerno can record from. Connect a mic and try again — typing works either way.",
-  },
-  unavailable: {
-    title: "Microphone unavailable",
-    body: "Recording needs a secure (https) connection and a browser that supports it. Typing works everywhere.",
-  },
-};
 
 export function MicPermissionDialog({
   status,
@@ -37,6 +15,12 @@ export function MicPermissionDialog({
   status: Exclude<MicStatus, "granted">;
   onClose: () => void;
 }) {
+  const t = useT();
+  const copy: Record<Exclude<MicStatus, "granted">, { title: string; body: string }> = {
+    denied: { title: t.mic.blockedTitle, body: t.mic.blockedBody },
+    "no-device": { title: t.mic.notFoundTitle, body: t.mic.notFoundBody },
+    unavailable: { title: t.mic.unavailableTitle, body: t.mic.unavailableBody },
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -50,7 +34,7 @@ export function MicPermissionDialog({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
-  const { title, body } = COPY[status];
+  const { title, body } = copy[status];
 
   return (
     <div className={styles.backdrop}>
@@ -71,7 +55,7 @@ export function MicPermissionDialog({
           {body}
         </p>
         <button type="button" className={styles.action} onClick={onClose} autoFocus>
-          Got it
+          {t.mic.gotIt}
         </button>
       </div>
     </div>

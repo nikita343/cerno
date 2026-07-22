@@ -6,6 +6,7 @@ import { Avatar } from "@/components/auth/Avatar";
 import { PlusIcon, SparkIcon } from "@/components/icons";
 import { memberProfile } from "@/lib/user";
 import type { WorkspaceMember } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./SmartAddBar.module.css";
@@ -34,7 +35,7 @@ function activeMention(text: string, caret: number): { query: string; at: number
  * becomes "ship the deck" assigned to Ada.
  */
 export function SmartAddBar({
-  placeholder = "Add one thing — Cerno fills in the rest",
+  placeholder,
   /**
    * Adds into a workspace's shared list instead of your own.
    *
@@ -53,6 +54,7 @@ export function SmartAddBar({
   workspaceId?: string | null;
   members?: WorkspaceMember[];
 }) {
+  const t = useT();
   const [text, setText] = useState("");
   const addTaskSmart = useAppStore((s) => s.addTaskSmart);
   const [pending, setPending] = useState(false);
@@ -151,7 +153,7 @@ export function SmartAddBar({
           <SparkIcon size="1.0625rem" />
         </span>
         <label htmlFor="smart-add" className="srOnly">
-          Add a task
+          {t.task.addTask}
         </label>
 
         {assignee && (
@@ -162,7 +164,7 @@ export function SmartAddBar({
               type="button"
               className={styles.assigneeClear}
               onClick={() => setAssignee(null)}
-              aria-label="Clear assignee"
+              aria-label={t.task.clearAssignee}
             >
               &times;
             </button>
@@ -176,7 +178,7 @@ export function SmartAddBar({
           value={text}
           onChange={onChange}
           onKeyDown={onKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t.task.addPlaceholder}
           autoComplete="off"
           disabled={pending}
         />
@@ -184,7 +186,7 @@ export function SmartAddBar({
           type="submit"
           className={styles.submit}
           disabled={!text.trim() || pending}
-          aria-label="Add task"
+          aria-label={t.task.addTask}
         >
           {pending ? (
             <span className={styles.dots} aria-hidden="true">
@@ -199,7 +201,7 @@ export function SmartAddBar({
       </form>
 
       {menuOpen && (
-        <ul className={styles.mentionMenu} role="listbox" aria-label="Assign to">
+        <ul className={styles.mentionMenu} role="listbox" aria-label={t.task.assignTo}>
           {matches.map((member, i) => {
             const p = memberProfile(member);
             return (

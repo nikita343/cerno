@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { CheckIcon, MoreIcon, TrashIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 
 import styles from "./SwipeRow.module.css";
 
@@ -53,6 +54,7 @@ export function SwipeRow({
   onMenu,
   children,
 }: SwipeRowProps) {
+  const t = useT();
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
 
@@ -118,12 +120,14 @@ export function SwipeRow({
           className={`${styles.action} ${styles.complete}`}
           tabIndex={isOpen ? 0 : -1}
           onClick={() => runAction(onComplete)}
-          aria-label={
-            completed ? `Mark "${title}" as not done` : `Mark "${title}" as done`
-          }
+          aria-label={`${
+            completed ? t.swipe.markNotDone : t.swipe.markDone
+          }: "${title}"`}
         >
           <CheckIcon size="1.125rem" />
-          <span className={styles.actionLabel}>{completed ? "Undo" : "Done"}</span>
+          <span className={styles.actionLabel}>
+            {completed ? t.swipe.undo : t.swipe.done}
+          </span>
         </button>
         {onMenu && (
           <button
@@ -131,10 +135,10 @@ export function SwipeRow({
             className={`${styles.action} ${styles.more}`}
             tabIndex={isOpen ? 0 : -1}
             onClick={() => runAction(onMenu)}
-            aria-label={`More actions for "${title}"`}
+            aria-label={`${t.swipe.moreActions}: "${title}"`}
           >
             <MoreIcon size="1.125rem" />
-            <span className={styles.actionLabel}>More</span>
+            <span className={styles.actionLabel}>{t.swipe.more}</span>
           </button>
         )}
         <button
@@ -142,10 +146,10 @@ export function SwipeRow({
           className={`${styles.action} ${styles.delete}`}
           tabIndex={isOpen ? 0 : -1}
           onClick={() => runAction(onDelete)}
-          aria-label={`Delete "${title}"`}
+          aria-label={`${t.swipe.delete}: "${title}"`}
         >
           <TrashIcon size="1.125rem" />
-          <span className={styles.actionLabel}>Delete</span>
+          <span className={styles.actionLabel}>{t.swipe.delete}</span>
         </button>
       </div>
 

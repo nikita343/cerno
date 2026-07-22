@@ -99,8 +99,8 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
     return (
       <div className={view.view}>
         <EmptyState
-          title="Workspace not found"
-          helper="It may have been deleted, or you may have been removed from it."
+          title={t.workspace.notFound}
+          helper={t.workspace.notFoundHelper}
         />
       </div>
     );
@@ -147,7 +147,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
             href={`${DASHBOARD_ROOT}/workspaces/${workspace.id}/settings`}
             className={styles.manageLink}
           >
-            {isAdmin ? "Manage & invite" : "People"}
+            {isAdmin ? t.workspace.manage : t.workspace.people}
           </Link>
         </div>
       </header>
@@ -158,14 +158,14 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
       <SmartAddBar
         workspaceId={workspaceId}
         members={members}
-        placeholder={`Add to ${workspace.name} — everyone here sees it`}
+        placeholder={`${workspace.name} — ${t.workspace.addToWorkspace}`}
       />
 
       {/* ------------------------------------------------------------ today */}
 
       <section className={view.section}>
         <div className={view.sectionHead}>
-          <h2 className={view.sectionLabel}>Today</h2>
+          <h2 className={view.sectionLabel}>{t.workspace.today}</h2>
           <span className={view.sectionMeta}>
             {openCount} {pluralize(openCount, "task")}
           </span>
@@ -180,10 +180,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         </div>
 
         {timed.length === 0 ? (
-          <p className={view.emptyDashed}>
-            Nothing planned here today. Anyone in the workspace can add
-            something.
-          </p>
+          <p className={view.emptyDashed}>{t.workspace.nothingToday}</p>
         ) : (
           <ol className={styles.timeline}>
             {timed.map(({ task, start, fixed }, index) => {
@@ -221,7 +218,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
       {later.length > 0 && (
         <section className={view.section}>
           <div className={view.sectionHead}>
-            <h2 className={view.sectionLabel}>Later</h2>
+            <h2 className={view.sectionLabel}>{t.workspace.later}</h2>
             <span className={view.sectionMeta}>
               {later.length} {pluralize(later.length, "task")}
             </span>

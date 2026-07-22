@@ -88,13 +88,24 @@ export function overdueIds(reminders: Reminder[]): Set<string> {
   );
 }
 
-/** "25m late", "1h 10m late", "in 40m". */
-export function formatLateness(minutesUntil: number): string {
+/**
+ * "25m late", "1h 10m late", "in 40m".
+ *
+ * The "in" / "late" words are passed in so this stays usable outside React and
+ * can be localised — Ukrainian puts the marker before the span.
+ */
+export function formatLateness(
+  minutesUntil: number,
+  labels: { inPrefix: string; lateSuffix: string } = {
+    inPrefix: "in",
+    lateSuffix: "late",
+  },
+): string {
   const late = minutesUntil < 0;
   const total = Math.abs(minutesUntil);
   const h = Math.floor(total / 60);
   const m = total % 60;
   const span = h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
-  if (!late) return `in ${span}`;
-  return `${span} late`;
+  if (!late) return `${labels.inPrefix} ${span}`;
+  return `${span} ${labels.lateSuffix}`;
 }

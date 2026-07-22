@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { ClockIcon, FlagIcon, TagIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { TaskChip } from "@/components/task/TaskChip";
 import type { Tag, Task } from "@/lib/types";
 import { PRIORITY_RANK } from "@/store/createAppStore";
@@ -14,18 +15,19 @@ import view from "./View.module.css";
 
 type FilterKey = "priority" | "deadline" | "tag";
 
-const FILTERS: Array<{
-  key: FilterKey;
-  name: string;
-  note: string;
-  Icon: typeof FlagIcon;
-}> = [
-  { key: "priority", name: "Priority", note: "High-priority first", Icon: FlagIcon },
-  { key: "deadline", name: "Deadline", note: "Sorted by due date", Icon: ClockIcon },
-  { key: "tag", name: "By smart tag", note: "Grouped by label", Icon: TagIcon },
-];
+const FILTER_ICONS: Record<FilterKey, typeof FlagIcon> = {
+  priority: FlagIcon,
+  deadline: ClockIcon,
+  tag: TagIcon,
+};
 
 export function FiltersView() {
+  const t = useT();
+  const FILTERS: Array<{ key: FilterKey; name: string; note: string; Icon: typeof FlagIcon }> = [
+    { key: "priority", name: t.filters.priorityName, note: t.filters.priorityNote, Icon: FILTER_ICONS.priority },
+    { key: "deadline", name: t.filters.deadlineName, note: t.filters.deadlineNote, Icon: FILTER_ICONS.deadline },
+    { key: "tag", name: t.filters.tagName, note: t.filters.tagNote, Icon: FILTER_ICONS.tag },
+  ];
   const today = useAppStore((s) => s.today);
   const allTasks = useAppStore((s) => s.tasks);
   const labels = useAppStoreShallow((s) => s.labels);
@@ -98,10 +100,10 @@ export function FiltersView() {
 
   return (
     <div className={`${view.view} ${view.viewWide}`}>
-      <h1 className={view.h1}>Filters &amp; labels</h1>
+      <h1 className={view.h1}>{t.filters.title}</h1>
 
       <section className={view.section}>
-        <h2 className={view.sectionLabelMuted}>My filters</h2>
+        <h2 className={view.sectionLabelMuted}>{t.filters.myFilters}</h2>
         <div className={view.list}>
           {FILTERS.map(({ key, name, note, Icon }) => (
             <button
@@ -127,9 +129,9 @@ export function FiltersView() {
 
       <section className={view.section}>
         <div className={view.sectionHead}>
-          <h2 className={view.sectionLabelMuted}>Labels</h2>
+          <h2 className={view.sectionLabelMuted}>{t.filters.labels}</h2>
           <span className={view.sectionNote}>
-            Cerno tags new tasks with these
+            {t.filters.labelsHelper}
           </span>
         </div>
         <div className={styles.labelPills}>

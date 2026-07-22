@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { CloseIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { MAX_WORKSPACE_MEMBERS } from "@/lib/types";
 
@@ -22,6 +23,7 @@ import styles from "./UpgradeCelebration.module.css";
  * every route that imports Settings.
  */
 export function UpgradeCelebration({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,37 +51,35 @@ export function UpgradeCelebration({ onClose }: { onClose: () => void }) {
           type="button"
           className={styles.close}
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.celebration.close}
         >
           <CloseIcon size="1rem" />
         </button>
 
-        <span className={styles.badge}>Team</span>
+        <span className={styles.badge}>{t.celebration.team}</span>
 
         <h2 id="upgrade-title" className={styles.title}>
-          You&rsquo;re on Team
+          {t.celebration.onTeam}
         </h2>
 
         <p className={styles.body}>
-          Workspaces are unlocked. Start one, invite up to{" "}
-          {MAX_WORKSPACE_MEMBERS - 1} other people, and share a task list where
-          anything assigned to someone lands in their day.
+          {t.celebration.bodyPrefix} {MAX_WORKSPACE_MEMBERS - 1}{" "}
+          {t.celebration.bodySuffix}
         </p>
         <p className={styles.small}>
-          They don&rsquo;t pay &mdash; your subscription covers everyone you
-          invite. Your receipt comes separately from Stripe.
+          {t.celebration.small}
         </p>
 
         <div className={styles.actions}>
           <button type="button" className={styles.secondary} onClick={onClose}>
-            Later
+            {t.celebration.later}
           </button>
           <Link
             href={`${DASHBOARD_ROOT}/workspaces/new`}
             className={styles.primary}
             onClick={onClose}
           >
-            Create a workspace
+            {t.celebration.createWorkspace}
           </Link>
         </div>
       </div>

@@ -10,15 +10,13 @@ import {
   VoiceUnavailableError,
   type RecorderHandle,
 } from "@/lib/recorder";
+import { useT } from "@/lib/i18n";
 import { ensureMicAccess, type MicStatus } from "@/lib/speech";
 import { usePresence } from "@/lib/usePresence";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { MicPermissionDialog } from "./MicPermissionDialog";
 import styles from "./CaptureOverlay.module.css";
-
-const PLACEHOLDER =
-  "Everything on your mind — one long sentence is fine.";
 
 /** Must match the exit animation duration in CaptureOverlay.module.css. */
 const CAPTURE_EXIT_MS = 180;
@@ -32,6 +30,7 @@ export function CaptureOverlay() {
   const setCaptureMode = useAppStore((s) => s.setCaptureMode);
   const closeCapture = useAppStore((s) => s.closeCapture);
   const submitDump = useAppStore((s) => s.submitDump);
+  const t = useT();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recorderRef = useRef<RecorderHandle | null>(null);
@@ -129,9 +128,7 @@ export function CaptureOverlay() {
         // session rather than leaving a button that can never succeed.
         if (error instanceof VoiceUnavailableError) setSpeechReady(false);
         setVoiceError(
-          error instanceof Error
-            ? error.message
-            : "Couldn't transcribe that. Try again.",
+          error instanceof Error ? error.message : t.capture.transcribeError,
         );
       } finally {
         setTranscribing(false);
@@ -175,7 +172,7 @@ export function CaptureOverlay() {
         type="button"
         className={styles.backdropDismiss}
         onClick={isThinking ? undefined : closeCapture}
-        aria-label="Close brain dump"
+        aria-label={t.capture.title}
         tabIndex={-1}
       />
 
@@ -184,17 +181,17 @@ export function CaptureOverlay() {
         className={styles.card}
         role="dialog"
         aria-modal="true"
-        aria-label="Brain dump"
+        aria-label={t.capture.title}
       >
         <div className={styles.header}>
           <span className={styles.headerDot} />
-          <span className={styles.headerTitle}>Brain dump</span>
+          <span className={styles.headerTitle}>{t.capture.title}</span>
           <button
             type="button"
             className={styles.close}
             onClick={closeCapture}
             disabled={isThinking}
-            aria-label="Close"
+            aria-label={t.capture.close}
           >
             <CloseIcon size="0.9375rem" />
           </button>
@@ -202,7 +199,7 @@ export function CaptureOverlay() {
 
         <div className={styles.body}>
           <label htmlFor="dump" className="srOnly">
-            What&rsquo;s on your mind?
+            {t.today.whatsOnYourMind}
           </label>
           <textarea
             id="dump"
@@ -210,7 +207,7 @@ export function CaptureOverlay() {
             className={styles.textarea}
             value={dumpText}
             onChange={(e) => setDumpText(e.target.value)}
-            placeholder={PLACEHOLDER}
+            placeholder={t.capture.placeholder}
             disabled={isThinking}
             rows={3}
             spellCheck={false}
@@ -224,7 +221,7 @@ export function CaptureOverlay() {
                 <span className={styles.thinkDot} />
               </span>
               <span className={styles.thinkingText}>
-                Planning your day — sorting priority, effort and deadlines…
+                {t.capture.thinking}
               </span>
             </div>
           )}
@@ -252,7 +249,7 @@ export function CaptureOverlay() {
               onClick={() => void toggleMic()}
               disabled={isThinking || checkingMic || transcribing}
               aria-label={
-                isListening ? "Stop recording" : "Record your dump"
+                isListening ? t.capture.stopRecording : t.capture.recordDump
               }
               aria-pressed={isListening}
             >
@@ -270,7 +267,7 @@ export function CaptureOverlay() {
                 <span className={styles.bar} />
               </span>
               <span className={styles.listeningText}>
-                Recording — tap the mic to stop
+                {t.capture.recording}
               </span>
             </div>
           )}
@@ -282,7 +279,7 @@ export function CaptureOverlay() {
                 <span className={styles.thinkDot} />
                 <span className={styles.thinkDot} />
               </span>
-              <span className={styles.listeningText}>Transcribing…</span>
+              <span className={styles.listeningText}>{t.capture.transcribing}</span>
             </div>
           )}
 
@@ -294,7 +291,7 @@ export function CaptureOverlay() {
             onClick={closeCapture}
             disabled={isThinking}
           >
-            Cancel
+            {t.common.cancel}
           </button>
 
           <button
@@ -304,7 +301,7 @@ export function CaptureOverlay() {
             onClick={handlePlan}
             disabled={isThinking}
           >
-            {isThinking ? "Planning…" : "Plan it"}
+            {isThinking ? t.capture.planning : t.capture.planIt}
           </button>
         </div>
       </div>

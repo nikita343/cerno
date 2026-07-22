@@ -11,6 +11,7 @@ import {
   MoreIcon,
   TrashIcon,
 } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import type { Priority, Task } from "@/lib/types";
 import { PHONE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { useAppStore } from "@/store/StoreProvider";
@@ -19,11 +20,7 @@ import { DatePicker } from "./DatePicker";
 import { TaskEditDialog } from "./TaskEditDialog";
 import styles from "./TaskMenu.module.css";
 
-const PRIORITIES: Array<{ value: Priority; label: string }> = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-];
+const PRIORITY_VALUES: Priority[] = ["high", "medium", "low"];
 
 type Panel = "menu" | "date" | "confirmDelete";
 
@@ -70,6 +67,12 @@ export function TaskMenu({
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
 }) {
+  const t = useT();
+  const priorityLabel: Record<Priority, string> = {
+    high: t.today.high,
+    medium: t.today.medium,
+    low: t.today.low,
+  };
   const updateTask = useAppStore((s) => s.updateTask);
   const rescheduleTask = useAppStore((s) => s.rescheduleTask);
 
@@ -110,7 +113,7 @@ export function TaskMenu({
     if (open && !isPhone) popRef.current?.focus();
   }, [open, isPhone]);
 
-  const label = `Actions for "${task.title}"`;
+  const label = `${t.task.actions}: ${task.title}`;
 
   // Shared by both presentations. Identical markup either way, so a change to
   // an action can't land on one form factor and not the other.
@@ -128,7 +131,7 @@ export function TaskMenu({
             }}
           >
             <EditIcon size="1rem" className={styles.rowIcon} />
-            <span>Edit</span>
+            <span>{t.task.edit}</span>
           </button>
 
           <button
@@ -138,33 +141,33 @@ export function TaskMenu({
             onClick={() => setPanel("date")}
           >
             <CalendarIcon size="1rem" className={styles.rowIcon} />
-            <span>Date</span>
+            <span>{t.task.date}</span>
             {/* Shows the time too, now that this panel sets it — otherwise the
                 only way to see a task's start is to open the panel. */}
             <span className={styles.rowHint}>
-              {task.plan_date ?? "None"}
+              {task.plan_date ?? t.common.none}
               {task.suggested_start ? ` · ${task.suggested_start}` : ""}
             </span>
           </button>
 
           <div className={styles.divider} />
 
-          <span className={styles.groupLabel}>Priority</span>
-          <div className={styles.flags} role="group" aria-label="Priority">
-            {PRIORITIES.map((p) => (
+          <span className={styles.groupLabel}>{t.task.priority}</span>
+          <div className={styles.flags} role="group" aria-label={t.task.priority}>
+            {PRIORITY_VALUES.map((value) => (
               <button
-                key={p.value}
+                key={value}
                 type="button"
                 className={styles.flag}
-                data-priority={p.value}
-                data-active={task.priority === p.value || undefined}
+                data-priority={value}
+                data-active={task.priority === value || undefined}
                 onClick={() => {
-                  void updateTask(task.id, { priority: p.value });
+                  void updateTask(task.id, { priority: value });
                   close();
                 }}
-                aria-label={`${p.label} priority`}
-                aria-pressed={task.priority === p.value}
-                title={p.label}
+                aria-label={priorityLabel[value]}
+                aria-pressed={task.priority === value}
+                title={priorityLabel[value]}
               >
                 <FlagIcon size="1rem" />
               </button>
@@ -180,7 +183,7 @@ export function TaskMenu({
             onClick={() => setPanel("confirmDelete")}
           >
             <TrashIcon size="1rem" className={styles.rowIcon} />
-            <span>Delete</span>
+            <span>{t.task.delete}</span>
           </button>
         </div>
       )}
@@ -189,7 +192,7 @@ export function TaskMenu({
         <DatePicker
           today={today}
           selected={task.plan_date}
-          title="Reschedule"
+          title={t.task.reschedule}
           flat={isPhone}
           onClose={close}
           onPick={(date) => {
@@ -222,7 +225,7 @@ export function TaskMenu({
       {panel === "confirmDelete" && (
         <div className={styles.confirm}>
           <p className={styles.confirmText}>
-            Delete &ldquo;{task.title}&rdquo;?
+            {t.task.delete} &ldquo;{task.title}&rdquo;?
           </p>
           <div className={styles.confirmActions}>
             <button
@@ -233,14 +236,14 @@ export function TaskMenu({
                 onDelete(task.id);
               }}
             >
-              Delete
+              {t.task.delete}
             </button>
             <button
               type="button"
               className={styles.confirmCancel}
               onClick={() => setPanel("menu")}
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </div>

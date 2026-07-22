@@ -17,6 +17,7 @@ import {
   type AppLanguage,
   type ModelChoice,
 } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { BillingCard } from "./BillingCard";
@@ -65,6 +66,7 @@ export function SettingsView({ section }: { section: SettingsSlug }) {
 }
 
 function ProfileSection() {
+  const t = useT();
   const user = useUser();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
@@ -82,7 +84,7 @@ function ProfileSection() {
     // Checked here as well as by the bucket's own limit, so the user gets an
     // instant answer instead of waiting out an upload that will be rejected.
     if (file.size > AVATAR_MAX_BYTES) {
-      setUploadError("That image is over 2 MB. Pick a smaller one.");
+      setUploadError(t.settings.uploadTooBig);
       return;
     }
 
@@ -115,7 +117,7 @@ function ProfileSection() {
               disabled={uploading}
             >
               <UploadIcon size="1rem" />
-              {uploading ? "Uploading…" : "Change"}
+              {uploading ? t.settings.uploading : t.settings.change}
             </button>
             <input
               ref={fileRef}
@@ -133,7 +135,7 @@ function ProfileSection() {
           {uploadError && <p className={styles.fieldError}>{uploadError}</p>}
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Display name</span>
+            <span className={styles.fieldLabel}>{t.settings.displayName}</span>
             <input
               className={styles.input}
               value={name}
@@ -155,6 +157,7 @@ function ProfileSection() {
 }
 
 function RemindersSection() {
+  const t = useT();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   return (
@@ -163,8 +166,8 @@ function RemindersSection() {
 
         <div className={styles.card}>
           <ToggleRow
-            label="Reminders"
-            description="Show overdue and upcoming tasks in the bell."
+            label={t.settings.remindersLabel}
+            description={t.settings.remindersToggle}
             checked={settings.reminders_enabled}
             onChange={(reminders_enabled) =>
               void updateSettings({ reminders_enabled })
@@ -172,8 +175,8 @@ function RemindersSection() {
           />
 
           <div className={styles.field} data-disabled={!settings.reminders_enabled || undefined}>
-            <span className={styles.fieldLabel}>Warn me this far ahead</span>
-            <div className={styles.segmented} role="group" aria-label="Reminder lead time">
+            <span className={styles.fieldLabel}>{t.settings.warnAhead}</span>
+            <div className={styles.segmented} role="group" aria-label={t.settings.reminderLeadTime}>
               {LEAD_OPTIONS.map((hours) => (
                 <button
                   key={hours}
@@ -186,7 +189,7 @@ function RemindersSection() {
                   }
                   aria-pressed={settings.reminder_lead_hours === hours}
                 >
-                  {hours}h
+                  {hours}{t.settings.hours}
                 </button>
               ))}
             </div>
@@ -198,6 +201,7 @@ function RemindersSection() {
 }
 
 function LanguageSection() {
+  const t = useT();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
 
@@ -236,7 +240,7 @@ function LanguageSection() {
 
         <div className={styles.card}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Language</span>
+            <span className={styles.fieldLabel}>{t.settings.languageLabel}</span>
             <select
               className={styles.select}
               value={settings.language}
@@ -254,7 +258,7 @@ function LanguageSection() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Timezone</span>
+            <span className={styles.fieldLabel}>{t.settings.timezone}</span>
             {/* A native select, deliberately: 400+ options get the OS's own
                 scrollable picker with type-ahead, which beats any listbox worth
                 building here and is a single tap on mobile. */}
@@ -281,10 +285,7 @@ function LanguageSection() {
                 ))
               )}
             </select>
-            <span className={styles.fieldNote}>
-              Used when Cerno resolves &ldquo;tomorrow&rdquo; and
-              &ldquo;Friday&rdquo; in a dump.
-            </span>
+            <span className={styles.fieldNote}>{t.settings.timezoneNote}</span>
           </label>
         </div>
       </section>
@@ -356,6 +357,7 @@ function ModelSection() {
 }
 
 function TelegramSection() {
+  const t = useT();
   const linked = useAppStore((s) => s.settings.telegram_linked);
   const refreshTelegramLinked = useAppStore((s) => s.refreshTelegramLinked);
   const disconnectTelegram = useAppStore((s) => s.disconnectTelegram);
@@ -382,12 +384,12 @@ function TelegramSection() {
       const response = await fetch("/api/telegram/link", { method: "POST" });
       const body = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !body.url) {
-        throw new Error(body.error ?? "Couldn't start linking.");
+        throw new Error(body.error ?? t.settings.couldntLink);
       }
       setAwaiting(true);
       window.open(body.url, "_blank", "noopener");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Couldn't start linking.");
+      setError(caught instanceof Error ? caught.message : t.settings.couldntLink);
     } finally {
       setBusy(false);
     }
@@ -398,27 +400,22 @@ function TelegramSection() {
       <div className={styles.card}>
         {linked ? (
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Telegram connected</span>
+            <span className={styles.fieldLabel}>{t.settings.telegramConnected}</span>
             <span className={styles.fieldNote}>
-              Send tasks to <strong>@cernohelperbot</strong> and they land in your
-              day — one message, one or more tasks. Send <strong>/today</strong>
-              {" "}for what&rsquo;s left, and you&rsquo;ll get a short brief each
-              morning.
+              {t.settings.telegramConnectedDesc}
             </span>
             <button
               type="button"
               className={styles.feedAction}
               onClick={() => void disconnectTelegram()}
             >
-              Disconnect
+              {t.settings.disconnect}
             </button>
           </div>
         ) : (
           <div className={styles.field}>
             <span className={styles.fieldNote}>
-              Link <strong>@cernohelperbot</strong> to add tasks from Telegram —
-              type them one per line and they appear in your day. You&rsquo;ll
-              also get a short brief each morning.
+              {t.settings.connectTelegramDesc}
             </span>
             <button
               type="button"
@@ -426,19 +423,18 @@ function TelegramSection() {
               onClick={() => void connect()}
               disabled={busy}
             >
-              {busy ? "Opening Telegram…" : "Connect Telegram"}
+              {busy ? t.settings.openingTelegram : t.settings.connectTelegram}
             </button>
 
             {awaiting && (
               <span className={styles.fieldNote}>
-                Tap <strong>Start</strong> in Telegram, then come back — this
-                updates on its own.{" "}
+                {t.settings.tapStart}{" "}
                 <button
                   type="button"
                   className={styles.feedAction}
                   onClick={() => void refreshTelegramLinked()}
                 >
-                  Check now
+                  {t.settings.checkNow}
                 </button>
               </span>
             )}
@@ -456,6 +452,7 @@ function TelegramSection() {
 }
 
 function CalendarFeed() {
+  const t = useT();
   const feedToken = useAppStore((s) => s.settings.feed_token);
   const rotateFeedToken = useAppStore((s) => s.rotateFeedToken);
 
@@ -486,8 +483,7 @@ function CalendarFeed() {
     return (
       <div className={styles.field}>
         <span className={styles.fieldNote}>
-          Creates a private link your calendar app can subscribe to. Your
-          scheduled tasks appear as events, updated automatically.
+          {t.settings.createFeedDesc}
         </span>
         <button
           type="button"
@@ -500,7 +496,7 @@ function CalendarFeed() {
           }}
         >
           <CalendarIcon size="1rem" />
-          Create feed link
+          {t.settings.createFeed}
         </button>
       </div>
     );
@@ -508,7 +504,7 @@ function CalendarFeed() {
 
   return (
     <div className={styles.field}>
-      <span className={styles.fieldLabel}>Your private feed URL</span>
+      <span className={styles.fieldLabel}>{t.settings.feedUrl}</span>
 
       <div className={styles.feedRow}>
         <input
@@ -516,24 +512,22 @@ function CalendarFeed() {
           value={revealed ? url : url.replace(/\/[^/]+$/, "/••••••••")}
           readOnly
           onFocus={(e) => e.currentTarget.select()}
-          aria-label="Calendar feed URL"
+          aria-label={t.settings.calendarFeedUrl}
         />
         <button
           type="button"
           className={styles.feedAction}
           onClick={() => setRevealed(!revealed)}
         >
-          {revealed ? "Hide" : "Show"}
+          {revealed ? t.settings.hide : t.settings.show}
         </button>
         <button type="button" className={styles.feedAction} onClick={copy}>
-          {copied ? "Copied" : "Copy"}
+          {copied ? t.settings.copied : t.settings.copy}
         </button>
       </div>
 
       <span className={styles.fieldNote}>
-        <strong>Anyone with this link can read your task titles</strong> without
-        signing in. Don&rsquo;t post it anywhere public. If it leaks, regenerate
-        it — the old link stops working immediately.
+        <strong>{t.settings.feedWarning}</strong> {t.settings.feedWarningRest}
       </span>
 
       <div className={styles.feedRow}>
@@ -548,7 +542,7 @@ function CalendarFeed() {
             setBusy(false);
           }}
         >
-          Regenerate
+          {t.settings.regenerate}
         </button>
         <button
           type="button"
@@ -560,7 +554,7 @@ function CalendarFeed() {
             setBusy(false);
           }}
         >
-          Turn off
+          {t.settings.turnOff}
         </button>
       </div>
     </div>

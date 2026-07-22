@@ -31,27 +31,27 @@ export function InboxView() {
   return (
     <div className={view.view}>
       <div className={view.titleRow}>
-        <h1 className={view.h1}>Inbox</h1>
+        <h1 className={view.h1}>{t.inbox.title}</h1>
         <span className={view.titleMeta}>
           {fromLastDump > 0
-            ? `${fromLastDump} parsed from your last dump`
+            ? `${fromLastDump} ${t.inbox.parsedFromDump}`
             : `${tasks.length} ${pluralize(tasks.length, "task")}`}
         </span>
       </div>
 
-      <SmartAddBar placeholder="Add one thing to the inbox" />
+      <SmartAddBar placeholder={t.inbox.addToInbox} />
 
       {tasks.length === 0 ? (
         <EmptyState
-          title="Inbox is clear"
-          helper="Everything you dumped has been planned or finished."
+          title={t.inbox.clear}
+          helper={t.inbox.clearHelper}
           action={
             <button
               type="button"
               className={styles.emptyAction}
               onClick={openCapture}
             >
-              Add something new
+              {t.inbox.addSomethingNew}
             </button>
           }
         />

@@ -12,7 +12,7 @@ import {
 import { Avatar } from "@/components/auth/Avatar";
 import { useUser } from "@/components/auth/UserProvider";
 import { signOut } from "@/lib/auth/actions";
-import { APP_VERSION } from "@/lib/fixtures";
+import { useT } from "@/lib/i18n";
 import { SETTINGS_HREF } from "@/lib/nav";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -20,6 +20,7 @@ import styles from "./SettingsMenuOverlay.module.css";
 
 export function SettingsMenuOverlay() {
   const user = useUser();
+  const t = useT();
   const menuOpen = useAppStore((s) => s.menuOpen);
   const setMenuOpen = useAppStore((s) => s.setMenuOpen);
   const theme = useAppStore((s) => s.theme);
@@ -55,7 +56,7 @@ export function SettingsMenuOverlay() {
         className={styles.menu}
         role="menu"
         tabIndex={-1}
-        aria-label="Profile and settings"
+        aria-label={t.menu.profileAndSettings}
       >
         <div className={styles.header}>
           <Avatar profile={user} size="2.375rem" />
@@ -76,14 +77,14 @@ export function SettingsMenuOverlay() {
           onClick={() => setMenuOpen(false)}
         >
           <CogIcon size="1.1875rem" className={styles.rowIcon} />
-          <span className={styles.rowLabel}>Settings</span>
+          <span className={styles.rowLabel}>{t.menu.settings}</span>
           <ChevronRight size="0.9375rem" className={styles.rowChevron} />
         </Link>
 
         <div className={styles.themeRow}>
           <ThemeIcon size="1.1875rem" className={styles.rowIcon} />
-          <span className={styles.rowLabel}>Theme</span>
-          <div className={styles.segmented} role="group" aria-label="Theme">
+          <span className={styles.rowLabel}>{t.menu.theme}</span>
+          <div className={styles.segmented} role="group" aria-label={t.menu.theme}>
             <button
               type="button"
               className={styles.segment}
@@ -91,7 +92,7 @@ export function SettingsMenuOverlay() {
               onClick={() => setTheme("dark")}
               aria-pressed={theme === "dark"}
             >
-              Dark
+              {t.menu.dark}
             </button>
             <button
               type="button"
@@ -100,7 +101,7 @@ export function SettingsMenuOverlay() {
               onClick={() => setTheme("light")}
               aria-pressed={theme === "light"}
             >
-              Light
+              {t.menu.light}
             </button>
           </div>
         </div>
@@ -118,17 +119,9 @@ export function SettingsMenuOverlay() {
             style={{ width: "100%" }}
           >
             <LogOutIcon size="1.1875rem" className={styles.rowIcon} />
-            <span className={styles.rowLabel}>Log out</span>
+            <span className={styles.rowLabel}>{t.menu.logOut}</span>
           </button>
         </form>
-
-        <div className={styles.footer}>
-          <span>Cerno v{APP_VERSION}</span>
-          <span className={styles.footerDot} />
-          <a href="#changelog" className={styles.footerLink}>
-            Changelog
-          </a>
-        </div>
       </div>
     </>
   );

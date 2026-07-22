@@ -19,6 +19,7 @@ import {
   type WorkspaceInvite,
   type WorkspaceMember,
 } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import { memberProfile } from "@/lib/user";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -47,6 +48,7 @@ export function WorkspaceMembers({
   currentUserId: string | null;
   onChanged: () => void;
 }) {
+  const t = useT();
   const refreshWorkspaces = useAppStore((s) => s.refreshWorkspaces);
   const leaveWorkspace = useAppStore((s) => s.leaveWorkspace);
 
@@ -110,7 +112,7 @@ export function WorkspaceMembers({
   const invite = (addressed: boolean) =>
     run(async () => {
       const client = db();
-      if (!client || !currentUserId) throw new Error("Sign in first.");
+      if (!client || !currentUserId) throw new Error(t.workspace.signInFirst);
       const created = await createInvite(
         client,
         workspace.id,
@@ -123,7 +125,7 @@ export function WorkspaceMembers({
 
       if (!addressed) {
         await copyLink(created.token);
-        setNotice("Link copied. Send it to whoever should join.");
+        setNotice(t.workspace.linkCopied);
         return;
       }
 
@@ -144,8 +146,8 @@ export function WorkspaceMembers({
 
       setNotice(
         body?.sent
-          ? `Invite emailed to ${recipient}. The link is also on your clipboard.`
-          : `Invite created and the link is on your clipboard — ${body?.error ?? "the email didn't send"}.`,
+          ? `${t.workspace.invitedEmailedPrefix} ${recipient}. ${t.workspace.invitedEmailedSuffix}`
+          : `${t.workspace.inviteCreatedPrefix} ${body?.error ?? t.workspace.emailDidntSend}.`,
       );
     });
 
@@ -158,25 +160,23 @@ export function WorkspaceMembers({
     } catch {
       // Clipboard access can be denied outright. Falling back to showing the
       // URL beats a button that silently does nothing.
-      window.prompt("Copy this invite link:", url);
+      window.prompt(t.workspace.copyThisLink, url);
     }
   };
 
   return (
     <section className={view.section}>
       <div className={view.sectionHead}>
-        <h2 className={view.sectionLabel}>People</h2>
+        <h2 className={view.sectionLabel}>{t.workspace.people}</h2>
         <span className={view.sectionMeta}>
-          {workspace.member_count} of {MAX_WORKSPACE_MEMBERS} seats
+          {workspace.member_count} {t.workspace.ofSeats} {MAX_WORKSPACE_MEMBERS} {t.workspace.seatsWord}
         </span>
       </div>
 
       <div className={styles.card}>
         {members.length === 0 && (
           <p className={styles.fieldNote}>
-            Couldn&rsquo;t load the people in this workspace. If this persists,
-            the roster function may not be installed &mdash; see
-            supabase/migrations/0008_member_identity.sql.
+            {t.workspace.rosterError}
           </p>
         )}
 
@@ -196,7 +196,7 @@ export function WorkspaceMembers({
                 <span className={styles.memberText}>
                   <span className={styles.memberName}>
                     {memberProfile(member).name}
-                    {isSelf && <span className={styles.you}> you</span>}
+                    {isSelf && <span className={styles.you}> {t.workspace.you}</span>}
                   </span>
                   {member.email && (
                     <span className={styles.memberEmail}>{member.email}</span>
@@ -204,7 +204,7 @@ export function WorkspaceMembers({
                 </span>
 
                 <span className={styles.roleBadge} data-owner={isOwner || undefined}>
-                  {isOwner ? "Owner" : member.role === "admin" ? "Admin" : "Member"}
+                  {isOwner ? t.workspace.owner : member.role === "admin" ? t.workspace.admin : t.workspace.member}
                 </span>
 
                 {/* The owner has no controls at all: they cannot be removed or
@@ -229,7 +229,7 @@ export function WorkspaceMembers({
                         })
                       }
                     >
-                      {member.role === "admin" ? "Make member" : "Make admin"}
+                      {member.role === "admin" ? t.workspace.makeMember : t.workspace.makeAdmin}
                     </button>
 
                     {currentUserId === workspace.owner_id && (
@@ -242,7 +242,7 @@ export function WorkspaceMembers({
                           // owner can hand it back.
                           if (
                             !window.confirm(
-                              `Make ${memberProfile(member).name} the owner? You'll stay an admin, but you can't undo this yourself.`,
+                              `${t.workspace.makeOwnerConfirmPrefix} ${memberProfile(member).name} ${t.workspace.makeOwnerConfirm}`,
                             )
                           ) {
                             return;
@@ -258,7 +258,7 @@ export function WorkspaceMembers({
                           });
                         }}
                       >
-                        Make owner
+                        {t.workspace.makeOwner}
                       </button>
                     )}
 
@@ -269,7 +269,7 @@ export function WorkspaceMembers({
                       onClick={() => {
                         if (
                           !window.confirm(
-                            `Remove ${memberProfile(member).name} from ${workspace.name}?`,
+                            `${t.workspace.removeConfirmPrefix} ${memberProfile(member).name} ${t.workspace.removeConfirmMid} ${workspace.name}?`,
                           )
                         ) {
                           return;
@@ -281,7 +281,7 @@ export function WorkspaceMembers({
                         });
                       }}
                     >
-                      Remove
+                      {t.workspace.remove}
                     </button>
                   </span>
                 )}
@@ -292,11 +292,11 @@ export function WorkspaceMembers({
                     className={`${styles.miniButton} ${styles.danger}`}
                     disabled={busy}
                     onClick={() => {
-                      if (!window.confirm(`Leave ${workspace.name}?`)) return;
+                      if (!window.confirm(`${t.workspace.leaveConfirm} ${workspace.name}?`)) return;
                       void leaveWorkspace(workspace.id);
                     }}
                   >
-                    Leave
+                    {t.workspace.leave}
                   </button>
                 )}
               </li>
@@ -308,20 +308,20 @@ export function WorkspaceMembers({
           <div className={styles.inviteBox}>
             {full ? (
               <p className={styles.fullNote}>
-                This workspace is full at {MAX_WORKSPACE_MEMBERS} people.{" "}
+                {t.workspace.fullPrefix} {MAX_WORKSPACE_MEMBERS} {t.workspace.fullSuffix}{" "}
                 <a
                   className={styles.inlineLink}
                   href={`mailto:hello@usecerno.xyz?subject=${encodeURIComponent("Cerno Enterprise")}`}
                 >
-                  Talk to us about Enterprise
+                  {t.workspace.talkEnterprise}
                 </a>{" "}
-                for a bigger team.
+                {t.workspace.forBiggerTeam}
               </p>
             ) : (
               <>
                 <label className={styles.inviteLabel} htmlFor="invite-email">
-                  Invite someone &mdash; {seatsLeft}{" "}
-                  {seatsLeft === 1 ? "seat" : "seats"} left
+                  {t.workspace.inviteSomeone} &mdash; {seatsLeft}{" "}
+                  {seatsLeft === 1 ? t.workspace.seatWord : t.workspace.seatsWord} {t.workspace.leftWord}
                 </label>
                 <div className={styles.inviteRow}>
                   <input
@@ -330,7 +330,7 @@ export function WorkspaceMembers({
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@company.com"
+                    placeholder={t.workspace.emailPlaceholder}
                     autoComplete="off"
                   />
                   <button
@@ -339,7 +339,7 @@ export function WorkspaceMembers({
                     disabled={busy || !email.includes("@")}
                     onClick={() => void invite(true)}
                   >
-                    Invite
+                    {t.workspace.invite}
                   </button>
                   <button
                     type="button"
@@ -347,20 +347,14 @@ export function WorkspaceMembers({
                     disabled={busy}
                     onClick={() => void invite(false)}
                   >
-                    Copy link
+                    {t.workspace.copyLink}
                   </button>
                 </div>
                 {/* The distinction that matters: "Invite" emails them AND
                     copies the link; "Copy link" only copies. Both are stated
                     because an admin who assumes an email went out would sit
                     waiting for someone who was never contacted. */}
-                <p className={styles.fieldNote}>
-                  <strong>Invite</strong> emails the link to that address, and
-                  only that address can accept it. <strong>Copy link</strong>{" "}
-                  works for whoever opens it first. Both expire in 7 days, and
-                  both put the link on your clipboard so you can send it
-                  yourself.
-                </p>
+                <p className={styles.fieldNote}>{t.workspace.inviteExplain}</p>
 
                 {notice && (
                   <p className={styles.notice} role="status">
@@ -375,21 +369,21 @@ export function WorkspaceMembers({
                 {invites.map((item) => (
                   <li key={item.id} className={styles.inviteItem}>
                     <span className={styles.inviteWho}>
-                      {item.email ?? "Anyone with the link"}
+                      {item.email ?? t.workspace.anyoneWithLink}
                     </span>
                     <span className={styles.inviteMeta}>
                       {item.uses >= item.max_uses
-                        ? "used"
+                        ? t.workspace.used
                         : new Date(item.expires_at) < new Date()
-                          ? "expired"
-                          : `expires ${new Date(item.expires_at).toLocaleDateString()}`}
+                          ? t.workspace.expired
+                          : `${t.workspace.expires} ${new Date(item.expires_at).toLocaleDateString()}`}
                     </span>
                     <button
                       type="button"
                       className={styles.miniButton}
                       onClick={() => void copyLink(item.token)}
                     >
-                      {copied === item.token ? "Copied" : "Copy"}
+                      {copied === item.token ? t.workspace.copied : t.workspace.copy}
                     </button>
                     <button
                       type="button"
@@ -404,7 +398,7 @@ export function WorkspaceMembers({
                         })
                       }
                     >
-                      Revoke
+                      {t.workspace.revoke}
                     </button>
                   </li>
                 ))}

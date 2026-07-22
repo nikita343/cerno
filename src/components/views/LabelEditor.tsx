@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { CheckIcon, CloseIcon, EditIcon, PlusIcon, TrashIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { validateLabelName } from "@/lib/labels";
 import { LABEL_PALETTE, type Label } from "@/lib/types";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
@@ -18,6 +19,7 @@ import styles from "./LabelEditor.module.css";
  * are affected.
  */
 export function LabelEditor() {
+  const t = useT();
   const labels = useAppStoreShallow((s) => s.labels);
   const tasks = useAppStoreShallow((s) => s.tasks);
   const addLabel = useAppStore((s) => s.addLabel);
@@ -63,7 +65,7 @@ export function LabelEditor() {
 
       {adding ? (
         <div className={styles.draft}>
-          <div className={styles.swatches} role="group" aria-label="Label colour">
+          <div className={styles.swatches} role="group" aria-label={t.labelEditor.labelColour}>
             {LABEL_PALETTE.map((color) => (
               <button
                 key={color}
@@ -90,7 +92,7 @@ export function LabelEditor() {
                 if (e.key === "Enter") submit();
                 if (e.key === "Escape") cancel();
               }}
-              placeholder="Label name"
+              placeholder={t.labelEditor.labelName}
               maxLength={24}
               autoFocus
             />
@@ -98,7 +100,7 @@ export function LabelEditor() {
               type="button"
               className={styles.iconButton}
               onClick={submit}
-              aria-label="Save label"
+              aria-label={t.labelEditor.saveLabel}
             >
               <CheckIcon size="1rem" />
             </button>
@@ -106,7 +108,7 @@ export function LabelEditor() {
               type="button"
               className={styles.iconButton}
               onClick={cancel}
-              aria-label="Cancel"
+              aria-label={t.labelEditor.cancel}
             >
               <CloseIcon size="1rem" />
             </button>
@@ -141,6 +143,7 @@ function LabelRow({
   const recolorLabel = useAppStore((s) => s.recolorLabel);
   const removeLabel = useAppStore((s) => s.removeLabel);
 
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(label.name);
   const [error, setError] = useState<string | null>(null);

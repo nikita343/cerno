@@ -58,43 +58,53 @@ export function nextWeek(today: string): string {
   return addDays(today, untilMonday);
 }
 
-export function buildPresets(today: string): Preset[] {
+/** Preset labels, passed in so this module stays usable outside React. */
+export interface PresetLabels {
+  today: string;
+  tomorrow: string;
+  weekend: string;
+  nextWeek: string;
+  noDate: string;
+}
+
+const EN_PRESET_LABELS: PresetLabels = {
+  today: "Today",
+  tomorrow: "Tomorrow",
+  weekend: "This weekend",
+  nextWeek: "Next week",
+  noDate: "No date",
+};
+
+export function buildPresets(
+  today: string,
+  labels: PresetLabels = EN_PRESET_LABELS,
+): Preset[] {
   const tomorrow = addDays(today, 1);
   const weekend = thisWeekend(today);
   const week = nextWeek(today);
 
   return [
-    {
-      key: "today",
-      label: "Today",
-      date: today,
-      hint: dayNameShort(today),
-    },
+    { key: "today", label: labels.today, date: today, hint: dayNameShort(today) },
     {
       key: "tomorrow",
-      label: "Tomorrow",
+      label: labels.tomorrow,
       date: tomorrow,
       hint: dayNameShort(tomorrow),
     },
     {
       key: "weekend",
-      label: "This weekend",
+      label: labels.weekend,
       date: weekend,
       hint: dayNameShort(weekend),
     },
     {
       key: "nextWeek",
-      label: "Next week",
+      label: labels.nextWeek,
       date: week,
       // Further out than the others, so a bare weekday would be ambiguous.
       hint: `${dayNameShort(week)} ${monthDayShort(week)}`,
     },
-    {
-      key: "noDate",
-      label: "No date",
-      date: null,
-      hint: "",
-    },
+    { key: "noDate", label: labels.noDate, date: null, hint: "" },
   ];
 }
 

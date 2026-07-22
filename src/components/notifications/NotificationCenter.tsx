@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { AlertIcon, CheckIcon, ClockIcon, CloseIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { formatLateness } from "@/lib/reminders";
 import { formatClock } from "@/lib/schedule";
 import type { Reminder } from "@/lib/types";
@@ -27,6 +28,7 @@ const EXIT_MS = 180;
  * desktop and a bottom sheet on mobile, decided entirely in CSS.
  */
 export function NotificationCenter() {
+  const t = useT();
   const open = useAppStore((s) => s.notificationsOpen);
   const setOpen = useAppStore((s) => s.setNotificationsOpen);
   const { visible } = useReminders();
@@ -61,23 +63,23 @@ export function NotificationCenter() {
         className={styles.panel}
         data-leaving={leaving || undefined}
         role="dialog"
-        aria-label="Notifications"
+        aria-label={t.notifications.title}
         tabIndex={-1}
       >
         <header className={styles.head}>
-          <h2 className={styles.title}>Notifications</h2>
+          <h2 className={styles.title}>{t.notifications.title}</h2>
           <button
             type="button"
             className={styles.close}
             onClick={() => setOpen(false)}
-            aria-label="Close notifications"
+            aria-label={t.notifications.close}
           >
             <CloseIcon size="1rem" />
           </button>
         </header>
 
         {visible.length === 0 ? (
-          <p className={styles.empty}>Nothing needs you right now.</p>
+          <p className={styles.empty}>{t.notifications.empty}</p>
         ) : (
           <ul className={styles.list}>
             {visible.map((reminder) => (
@@ -91,6 +93,7 @@ export function NotificationCenter() {
 }
 
 function ReminderRow({ reminder }: { reminder: Reminder }) {
+  const t = useT();
   const completeTask = useAppStore((s) => s.completeTask);
   const dismissReminder = useAppStore((s) => s.dismissReminder);
   const overdue = reminder.kind === "overdue";
@@ -106,7 +109,7 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
         <span className={styles.rowMeta}>
           {formatClock(reminder.start)}
           <span className={styles.rowDot} aria-hidden="true" />
-          {formatLateness(reminder.minutesUntil)}
+          {formatLateness(reminder.minutesUntil, { inPrefix: t.notifications.inPrefix, lateSuffix: t.notifications.lateSuffix })}
         </span>
       </span>
 
@@ -115,8 +118,8 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
           type="button"
           className={styles.rowAction}
           onClick={() => void completeTask(reminder.task.id)}
-          aria-label={`Mark "${reminder.task.title}" done`}
-          title="Mark done"
+          aria-label={`${t.notifications.markDone}: "${reminder.task.title}"`}
+          title={t.notifications.markDone}
         >
           <CheckIcon size="0.9375rem" />
         </button>
@@ -128,8 +131,8 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
             type="button"
             className={styles.rowAction}
             onClick={() => dismissReminder(reminder.id)}
-            aria-label={`Dismiss reminder for "${reminder.task.title}"`}
-            title="Dismiss"
+            aria-label={`${t.notifications.dismiss}: "${reminder.task.title}"`}
+            title={t.notifications.dismiss}
           >
             <CloseIcon size="0.9375rem" />
           </button>

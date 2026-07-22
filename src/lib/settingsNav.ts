@@ -61,12 +61,9 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     note: "Subscribe from Google or Apple",
     hint: "Subscribe from Google, Apple or Outlook",
   },
-  {
-    slug: "telegram",
-    label: "Telegram",
-    note: "Add tasks and get a morning brief",
-    hint: "Send tasks to the bot and they land in your day",
-  },
+  // Telegram is hidden for now — the bot needs more work before it's worth
+  // surfacing. The route (/dashboard/settings/telegram) and all its code stay
+  // in place; re-add the entry here to turn the tab back on.
   {
     slug: "model",
     label: "Planning model",

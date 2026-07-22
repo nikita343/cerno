@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CloseIcon } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { normaliseTime } from "@/lib/reschedule";
 import { usePresence } from "@/lib/usePresence";
 import type { Priority, Task } from "@/lib/types";
@@ -17,11 +18,7 @@ const EXIT_MS = 180;
 /** Mirrors the DB check on tasks.description. */
 const MAX_DESCRIPTION = 2000;
 
-const PRIORITIES: Array<{ value: Priority; label: string }> = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
-];
+const PRIORITY_VALUES: Priority[] = ["high", "medium", "low"];
 
 /**
  * Edit a task's title, description, priority, start time and estimate.
@@ -39,6 +36,12 @@ export function TaskEditDialog({
   onClose: () => void;
 }) {
   const updateTask = useAppStore((s) => s.updateTask);
+  const t = useT();
+  const priorityLabel: Record<Priority, string> = {
+    high: t.today.high,
+    medium: t.today.medium,
+    low: t.today.low,
+  };
   const { present, leaving } = usePresence(true, EXIT_MS);
 
   const [title, setTitle] = useState(task.title);
@@ -126,15 +129,15 @@ export function TaskEditDialog({
         data-leaving={leaving || undefined}
         role="dialog"
         aria-modal="true"
-        aria-label="Edit task"
+        aria-label={t.task.editTask}
       >
         <header className={styles.head}>
-          <span className={styles.headTitle}>Edit task</span>
+          <span className={styles.headTitle}>{t.task.editTask}</span>
           <button
             type="button"
             className={styles.close}
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t.task.close}
           >
             <CloseIcon size="1rem" />
           </button>
@@ -142,7 +145,7 @@ export function TaskEditDialog({
 
         <div className={styles.body}>
           <label className={styles.field}>
-            <span className={styles.label}>Title</span>
+            <span className={styles.label}>{t.task.titleLabel}</span>
             <input
               ref={titleRef}
               className={styles.input}
@@ -156,12 +159,12 @@ export function TaskEditDialog({
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Description</span>
+            <span className={styles.label}>{t.task.descriptionLabel}</span>
             <textarea
               className={styles.textarea}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Notes, links, sub-steps…"
+              placeholder={t.task.notesPlaceholder}
               maxLength={MAX_DESCRIPTION}
               rows={4}
             />
@@ -169,30 +172,30 @@ export function TaskEditDialog({
                 nobody fills is noise. */}
             {description.length > MAX_DESCRIPTION - 200 && (
               <span className={styles.counter}>
-                {MAX_DESCRIPTION - description.length} left
+                {MAX_DESCRIPTION - description.length} {t.task.charsLeft}
               </span>
             )}
           </label>
 
           <div className={styles.split}>
             <div className={styles.field}>
-              <span className={styles.label}>Priority</span>
+              <span className={styles.label}>{t.task.priority}</span>
               <div
                 className={styles.segmented}
                 role="group"
-                aria-label="Priority"
+                aria-label={t.task.priority}
               >
-                {PRIORITIES.map((p) => (
+                {PRIORITY_VALUES.map((value) => (
                   <button
-                    key={p.value}
+                    key={value}
                     type="button"
                     className={styles.segment}
-                    data-priority={p.value}
-                    data-active={priority === p.value || undefined}
-                    onClick={() => setPriority(p.value)}
-                    aria-pressed={priority === p.value}
+                    data-priority={value}
+                    data-active={priority === value || undefined}
+                    onClick={() => setPriority(value)}
+                    aria-pressed={priority === value}
                   >
-                    {p.label}
+                    {priorityLabel[value]}
                   </button>
                 ))}
               </div>
@@ -202,7 +205,7 @@ export function TaskEditDialog({
               {/* Empty means "no fixed time", which hands the task back to the
                   derived timeline rather than pinning it. That is why this
                   isn't defaulted to anything. */}
-              <span className={styles.label}>Starts</span>
+              <span className={styles.label}>{t.task.starts}</span>
               <input
                 className={styles.input}
                 type="time"
@@ -212,7 +215,7 @@ export function TaskEditDialog({
             </label>
 
             <label className={styles.field}>
-              <span className={styles.label}>Estimate</span>
+              <span className={styles.label}>{t.task.estimate}</span>
               <span className={styles.minutesWrap}>
                 <input
                   className={styles.minutes}
@@ -224,7 +227,7 @@ export function TaskEditDialog({
                   value={minutes}
                   onChange={(e) => setMinutes(e.target.value)}
                 />
-                <span className={styles.minutesUnit}>min</span>
+                <span className={styles.minutesUnit}>{t.task.minShort}</span>
               </span>
             </label>
           </div>
@@ -232,10 +235,10 @@ export function TaskEditDialog({
 
         <footer className={styles.foot}>
           <button type="button" className={styles.cancel} onClick={onClose}>
-            Cancel
+            {t.common.cancel}
           </button>
           <button type="button" className={styles.save} onClick={save}>
-            Save
+            {t.common.save}
           </button>
         </footer>
       </div>

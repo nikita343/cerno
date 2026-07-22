@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
+import { useT } from "@/lib/i18n";
 import { isEntitled, MAX_WORKSPACE_MEMBERS, type Subscription } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./SettingsView.module.css";
@@ -21,6 +23,7 @@ import styles from "./SettingsView.module.css";
  * doesn't work rather than access they hadn't paid for.
  */
 export function BillingCard() {
+  const t = useT();
   const subscription = useAppStore((s) => s.subscription);
   const workspaces = useAppStore((s) => s.workspaces);
 
@@ -43,7 +46,7 @@ export function BillingCard() {
       if (!response.ok || !body?.url) {
         // `detail` is only ever populated outside production — see devDetail.
         setError(
-          [body?.error ?? "Something went wrong. Try again.", body?.detail]
+          [body?.error ?? t.billing.genericError, body?.detail]
             .filter(Boolean)
             .join(" — "),
         );
@@ -54,7 +57,7 @@ export function BillingCard() {
       // and leave the user looking at an unchanged screen.
       window.location.href = body.url;
     } catch {
-      setError("Couldn't reach the server. Check your connection.");
+      setError(t.billing.networkError);
     } finally {
       setBusy(null);
     }
@@ -65,32 +68,32 @@ export function BillingCard() {
       <div className={styles.planHead}>
         <div className={styles.planText}>
           <span className={styles.planName}>
-            {entitled ? "Team" : "Free"}
+            {entitled ? t.billing.team : t.billing.free}
           </span>
-          <span className={styles.fieldNote}>{describe(subscription)}</span>
+          <span className={styles.fieldNote}>{describe(subscription, t)}</span>
         </div>
         <span className={styles.planBadge} data-paid={entitled || undefined}>
-          {entitled ? "$12 / month" : "Current"}
+          {entitled ? t.billing.perMonth : t.billing.current}
         </span>
       </div>
 
       <ul className={styles.planPoints}>
         {entitled ? (
           <>
-            <li>Unlimited workspaces &mdash; {workspaces.length} so far</li>
-            <li>Up to {MAX_WORKSPACE_MEMBERS} people per workspace</li>
-            <li>Shared task lists with assignees</li>
+            <li>{t.billing.unlimitedWorkspaces} &mdash; {workspaces.length} {t.billing.soFar}</li>
+            <li>{MAX_WORKSPACE_MEMBERS} {t.billing.upToPeople}</li>
+            <li>{t.billing.sharedLists}</li>
           </>
         ) : (
           <>
-            <li>Everything personal, free forever</li>
+            <li>{t.billing.freeForever}</li>
             <li>
-              Team adds shared workspaces for up to {MAX_WORKSPACE_MEMBERS}{" "}
-              people
+              {t.billing.teamAddsPrefix} {MAX_WORKSPACE_MEMBERS}{" "}
+              {t.billing.teamAddsWorkspaces}
             </li>
             {/* Said plainly and up front, because discovering it at the invite
                 screen is how people end up annoyed. */}
-            <li>You pay; the people you invite don&rsquo;t</li>
+            <li>{t.billing.inviterPays}</li>
           </>
         )}
       </ul>
@@ -109,7 +112,7 @@ export function BillingCard() {
             onClick={() => void go("portal")}
             disabled={busy !== null}
           >
-            {busy === "portal" ? "Opening…" : "Manage billing"}
+            {busy === "portal" ? t.billing.opening : t.billing.manageBilling}
           </button>
         ) : (
           <button
@@ -118,7 +121,7 @@ export function BillingCard() {
             onClick={() => void go("checkout")}
             disabled={busy !== null}
           >
-            {busy === "checkout" ? "Opening…" : "Upgrade to Team"}
+            {busy === "checkout" ? t.billing.opening : t.billing.upgrade}
           </button>
         )}
 
@@ -131,7 +134,7 @@ export function BillingCard() {
             "Cerno Enterprise",
           )}`}
         >
-          Need more than {MAX_WORKSPACE_MEMBERS}? Talk to us
+          {t.billing.needMore} {MAX_WORKSPACE_MEMBERS}? {t.billing.talkToUs}
         </a>
       </div>
     </div>
@@ -139,7 +142,7 @@ export function BillingCard() {
 }
 
 /** One line of plain English for each Stripe status. */
-function describe(subscription: Subscription): string {
+function describe(subscription: Subscription, t: Dictionary): string {
   const renews = subscription.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString(undefined, {
         day: "numeric",
@@ -152,21 +155,19 @@ function describe(subscription: Subscription): string {
     case "active":
     case "trialing":
       if (subscription.cancel_at_period_end && renews) {
-        // The distinction that matters most to someone who just cancelled:
-        // they have not lost anything yet.
-        return `Cancels on ${renews}. You keep everything until then.`;
+        return `${t.billing.cancelsOn} ${renews}. ${t.billing.keepUntilThen}`;
       }
-      return renews ? `Renews on ${renews}` : "Active";
+      return renews ? `${t.billing.renewsOn} ${renews}` : t.billing.active;
     case "past_due":
-      return "Payment failed. We'll retry — update your card to be safe.";
+      return t.billing.pastDue;
     case "unpaid":
-      return "Payment failed too many times. Update your card to restore Team.";
+      return t.billing.unpaid;
     case "canceled":
-      return "Cancelled. Your workspaces are still here, read and write.";
+      return t.billing.canceled;
     case "incomplete":
     case "incomplete_expired":
-      return "That checkout didn't finish.";
+      return t.billing.incomplete;
     default:
-      return "Personal planning, free forever";
+      return t.billing.personalFree;
   }
 }

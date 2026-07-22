@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { PlusIcon } from "@/components/icons";
 import { relativeDayTitle } from "@/lib/date";
+import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./DayAddTask.module.css";
@@ -20,6 +21,7 @@ import styles from "./DayAddTask.module.css";
  */
 export function DayAddTask({ date, today }: { date: string; today: string }) {
   const addTaskSmart = useAppStore((s) => s.addTaskSmart);
+  const t = useT();
 
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -58,7 +60,7 @@ export function DayAddTask({ date, today }: { date: string; today: string }) {
         onClick={() => setOpen(true)}
       >
         <PlusIcon size="0.9375rem" />
-        <span>Add task</span>
+        <span>{t.task.addTask}</span>
       </button>
     );
   }
@@ -72,7 +74,7 @@ export function DayAddTask({ date, today }: { date: string; today: string }) {
       }}
     >
       <label htmlFor={`add-${date}`} className="srOnly">
-        Add a task on {relativeDayTitle(date, today)}
+        {t.task.addTask} · {relativeDayTitle(date, today, t.date)}
       </label>
       <input
         id={`add-${date}`}
@@ -88,7 +90,7 @@ export function DayAddTask({ date, today }: { date: string; today: string }) {
         onKeyDown={(e) => {
           if (e.key === "Escape") close();
         }}
-        placeholder="Add one thing — Cerno fills in the rest"
+        placeholder={t.task.addPlaceholder}
         autoComplete="off"
         disabled={pending}
       />
@@ -96,7 +98,7 @@ export function DayAddTask({ date, today }: { date: string; today: string }) {
         type="submit"
         className={styles.submit}
         disabled={!text.trim() || pending}
-        aria-label="Add task"
+        aria-label={t.task.addTask}
       >
         <PlusIcon size="0.9375rem" />
       </button>

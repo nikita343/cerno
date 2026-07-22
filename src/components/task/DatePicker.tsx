@@ -12,6 +12,7 @@ import {
   SunIcon,
 } from "@/components/icons";
 import { monthYear } from "@/lib/date";
+import { useT } from "@/lib/i18n";
 import {
   buildPresets,
   monthGrid,
@@ -78,7 +79,25 @@ export function DatePicker({
   const [anchor, setAnchor] = useState(selected ?? today);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const presets = useMemo(() => buildPresets(today), [today]);
+  const t = useT();
+  const presets = useMemo(
+    () =>
+      buildPresets(today, {
+        today: t.date.today,
+        tomorrow: t.date.tomorrow,
+        weekend: t.task.thisWeekend,
+        nextWeek: t.task.nextWeek,
+        noDate: t.task.noDate,
+      }),
+    [today, t],
+  );
+  // Translated label for each time preset, keyed off its fixed value.
+  const timeLabel: Record<string, string> = {
+    "09:00": t.today.morning,
+    "12:00": t.task.midday,
+    "15:00": t.today.afternoon,
+    "18:00": t.today.evening,
+  };
   const cells = useMemo(() => monthGrid(anchor), [anchor]);
 
   useEffect(() => {
@@ -103,7 +122,7 @@ export function DatePicker({
       className={styles.picker}
       data-flat={flat || undefined}
       role="dialog"
-      aria-label={title ?? "Pick a date"}
+      aria-label={title ?? t.task.pickDate}
       tabIndex={-1}
     >
       {title && (
@@ -113,7 +132,7 @@ export function DatePicker({
             type="button"
             className={styles.close}
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t.task.close}
           >
             <CloseIcon size="0.9375rem" />
           </button>
@@ -146,7 +165,7 @@ export function DatePicker({
             type="button"
             className={styles.monthNav}
             onClick={() => setAnchor(shiftMonth(anchor, -1))}
-            aria-label="Previous month"
+            aria-label={t.task.previousMonth}
           >
             <ChevronLeft size="0.9375rem" />
           </button>
@@ -154,8 +173,8 @@ export function DatePicker({
             type="button"
             className={styles.monthNav}
             onClick={() => setAnchor(today)}
-            aria-label="Back to this month"
-            title="This month"
+            aria-label={t.task.backToThisMonth}
+            title={t.task.thisMonth}
           >
             <span className={styles.dot} />
           </button>
@@ -163,7 +182,7 @@ export function DatePicker({
             type="button"
             className={styles.monthNav}
             onClick={() => setAnchor(shiftMonth(anchor, 1))}
-            aria-label="Next month"
+            aria-label={t.task.nextMonth}
           >
             <ChevronRight size="0.9375rem" />
           </button>
@@ -205,9 +224,9 @@ export function DatePicker({
           the panel is the caller's business — see TaskMenu. */}
       {onPickTime && (
         <div className={styles.times}>
-          <span className={styles.timesLabel}>Time</span>
+          <span className={styles.timesLabel}>{t.task.time}</span>
 
-          <div className={styles.timeRow} role="group" aria-label="Start time">
+          <div className={styles.timeRow} role="group" aria-label={t.task.startTime}>
             {TIME_PRESETS.map((preset) => (
               <button
                 key={preset.value}
@@ -217,7 +236,7 @@ export function DatePicker({
                 aria-pressed={time === preset.value}
                 onClick={() => onPickTime(preset.value)}
               >
-                {preset.label}
+                {timeLabel[preset.value] ?? preset.label}
               </button>
             ))}
           </div>

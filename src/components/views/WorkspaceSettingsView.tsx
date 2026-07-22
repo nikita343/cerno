@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ChevronLeft } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
@@ -27,6 +28,7 @@ import view from "./View.module.css";
  */
 export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
+  const t = useT();
   const workspace = useAppStore((s) =>
     s.workspaces.find((w) => w.id === workspaceId),
   );
@@ -55,8 +57,8 @@ export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) 
     return (
       <div className={view.view}>
         <EmptyState
-          title="Workspace not found"
-          helper="It may have been deleted, or you may have been removed from it."
+          title={t.workspace.notFound}
+          helper={t.workspace.notFoundHelper}
         />
       </div>
     );
@@ -84,18 +86,18 @@ export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) 
         {workspace.name}
       </Link>
 
-      <h1 className={view.h1}>Workspace settings</h1>
+      <h1 className={view.h1}>{t.workspace.settingsTitle}</h1>
 
       {/* Only admins can write these — the policy enforces it either way, but
           showing a form that always fails is worse than showing the values. */}
       {isAdmin && (
         <section className={view.section}>
           <div className={view.sectionHead}>
-            <h2 className={view.sectionLabel}>Details</h2>
+            <h2 className={view.sectionLabel}>{t.workspace.details}</h2>
           </div>
           <div className={styles.card}>
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>Name</span>
+              <span className={styles.fieldLabel}>{t.workspace.nameLabel}</span>
               <input
                 className={styles.input}
                 value={name}
@@ -106,7 +108,7 @@ export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) 
             </label>
             <label className={styles.field}>
               <span className={styles.fieldLabel}>
-                Description <span className={styles.optional}>optional</span>
+                {t.workspace.descriptionLabel} <span className={styles.optional}>{t.workspace.optional}</span>
               </span>
               <textarea
                 className={styles.textarea}
@@ -119,7 +121,7 @@ export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) 
             </label>
             {/* Saved on blur, like the rest of Settings — each field is an
                 independent preference, not a form you submit. */}
-            <p className={styles.fieldNote}>Saved as you go.</p>
+            <p className={styles.fieldNote}>{t.workspace.saved}</p>
           </div>
         </section>
       )}
@@ -135,12 +137,12 @@ export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) 
       {isOwner && (
         <section className={view.section}>
           <div className={view.sectionHead}>
-            <h2 className={view.sectionLabel}>Danger zone</h2>
+            <h2 className={view.sectionLabel}>{t.workspace.dangerZone}</h2>
           </div>
           <div className={styles.card}>
             <p className={styles.fieldNote}>
-              Deleting <strong>{workspace.name}</strong> removes it for everyone
-              in it, along with every task inside. This cannot be undone.
+              {t.workspace.deleteHelperPrefix} <strong>{workspace.name}</strong>{" "}
+              {t.workspace.deleteHelperSuffix}
             </p>
             <div className={styles.formActions}>
               <button
@@ -150,14 +152,14 @@ export function WorkspaceSettingsView({ workspaceId }: { workspaceId: string }) 
                   // Typed confirmation, not a yes/no: this destroys other
                   // people's work, not just the owner's.
                   const typed = window.prompt(
-                    `Type the workspace name to delete it permanently:\n\n${workspace.name}`,
+                    `${t.workspace.deletePrompt}\n\n${workspace.name}`,
                   );
                   if (typed?.trim() !== workspace.name) return;
                   void deleteWorkspace(workspace.id);
                   router.replace(`${DASHBOARD_ROOT}/workspaces`);
                 }}
               >
-                Delete this workspace
+                {t.workspace.deleteThis}
               </button>
             </div>
           </div>
