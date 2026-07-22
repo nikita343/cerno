@@ -194,8 +194,11 @@ export function TodayView() {
         <section className={view.section}>
           <div className={view.sectionHead}>
             <h2 className={view.sectionLabel}>{t.today.scheduled}</h2>
+            {/* "N open", not "N tasks": done rows stay in the list below, so a
+                bare task count read as fewer rows than are visible (10 vs 14).
+                Naming it "open" makes the number match what it counts. */}
             <span className={view.sectionMeta}>
-              {open.length} {pluralize(open.length, "task")}
+              {t.today.openCount.replace("{n}", String(open.length))}
             </span>
 
             {overdueIdList.length > 0 && (

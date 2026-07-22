@@ -117,6 +117,14 @@ export function TaskDndProvider({ children }: { children: React.ReactNode }) {
       // "whichever zone the cursor is actually over" resolves the innermost one
       // the way a person expects.
       collisionDetection={pointerWithin}
+      // No edge auto-scroll. It made the target hard to hit: nearing the bottom
+      // of the timeline to reach the "postpone to tomorrow" bar scrolled the
+      // list out from under the cursor, so the drop zone slid away as you aimed
+      // at it. Instead the scroll area is frozen for the duration of the drag
+      // (see .content[data-drag-active] in AppShell.module.css); every drop
+      // target — the sticky postpone bar included — stays put where you can
+      // aim at it.
+      autoScroll={false}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragCancel={() => setActiveId(null)}
