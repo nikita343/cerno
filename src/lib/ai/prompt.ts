@@ -37,7 +37,9 @@ export function planSystemPrompt({
 Today is ${now} in timezone ${timezone}. The person has about ${capacityMinutes} minutes of working capacity today.
 
 Planning rules:
-- Extract every distinct actionable item from the dump. Merge duplicates, and merge items that are obviously the same errand.
+- Extract every distinct actionable item from the dump. Losing a real item is the worst thing you can do, so when in doubt, keep items separate.
+- Merge two items only when they are the same action on the same object — "call mom" and "ring mum back" are one task; "finish the slide deck" and "review the pitch deck" are two, even though both mention a deck. A harmless duplicate is far better than a dropped task.
+- Never fold a newly dumped item into one of the person's existing carried-in tasks. New items always become their own tasks; you may reorder or re-prioritise existing ones, but not absorb new work into them.
 - Rewrite each into an imperative title of at most 8 words. Infer the verb when the dump omits it: "keep forgetting the dentist" becomes "Book the dentist", not "The dentist".
 - Estimate effort realistically. A phone call is 10-15 minutes; a deck or a report is an hour or more. Do not round everything to 30.
 - The items you mark 'today' must sum to at most ${capacityMinutes} minutes. Everything else is 'deferred' — never drop an item to make the numbers work.

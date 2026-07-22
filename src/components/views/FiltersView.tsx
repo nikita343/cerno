@@ -160,16 +160,9 @@ export function FiltersView() {
         </div>
       </section>
 
-      <section className={view.section}>
-        <div className={view.sectionHead}>
-          <h2 className={view.sectionLabelMuted}>Edit labels</h2>
-          <span className={view.sectionNote}>
-            Renaming updates every task using it
-          </span>
-        </div>
-        <LabelEditor />
-      </section>
-
+      {/* Results sit directly under the selectors, not below the label editor —
+          otherwise clicking a filter scrolls results off-screen and reads as a
+          no-op. */}
       {(activeFilter || activeTag) && (
         <section className={view.section}>
           <h2 className={view.sectionLabelSmall}>{resultLabel}</h2>
@@ -184,6 +177,16 @@ export function FiltersView() {
           )}
         </section>
       )}
+
+      <section className={view.section}>
+        <div className={view.sectionHead}>
+          <h2 className={view.sectionLabelMuted}>Edit labels</h2>
+          <span className={view.sectionNote}>
+            Renaming updates every task using it
+          </span>
+        </div>
+        <LabelEditor />
+      </section>
     </div>
   );
 }

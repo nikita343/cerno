@@ -17,7 +17,7 @@ import type { Task } from "./types";
 export const DAY_START_MINUTES = 9 * 60;
 
 /** Anything spilling past this is clamped so the timeline can't run to 03:00. */
-const DAY_END_MINUTES = 24 * 60 - 1;
+export const DAY_END_MINUTES = 24 * 60 - 1;
 
 /**
  * Where the derived clock should start for a given day.
@@ -133,7 +133,13 @@ export interface BlockGroup {
 /** Buckets timed tasks into Morning/Afternoon/Evening, dropping empty blocks. */
 export function groupIntoBlocks(timed: TimedTask[]): BlockGroup[] {
   return TIME_BLOCKS.map((block) => {
-    const items = timed.filter((t) => blockFor(t.start).key === block.key);
+    // Order by clock within the block so the printed times always ascend. A
+    // task with a fixed early time (e.g. a 17:00 pickup) must not appear below
+    // work that spilled to 23:59 just because it sat later in plan order — that
+    // reads as a rendering fault. Ties keep plan order (stable sort).
+    const items = timed
+      .filter((t) => blockFor(t.start).key === block.key)
+      .sort((a, b) => a.start - b.start);
     return {
       block,
       items,

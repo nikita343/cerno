@@ -96,7 +96,11 @@ async function viaAnthropic<T extends z.ZodType>(
   const client = getClient();
   if (!client) throw new Error("Anthropic client unavailable");
 
-  const response = await client.messages.parse({
+  // Streamed, not a single blocking call. A planning request with adaptive
+  // thinking and a high max_tokens can run tens of seconds; streaming keeps the
+  // connection alive across that window so an idle-socket timeout can't kill the
+  // signature demo. `finalMessage()` still returns the fully parsed output.
+  const stream = client.messages.stream({
     model: spec.id,
     max_tokens: options.maxTokens,
     // Adaptive, not a token budget: `budget_tokens` is rejected outright on
@@ -107,7 +111,8 @@ async function viaAnthropic<T extends z.ZodType>(
     messages: [{ role: "user", content: options.user }],
   });
 
-  const parsed = response.parsed_output;
+  const message = await stream.finalMessage();
+  const parsed = message.parsed_output;
   if (!parsed) throw new Error("empty parsed output");
   return parsed as z.infer<T>;
 }

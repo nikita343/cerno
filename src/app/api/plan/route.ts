@@ -5,10 +5,12 @@ import { describeError } from "@/lib/ai/client";
 import { generateStructured } from "@/lib/ai/generate";
 import { planSystemPrompt, planUserPrompt } from "@/lib/ai/prompt";
 import { buildPlanResponseSchema, type PlannedTask } from "@/lib/ai/schema";
-import { addDays, todayISO } from "@/lib/date";
+import { addDays, todayISO, todayInZone } from "@/lib/date";
 import { DAY_CAPACITY_MINUTES } from "@/lib/fixtures";
 import { newId } from "@/lib/id";
 import { buildPlan } from "@/lib/planner";
+import { minutesNowInZone } from "@/lib/reminders";
+import { DAY_END_MINUTES } from "@/lib/schedule";
 import { insertDump, upsertDayPlan, upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
@@ -21,6 +23,9 @@ import type { DayPlan, Dump, PlanResult, Tag, Task } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// A plan with adaptive thinking can take tens of seconds; give the function the
+// Hobby-plan ceiling so a slow model can't trip the default timeout.
+export const maxDuration = 60;
 
 /** Guards against a giant paste turning into a giant bill. */
 const MAX_DUMP_CHARS = 8_000;
@@ -82,6 +87,15 @@ export async function POST(request: Request) {
   // so the planner resolves "tomorrow"/"Friday" in the zone the user picked.
   const timezone = savedTimezone ?? body.timezone;
 
+  // A realistic day can't hold more than the hours actually left in it. When
+  // planning today, cap the budget at the time remaining before end-of-day —
+  // otherwise the planner schedules a full 8h into the evening and the timeline
+  // clamps the overflow onto a 23:59 wall instead of deferring it to tomorrow.
+  const planningToday = today === todayInZone(timezone, new Date());
+  const effectiveCapacity = planningToday
+    ? Math.min(capacityMinutes, Math.max(0, DAY_END_MINUTES - minutesNowInZone(timezone)))
+    : capacityMinutes;
+
   // Whether *any* vendor is configured is decided inside generateStructured,
   // which falls back across providers before giving up. This local helper is
   // what both that fallback and a hard failure land on.
@@ -90,7 +104,7 @@ export async function POST(request: Request) {
       dumpText: body.dumpText,
       source: body.source,
       today,
-      capacityMinutes,
+      capacityMinutes: effectiveCapacity,
       carryIn,
       labelNames,
     });
@@ -109,7 +123,7 @@ export async function POST(request: Request) {
       system: planSystemPrompt({
         now: today,
         timezone,
-        capacityMinutes,
+        capacityMinutes: effectiveCapacity,
         labelNames,
       }),
       user: planUserPrompt({ dumpText: body.dumpText, carryIn }),
@@ -128,7 +142,7 @@ export async function POST(request: Request) {
       parsed,
       carryIn,
       today,
-      capacityMinutes,
+      capacityMinutes: effectiveCapacity,
       source: body.source,
       dumpText: body.dumpText,
     });
@@ -256,6 +270,20 @@ function assemble({
     }
   });
 
+  // Safety net for "fail visible, never silent": the model is told to echo
+  // every carried-in id, but if it drops one, we carry that task forward
+  // unchanged rather than letting a replan quietly delete existing work. It
+  // keeps its prior status and day; the user can re-plan it deliberately.
+  const echoed = new Set(
+    parsed.tasks.map((t) => t.id).filter((id): id is string => Boolean(id)),
+  );
+  const preserved = carryIn.filter((t) => !echoed.has(t.id));
+  if (preserved.length > 0) {
+    console.warn(
+      `[/api/plan] model dropped ${preserved.length} carried-in task(s); preserving them`,
+    );
+  }
+
   const totalMinutes = parsed.tasks.reduce(
     (n, t) => n + clampMinutes(t.estimated_minutes),
     0,
@@ -278,7 +306,11 @@ function assemble({
     created_at: createdAt,
   };
 
-  return { dump, tasks: [...scheduled, ...later, ...deferred], dayPlan };
+  return {
+    dump,
+    tasks: [...scheduled, ...later, ...deferred, ...preserved],
+    dayPlan,
+  };
 }
 
 function clampMinutes(value: number): number {
