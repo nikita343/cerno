@@ -102,6 +102,13 @@ export const en = {
     subtitle: "You can change this any time in Settings.",
     continue: "Continue",
   },
+  labels: {
+    work: "work",
+    home: "home",
+    errand: "errand",
+    comms: "comms",
+    health: "health",
+  },
   today: {
     scheduled: "Scheduled",
     deferred: "Deferred",
@@ -122,6 +129,10 @@ export const en = {
     low: "Low",
     due: "due",
     postponeToTomorrow: "Drop here to postpone to tomorrow",
+    toGo: "{n} to go",
+    parkedCount: "{n} parked for tomorrow",
+    doneCount: "{n} done",
+    allDoneNote: "Everything planned for today is done.",
   },
   date: {
     today: "Today",
@@ -548,6 +559,13 @@ export const uk: Dictionary = {
     subtitle: "Це можна будь-коли змінити в налаштуваннях.",
     continue: "Продовжити",
   },
+  labels: {
+    work: "робота",
+    home: "дім",
+    errand: "справи",
+    comms: "зв'язок",
+    health: "здоров'я",
+  },
   today: {
     scheduled: "Заплановано",
     deferred: "Відкладено",
@@ -568,6 +586,10 @@ export const uk: Dictionary = {
     low: "Низьк.",
     due: "до",
     postponeToTomorrow: "Киньте сюди, щоб відкласти на завтра",
+    toGo: "залишилось {n}",
+    parkedCount: "{n} відкладено на завтра",
+    doneCount: "{n} готово",
+    allDoneNote: "Усе заплановане на сьогодні виконано.",
   },
   date: {
     today: "Сьогодні",

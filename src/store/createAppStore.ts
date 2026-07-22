@@ -1065,8 +1065,12 @@ export function deferredFor(tasks: Task[], date: string): Task[] {
 }
 
 export function inboxTasks(tasks: Task[]): Task[] {
+  // The inbox is a pure holding pen: only things Cerno parsed but did NOT
+  // schedule. A task that's on today (or done, or deferred to tomorrow) already
+  // has a home and must not also sit here — otherwise "add to today" appears to
+  // do nothing and the inbox count double-counts scheduled work.
   return tasks
-    .filter((t) => t.status !== "done")
+    .filter((t) => t.status === "inbox")
     .sort((a, b) => {
       const rank = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
       return rank !== 0 ? rank : a.sort_order - b.sort_order;

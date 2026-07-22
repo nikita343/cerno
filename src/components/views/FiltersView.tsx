@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ClockIcon, FlagIcon, TagIcon } from "@/components/icons";
 import { useT } from "@/lib/i18n";
+import { labelDisplay } from "@/lib/labels";
 import { TaskChip } from "@/components/task/TaskChip";
 import type { Tag, Task } from "@/lib/types";
 import { PRIORITY_RANK } from "@/store/createAppStore";
@@ -148,7 +149,9 @@ export function FiltersView() {
                 className={styles.labelDot}
                 style={{ background: label.color }}
               />
-              <span className={styles.labelName}>{label.name}</span>
+              <span className={styles.labelName}>
+                {labelDisplay(label.name, t.labels)}
+              </span>
               <span className={styles.labelCount}>
                 {labelCounts[label.name] ?? 0}
               </span>

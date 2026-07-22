@@ -5,7 +5,7 @@ import { AlertIcon, CheckIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
 
 import { useT } from "@/lib/i18n";
-import { labelColor } from "@/lib/labels";
+import { labelColor, labelDisplay } from "@/lib/labels";
 import type { Task, UserProfile } from "@/lib/types";
 import { useAppStoreShallow } from "@/store/StoreProvider";
 
@@ -171,7 +171,7 @@ export function TaskChip({
               className={styles.tagDot}
               style={{ background: labelColor(labels, tag) }}
             />
-            {tag}
+            {labelDisplay(tag, t.labels)}
           </span>
         )}
 

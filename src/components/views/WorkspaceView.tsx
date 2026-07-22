@@ -12,7 +12,7 @@ import { useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { memberProfile } from "@/lib/user";
 import { pluralize, totalDuration } from "@/lib/format";
-import { formatClock, withStartTimes } from "@/lib/schedule";
+import { derivedDayStart, formatClock, withStartTimes } from "@/lib/schedule";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { loadMembers } from "@/lib/supabase/workspaces";
@@ -37,6 +37,7 @@ import view from "./View.module.css";
  */
 export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   const today = useAppStore((s) => s.today);
+  const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
   const userId = useAppStore((s) => s.userId);
   const workspace = useAppStore((s) =>
@@ -92,7 +93,10 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
     [tasks, today],
   );
 
-  const timed = useMemo(() => withStartTimes(todays), [todays]);
+  const timed = useMemo(
+    () => withStartTimes(todays, derivedDayStart(today, today, nowMinutes)),
+    [todays, today, nowMinutes],
+  );
   const openCount = todays.filter((t) => t.status !== "done").length;
 
   if (!workspace) {

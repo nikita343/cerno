@@ -19,6 +19,28 @@ export const DAY_START_MINUTES = 9 * 60;
 /** Anything spilling past this is clamped so the timeline can't run to 03:00. */
 const DAY_END_MINUTES = 24 * 60 - 1;
 
+/**
+ * Where the derived clock should start for a given day.
+ *
+ * Today lays unplanned work from *now* forward (clamped to no earlier than the
+ * working-day start), so open tasks never land in the past and get flagged
+ * overdue for no reason. Any other day starts from 09:00 — "now" is meaningless
+ * for a day that isn't today.
+ *
+ * `nowMinutes` is 0 on the server (the clock is client-only), so this returns
+ * the 09:00 baseline during SSR and the first client render, then re-derives to
+ * the real time once the now-ticker updates — matching, so no hydration jump.
+ */
+export function derivedDayStart(
+  date: string,
+  today: string,
+  nowMinutes: number,
+): number {
+  return date === today
+    ? Math.max(DAY_START_MINUTES, nowMinutes)
+    : DAY_START_MINUTES;
+}
+
 export type BlockKey = "morning" | "afternoon" | "evening";
 
 export interface TimeBlock {
@@ -115,7 +137,12 @@ export function groupIntoBlocks(timed: TimedTask[]): BlockGroup[] {
     return {
       block,
       items,
-      minutes: items.reduce((n, t) => n + t.task.estimated_minutes, 0),
+      // Only open work counts toward the subtotal, so the sum of the blocks
+      // reconciles with the section total (which is also open-only). Done tasks
+      // still render in the block, they just don't add to the "time to go".
+      minutes: items
+        .filter((t) => t.task.status !== "done")
+        .reduce((n, t) => n + t.task.estimated_minutes, 0),
       from: items.length > 0 ? Math.min(...items.map((t) => t.start)) : block.from,
       to: items.length > 0 ? Math.max(...items.map((t) => t.end)) : block.to,
     };

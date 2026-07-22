@@ -12,7 +12,12 @@ import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
 import { taskDuration, totalDuration, pluralize } from "@/lib/format";
-import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
+import {
+  derivedDayStart,
+  formatClock,
+  groupIntoBlocks,
+  withStartTimes,
+} from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { PHONE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { deferredFor, scheduledFor, totalMinutes } from "@/store/createAppStore";
@@ -118,13 +123,33 @@ export function TodayView() {
   // day. Grouping is derived rather than stored, so reordering or completing a
   // task reshapes the timeline without any migration.
   const blocks = useMemo(
-    () => groupIntoBlocks(withStartTimes(scheduled)),
-    [scheduled],
+    () =>
+      groupIntoBlocks(
+        withStartTimes(scheduled, derivedDayStart(today, today, nowMinutes)),
+      ),
+    [scheduled, today, nowMinutes],
   );
 
   const open = scheduled.filter((t) => t.status !== "done");
   const remaining = totalMinutes(open);
   const hasAnything = scheduled.length > 0 || deferred.length > 0;
+
+  // The header narrative is regenerated only on a full replan, so its numbers
+  // drift as soon as you add, complete or edit a task. This capacity line is
+  // derived from the live list instead, so it can never contradict what's on
+  // screen. (The qualitative headline above it stays from the last plan.)
+  const capacityNote = useMemo(() => {
+    if (scheduled.length === 0) return null;
+    if (open.length === 0) return t.today.allDoneNote;
+    const parts = [
+      t.today.toGo.replace("{n}", String(open.length)),
+      `~ ${totalDuration(remaining)}`,
+    ];
+    if (deferred.length > 0) {
+      parts.push(t.today.parkedCount.replace("{n}", String(deferred.length)));
+    }
+    return parts.join(" · ");
+  }, [scheduled.length, open.length, remaining, deferred.length, t]);
 
   // The postpone bar only appears while something is being dragged — see
   // useDragActive. A permanent "drop here for tomorrow" strip would be noise.
@@ -144,9 +169,7 @@ export function TodayView() {
         <h1 className={`${view.h1} ${view.h1Long}`}>
           {dayPlan?.summary ?? "Nothing planned yet."}
         </h1>
-        {dayPlan?.capacity_note && (
-          <p className={view.subline}>{dayPlan.capacity_note}</p>
-        )}
+        {capacityNote && <p className={view.subline}>{capacityNote}</p>}
       </header>
 
       <SmartAddBar />

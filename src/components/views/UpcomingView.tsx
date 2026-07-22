@@ -17,7 +17,12 @@ import {
 } from "@/lib/date";
 import { totalDuration } from "@/lib/format";
 import type { Task } from "@/lib/types";
-import { formatClock, groupIntoBlocks, withStartTimes } from "@/lib/schedule";
+import {
+  derivedDayStart,
+  formatClock,
+  groupIntoBlocks,
+  withStartTimes,
+} from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { tasksOn } from "@/store/createAppStore";
 import { useT } from "@/lib/i18n";
@@ -28,6 +33,7 @@ import view from "./View.module.css";
 
 export function UpcomingView() {
   const today = useAppStore((s) => s.today);
+  const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
   const anchor = useAppStore((s) => s.upcomingAnchor);
   const tasks = useAppStore((s) => s.tasks);
@@ -133,7 +139,9 @@ export function UpcomingView() {
 
             {dayTasks.length > 0 ? (
               <div className={styles.blocks}>
-                {groupIntoBlocks(withStartTimes(dayTasks)).map(
+                {groupIntoBlocks(
+                  withStartTimes(dayTasks, derivedDayStart(date, today, nowMinutes)),
+                ).map(
                   ({ block, items, minutes }) => (
                     <div key={block.key} className={styles.block}>
                       <div className={styles.blockHead}>

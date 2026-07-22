@@ -1,4 +1,4 @@
-import type { Label } from "./types";
+import { DEFAULT_LABELS, type Label } from "./types";
 
 /**
  * Label colour lookup.
@@ -14,6 +14,26 @@ import type { Label } from "./types";
 
 /** Shown for a tag with no matching label — a leftover from a deleted one. */
 export const LABEL_FALLBACK = "#9B9BA1";
+
+/** The canonical smart-tag names, lower-cased, that have translations. */
+const CANONICAL_LABELS = new Set(DEFAULT_LABELS.map((l) => l.name));
+
+/**
+ * Localised display name for a smart tag.
+ *
+ * Only the five untouched default tags are translated — a user who renamed one
+ * to their own word keeps that word verbatim in every language. Pass `t.labels`
+ * as the lookup. Used for read-only display (chips, filters); the label editor
+ * shows the real stored name, since that's the value it renames.
+ */
+export function labelDisplay(
+  name: string | null | undefined,
+  names: Partial<Record<string, string>>,
+): string {
+  if (!name) return "";
+  const key = name.trim().toLowerCase();
+  return (CANONICAL_LABELS.has(key) && names[key]) || name;
+}
 
 export function labelColor(
   labels: Label[],
