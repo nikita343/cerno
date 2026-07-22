@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Logo } from "@/components/brand/Logo";
+
 import styles from "./auth.module.css";
 
 /**
@@ -15,8 +17,8 @@ export default function AuthLayout({
 }) {
   return (
     <main className={styles.page}>
-      <Link href="/" className={styles.back}>
-        Cerno
+      <Link href="/" className={styles.back} aria-label="Cerno home">
+        <Logo size={24} />
       </Link>
       {children}
     </main>

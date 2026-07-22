@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import { GoogleIcon } from "@/components/icons";
+import { LogoMark } from "@/components/brand/Logo";
 import { signIn, signUp } from "@/lib/auth/actions";
 import {
   EMPTY_AUTH_STATE,
@@ -89,7 +90,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   return (
     <div className={styles.card}>
       <div className={styles.head}>
-        <span className={styles.mark} aria-hidden="true" />
+        <LogoMark size={30} className={styles.mark} />
         <h1 className={styles.title}>{copy.title}</h1>
         <p className={styles.helper}>{copy.helper}</p>
       </div>

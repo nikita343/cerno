@@ -6,6 +6,8 @@ import { useActionState } from "react";
 import { updatePassword } from "@/lib/auth/actions";
 import { EMPTY_AUTH_STATE, type AuthFormState } from "@/lib/auth/types";
 
+import { LogoMark } from "@/components/brand/Logo";
+
 import styles from "./AuthForm.module.css";
 
 /**
@@ -25,7 +27,7 @@ export function ResetForm() {
   return (
     <div className={styles.card}>
       <div className={styles.head}>
-        <span className={styles.mark} aria-hidden="true" />
+        <LogoMark size={30} className={styles.mark} />
         <h1 className={styles.title}>Choose a new password</h1>
         <p className={styles.helper}>
           Pick something at least 8 characters long.

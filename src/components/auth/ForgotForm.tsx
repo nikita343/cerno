@@ -6,6 +6,8 @@ import { useActionState } from "react";
 import { requestPasswordReset } from "@/lib/auth/actions";
 import { EMPTY_AUTH_STATE, type AuthFormState } from "@/lib/auth/types";
 
+import { LogoMark } from "@/components/brand/Logo";
+
 import styles from "./AuthForm.module.css";
 
 /**
@@ -24,7 +26,7 @@ export function ForgotForm() {
   return (
     <div className={styles.card}>
       <div className={styles.head}>
-        <span className={styles.mark} aria-hidden="true" />
+        <LogoMark size={30} className={styles.mark} />
         <h1 className={styles.title}>Reset your password</h1>
         <p className={styles.helper}>
           Enter your email and we&rsquo;ll send you a link to set a new one.
