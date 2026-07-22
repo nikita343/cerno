@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Logo, LogoMark } from "@/components/brand/Logo";
+import { LandingMotion } from "@/components/landing/LandingMotion";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { getUser } from "@/lib/supabase/server";
 
@@ -175,8 +176,9 @@ export default async function LandingPage({
 
   return (
     <div className={styles.page}>
+      <LandingMotion />
       {/* ------------------------------------------------------------- nav */}
-      <header className={styles.nav}>
+      <header className={styles.nav} data-nav>
         <Link href="#top" className={styles.navBrand} aria-label="Cerno">
           <Logo size={26} />
         </Link>
@@ -197,8 +199,11 @@ export default async function LandingPage({
       </header>
 
       {/* ----------------------------------------------------------- hero */}
-      <section id="top" className={styles.hero}>
-        <div className={styles.heroCopy}>
+      <section id="top" className={styles.hero} data-hero>
+        <span className={styles.heroDot} aria-hidden="true" data-floating-dot />
+        <span className={styles.heroDotSecondary} aria-hidden="true" data-floating-dot />
+        <span className={styles.heroDotTertiary} aria-hidden="true" data-floating-dot />
+        <div className={styles.heroCopy} data-hero-copy>
           <p className={styles.eyebrow}>AI daily planner</p>
           <h1 className={styles.title}>
             plan the day.
@@ -220,7 +225,7 @@ export default async function LandingPage({
           </div>
         </div>
 
-        <div className={styles.heroMedia}>
+        <div className={styles.heroMedia} data-hero-media>
           <div className={styles.frame}>
             <div className={styles.frameBar}>
               <span />
@@ -241,7 +246,7 @@ export default async function LandingPage({
 
       {/* ------------------------------------------------------ statement */}
       <section className={styles.statement}>
-        <p>
+        <p data-statement-text>
           A to-do list only ever grows. Cerno reads the pile, weighs urgency
           against effort, and protects your day from itself — so you{" "}
           <span className={styles.accent}>finish</span>, instead of scrolling.
@@ -259,7 +264,7 @@ export default async function LandingPage({
         </div>
         <div className={styles.steps}>
           {STEPS.map((step) => (
-            <article key={step.n} className={styles.step}>
+            <article key={step.n} className={styles.step} data-reveal>
               <span className={styles.stepN}>{step.n}</span>
               <h3 className={styles.stepTitle}>{step.title}</h3>
               <p className={styles.stepBody}>{step.body}</p>
@@ -285,12 +290,12 @@ export default async function LandingPage({
               className={styles.feature}
               data-flip={i % 2 === 1 || undefined}
             >
-              <div className={styles.featureCopy}>
+              <div className={styles.featureCopy} data-reveal>
                 <span className={styles.featureEyebrow}>{f.eyebrow}</span>
                 <h3 className={styles.featureTitle}>{f.title}</h3>
                 <p className={styles.featureBody}>{f.body}</p>
               </div>
-              <div className={styles.featureMedia}>
+              <div className={styles.featureMedia} data-reveal>
                 <div className={styles.shotFrame}>
                   <Image
                     src={f.image}
@@ -325,7 +330,7 @@ export default async function LandingPage({
         </div>
 
         <div className={styles.plans}>
-          <div className={styles.plan}>
+          <div className={styles.plan} data-reveal>
             <div className={styles.planHead}>
               <span className={styles.planName}>Free</span>
             </div>
@@ -343,7 +348,7 @@ export default async function LandingPage({
             </Link>
           </div>
 
-          <div className={styles.plan} data-featured>
+          <div className={styles.plan} data-featured data-reveal>
             <div className={styles.planHead}>
               <span className={styles.planName}>Team</span>
               <span className={styles.planTag}>up to 10 people</span>

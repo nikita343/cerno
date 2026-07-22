@@ -47,6 +47,12 @@
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid transparent;
+  transition: border-color 0.3s var(--l-ease), background 0.3s var(--l-ease);
+}
+
+.navSolid {
+  border-bottom-color: var(--l-line);
+  background: color-mix(in srgb, var(--l-bg) 95%, transparent);
 }
 
 .navBrand {
@@ -112,6 +118,7 @@
 /* ------------------------------------------------------------------ hero */
 
 .hero {
+  position: relative;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   align-items: center;
@@ -119,12 +126,96 @@
   max-width: 1500px;
   margin: 0 auto;
   padding: clamp(3rem, 8vw, 6.5rem) clamp(1.25rem, 5vw, 3.5rem) clamp(3rem, 6vw, 5rem);
+  overflow: hidden;
+}
+
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.hero::before {
+  top: 18%;
+  right: 12%;
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--l-accent);
+  transform: translate3d(0, var(--hero-parallax, 0), 0);
+}
+
+.hero::after {
+  left: 8%;
+  bottom: 18%;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--l-ink);
+  opacity: 0.28;
+  transform: translate3d(0, calc(var(--hero-parallax, 0) * 0.75), 0);
+}
+
+.heroDot,
+.heroDotSecondary,
+.heroDotTertiary {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.heroDot {
+  top: 22%;
+  right: 40%;
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--l-accent);
+  opacity: 0.55;
+}
+
+.heroDotSecondary {
+  left: 10%;
+  bottom: 28%;
+  width: 0.45rem;
+  height: 0.45rem;
+  background: var(--l-ink);
+  opacity: 0.32;
+}
+
+.heroDotTertiary {
+  top: 16%;
+  left: 30%;
+  width: 0.3rem;
+  height: 0.3rem;
+  background: var(--l-accent);
+  opacity: 0.4;
 }
 
 .heroCopy {
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  opacity: 0;
+  transform: translate3d(0, 2rem, 0);
+  transition: opacity 0.8s var(--l-ease), transform 0.8s var(--l-ease);
+}
+
+.heroCopy.isVisible,
+.heroMedia.isVisible,
+[data-reveal].isVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.heroMedia {
+  justify-self: end;
+  width: 100%;
+  max-width: 40rem;
+  opacity: 0;
+  transform: translate3d(0, 2.5rem, 0) scale(0.98);
+  transition: opacity 0.9s var(--l-ease), transform 0.9s var(--l-ease);
 }
 
 .eyebrow {
@@ -194,12 +285,6 @@
 }
 
 /* Browser-chrome frame around the hero screenshot. */
-.heroMedia {
-  justify-self: end;
-  width: 100%;
-  max-width: 40rem;
-}
-
 .frame {
   border: 1px solid var(--l-line);
   border-radius: 1rem;
@@ -260,6 +345,18 @@
   text-wrap: pretty;
 }
 
+.statementWord {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(0, 1.2rem, 0);
+  transition: opacity 0.45s var(--l-ease), transform 0.45s var(--l-ease);
+}
+
+.statementWord.isVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
 /* ------------------------------------------------------- generic section */
 
 .section {
@@ -306,6 +403,18 @@
   border-radius: 1.25rem;
   border: 1px solid var(--l-line);
   background: var(--l-surface);
+  transform: translate3d(0, 2rem, 0);
+  opacity: 0;
+  transition: opacity 0.75s var(--l-ease), transform 0.75s var(--l-ease), border-color 0.25s var(--l-ease);
+}
+
+.step:hover {
+  border-color: color-mix(in srgb, var(--l-accent) 28%, var(--l-line));
+}
+
+.step.isVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .stepN {
@@ -366,6 +475,17 @@
   gap: clamp(1.75rem, 5vw, 4rem);
 }
 
+[data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 2rem, 0);
+  transition: opacity 0.8s var(--l-ease), transform 0.8s var(--l-ease);
+}
+
+[data-reveal].isVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
 /* Alternate the image side on odd rows for the zig-zag rhythm. */
 .feature[data-flip] .featureCopy {
   order: 2;
@@ -409,6 +529,16 @@
   border: 1px solid var(--l-line);
   background: var(--l-bg);
   box-shadow: 0 30px 60px -34px rgba(10, 10, 11, 0.28);
+  transform: translate3d(0, 1.5rem, 0);
+  transition: transform 0.75s var(--l-ease);
+}
+
+.feature[data-flip] .shotFrame {
+  transform: translate3d(0, 0, 0);
+}
+
+.shotFrame:hover {
+  transform: translate3d(0, -4px, 0);
 }
 
 .shot {
@@ -467,6 +597,14 @@
   border-radius: 1.5rem;
   border: 1px solid var(--l-line);
   background: var(--l-surface);
+  opacity: 0;
+  transform: translate3d(0, 1.5rem, 0);
+  transition: opacity 0.7s var(--l-ease), transform 0.7s var(--l-ease), border-color 0.25s var(--l-ease);
+}
+
+.plan.isVisible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .plan[data-featured] {
