@@ -69,35 +69,9 @@
   background: color-mix(in srgb, var(--accent, var(--text)) 6%, transparent);
 }
 
-/* The postpone target, shown only while dragging. Sticks to the bottom so it's
-   reachable without scrolling to the end of a long day. */
-.postpone {
-  position: sticky;
-  bottom: 0.5rem;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding: 0.875rem 1rem;
-  border-radius: 0.75rem;
-  border: 1.5px dashed var(--border-strong, var(--border));
-  background: var(--surface);
-  color: var(--text-muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.4);
-  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease),
-    background var(--dur) var(--ease);
-}
-
-.postpone[data-drop-over] {
-  border-color: var(--accent, var(--text));
-  border-style: solid;
-  color: var(--text);
-  background: color-mix(in srgb, var(--accent, var(--text)) 8%, var(--surface));
-}
+/* The postpone-to-tomorrow target moved out of Today and onto the drag
+   provider, where it's fixed to the viewport bottom so a scroll-locked drag can
+   reach it from any view — see TaskDndProvider.module.css `.postpone`. */
 
 /* The rule runs the full width so each part of the day reads as its own band
    rather than as an indented sub-heading. */

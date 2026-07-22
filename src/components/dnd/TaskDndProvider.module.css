@@ -24,3 +24,45 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* The postpone-to-tomorrow drop target. Fixed to the viewport bottom, not
+   sticky inside the page, so a scroll-locked drag can always reach it whatever
+   the scroll position and whatever view you're on. Bottom-centre above the tab
+   bar on phones; a touch higher on desktop where the tab bar is gone. Sits just
+   under the drag overlay (z 60) so the dragged card glides over it. */
+.postpone {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1.5px dashed var(--border-strong, var(--border));
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.4);
+  animation: cernoSheetUp var(--dur) var(--ease-out);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+
+@media screen and (min-width: 960px) {
+  .postpone {
+    bottom: 1.5rem;
+  }
+}
+
+.postpone[data-drop-over] {
+  border-color: var(--accent, var(--text));
+  border-style: solid;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent, var(--text)) 8%, var(--surface));
+}

@@ -13,11 +13,14 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 
+import { CalendarIcon } from "@/components/icons";
 import { addDays } from "@/lib/date";
+import { useT } from "@/lib/i18n";
 import { DAY_START_MINUTES, TIME_BLOCKS, formatClock } from "@/lib/schedule";
 import { useAppStore } from "@/store/StoreProvider";
 
-import { asDropTarget } from "./dropTarget";
+import { Droppable } from "./Droppable";
+import { asDropTarget, dropId } from "./dropTarget";
 import styles from "./TaskDndProvider.module.css";
 
 /**
@@ -58,6 +61,7 @@ export function useDragActive(): boolean {
  *    needed on the rows.
  */
 export function TaskDndProvider({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const tasks = useAppStore((s) => s.tasks);
   const rescheduleTask = useAppStore((s) => s.rescheduleTask);
   const scheduleTaskAt = useAppStore((s) => s.scheduleTaskAt);
@@ -132,6 +136,22 @@ export function TaskDndProvider({ children }: { children: React.ReactNode }) {
       <DragActiveContext.Provider value={activeId !== null}>
         {children}
       </DragActiveContext.Provider>
+      {/* The postpone-to-tomorrow target, pinned to the viewport rather than the
+          page. It used to live inside Today as a sticky strip, but once a drag
+          freezes the scroll (see AppShell) a sticky element parked below the
+          fold is simply gone — there's no scrolling to it. Fixed to the bottom
+          here it's always in reach, on any view, for the whole drag. Rendered
+          only while something is in flight, so it never clutters the idle UI. */}
+      {activeId !== null && (
+        <Droppable
+          id={dropId.tomorrow}
+          target={{ kind: "tomorrow" }}
+          className={styles.postpone}
+        >
+          <CalendarIcon size="1rem" />
+          <span>{t.today.postponeToTomorrow}</span>
+        </Droppable>
+      )}
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <div className={styles.overlay}>

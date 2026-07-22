@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarIcon } from "@/components/icons";
 import { Droppable } from "@/components/dnd/Droppable";
 import { dropId } from "@/components/dnd/dropTarget";
-import { useDragActive } from "@/components/dnd/TaskDndProvider";
 import { DatePicker } from "@/components/task/DatePicker";
 import { PickerModal } from "@/components/task/PickerModal";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
@@ -150,10 +149,6 @@ export function TodayView() {
     }
     return parts.join(" · ");
   }, [scheduled.length, open.length, remaining, deferred.length, t]);
-
-  // The postpone bar only appears while something is being dragged — see
-  // useDragActive. A permanent "drop here for tomorrow" strip would be noise.
-  const dragActive = useDragActive();
 
   return (
     <div className={`${view.view} ${view.viewWide}`}>
@@ -344,19 +339,6 @@ export function TodayView() {
         </section>
       )}
 
-      {/* Appears only mid-drag. Dropping a today task here parks it on tomorrow
-          — the "drop to postpone" gesture, made explicit rather than requiring
-          a trip to Upcoming's week strip. */}
-      {dragActive && (
-        <Droppable
-          id={dropId.tomorrow}
-          target={{ kind: "tomorrow" }}
-          className={styles.postpone}
-        >
-          <CalendarIcon size="1rem" />
-          <span>{t.today.postponeToTomorrow}</span>
-        </Droppable>
-      )}
     </div>
   );
 }
