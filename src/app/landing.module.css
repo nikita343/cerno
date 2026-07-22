@@ -336,6 +336,308 @@
   display: inline-block;
 }
 
+/* ------------------------------------------------ watch it think (bento) */
+
+.bento {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.25rem, 5vw, 3.5rem) clamp(3.5rem, 6vw, 6rem);
+}
+
+.bentoGrid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 1.25rem;
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.bentoCard {
+  position: relative;
+  background: var(--l-surface);
+  border: 1px solid var(--l-line);
+  border-radius: 1.75rem;
+  padding: clamp(1.5rem, 2.4vw, 1.875rem);
+  box-shadow: 0 24px 48px -28px rgba(10, 10, 11, 0.14);
+  overflow: hidden;
+}
+
+.bentoCardTall {
+  grid-row: span 2;
+}
+
+.bentoCardDark {
+  background: #0a0a0b;
+  border-color: #17171a;
+  box-shadow: 0 24px 48px -28px rgba(10, 10, 11, 0.3);
+}
+
+.bentoRowHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.bentoLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--l-ink);
+}
+
+.bentoLabelDark {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f5f5f4;
+}
+
+.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.75rem;
+  color: var(--l-muted);
+  white-space: nowrap;
+}
+
+.thinkDot {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: var(--l-accent);
+}
+
+/* --- the reprioritizing task stream --- */
+.streamViewport {
+  position: relative;
+  height: 19.875rem;
+}
+
+.streamMask {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 84%, transparent);
+  mask-image: linear-gradient(to bottom, #000 0, #000 84%, transparent);
+}
+
+.anchorSlot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.75rem;
+  border: 1.5px solid rgba(230, 0, 55, 0.4);
+  background: rgba(230, 0, 55, 0.05);
+  border-radius: 0.875rem;
+  z-index: 0;
+}
+
+.stream {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  will-change: transform;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 0.8125rem;
+  height: 3.75rem;
+  padding: 0 1rem;
+  background: var(--l-surface);
+  border: 1px solid #ededea;
+  border-radius: 0.875rem;
+}
+
+.taskDot {
+  flex: none;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border-radius: 50%;
+}
+
+.taskTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--l-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taskEffort {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--l-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.anchorTag {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.625rem;
+  z-index: 5;
+  font-size: 0.65625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--l-accent);
+  border-radius: 999px;
+  padding: 0.1875rem 0.5625rem;
+  box-shadow: 0 4px 12px -4px rgba(230, 0, 55, 0.5);
+}
+
+.bentoNote {
+  margin: 1.125rem 0 0;
+  font-size: 0.84375rem;
+  line-height: 1.5;
+  color: var(--l-muted);
+  text-wrap: pretty;
+}
+
+.bentoNoteDark {
+  margin: 1rem 0 0;
+  font-size: 0.84375rem;
+  line-height: 1.5;
+  color: var(--l-faint);
+  text-wrap: pretty;
+}
+
+/* --- the typewriter command box --- */
+.cmdBox {
+  margin-top: 1.375rem;
+  background: #141416;
+  border: 1px solid #26262a;
+  border-radius: 1rem;
+  padding: 1.125rem 1.125rem 1rem;
+  min-height: 7.375rem;
+}
+
+.cmdBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cmdDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--l-accent);
+}
+
+.cmdEyebrow {
+  font-size: 0.71875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--l-muted);
+}
+
+.cmdText {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #f5f5f4;
+  min-height: 3rem;
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  transform: translateY(2px);
+  background: var(--l-accent);
+  margin-left: 1px;
+}
+
+/* --- the live status card --- */
+.notif {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--l-ink);
+  background: var(--l-bg);
+  border: 1px solid var(--l-line);
+  border-radius: 999px;
+  padding: 0.4375rem 0.8125rem;
+  box-shadow: 0 10px 24px -12px rgba(10, 10, 11, 0.25);
+  opacity: 0;
+  will-change: transform;
+}
+
+.notifDot {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background: #1e9e6e;
+}
+
+.statusList {
+  margin-top: 1.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.statusDot {
+  flex: none;
+  width: 0.6875rem;
+  height: 0.6875rem;
+  border-radius: 50%;
+}
+
+.statusLabel {
+  flex: 1;
+  font-size: 0.90625rem;
+  font-weight: 500;
+  color: var(--l-ink);
+}
+
+.statusLabelMuted {
+  color: var(--l-secondary);
+}
+
+.statusLabelParked {
+  color: var(--l-faint);
+  text-decoration: line-through;
+}
+
+.statusTime {
+  font-size: 0.75rem;
+  color: var(--l-faint);
+}
+
+@media (max-width: 860px) {
+  .bentoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bentoCardTall {
+    grid-row: auto;
+  }
+}
+
 /* ------------------------------------------------------- generic section */
 
 .section {

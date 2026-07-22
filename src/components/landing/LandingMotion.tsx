@@ -29,11 +29,20 @@ export function LandingMotion() {
       document.querySelector<T>(sel);
 
     const triggers: ScrollTrigger[] = [];
-    const loops: gsap.core.Tween[] = [];
+    const loops: gsap.core.Animation[] = [];
+    const timers: number[] = [];
+    let alive = true;
 
     // Reduced motion: no animation at all. Content is already visible in the
-    // CSS, so there is nothing to reveal — just leave everything as-is.
-    if (reduce) return;
+    // CSS, so there is nothing to reveal. Populate the live-demo placeholders
+    // with a static frame so nothing reads as empty.
+    if (reduce) {
+      const typed = one('[data-typed]');
+      if (typed) typed.textContent = 'call the plumber about the leak…';
+      const notif = one('[data-notif]');
+      if (notif) gsap.set(notif, { opacity: 1 });
+      return;
+    }
 
     /**
      * Defensive reveal: hide the elements, then animate them in once when they
@@ -174,6 +183,133 @@ export function LandingMotion() {
         );
     });
 
+    // ---- live "watch it think" bento demos -------------------------------
+
+    // pulsing planning / command dots
+    const pulseDots = q('[data-think-dot], [data-cmd-dot]');
+    if (pulseDots.length)
+      loops.push(
+        gsap.to(pulseDots, {
+          scale: 1.5,
+          opacity: 0.45,
+          duration: 0.85,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+        }),
+      );
+
+    // breathing status dots
+    q('[data-breathe]').forEach((d, i) =>
+      loops.push(
+        gsap.to(d, {
+          scale: 1.18,
+          duration: 1.4,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: i * 0.5,
+        }),
+      ),
+    );
+
+    // reprioritizing queue ticker — the top row advances, list re-settles
+    const stream = one('[data-stream]');
+    if (stream) {
+      const advance = () => {
+        if (!alive || !stream.isConnected) return;
+        const first = stream.children[0] as HTMLElement | undefined;
+        if (!first) return;
+        const h = first.getBoundingClientRect().height + 12;
+        loops.push(
+          gsap.to(stream, {
+            y: -h,
+            duration: 0.65,
+            ease: 'power2.inOut',
+            delay: 2.1,
+            onComplete: () => {
+              if (!alive) return;
+              gsap.set(stream, { y: 0 });
+              stream.appendChild(first);
+              advance();
+            },
+          }),
+        );
+      };
+      advance();
+    }
+
+    // typewriter brain dump
+    const typed = one('[data-typed]');
+    if (typed) {
+      const phrases = [
+        'call the plumber about the leak…',
+        'Karlsson brief due thursday, ~10 min',
+        'dentist, dry cleaning, PR reviews',
+        "mom's birthday gift + book flights",
+      ];
+      let pi = 0;
+      let ci = 0;
+      let deleting = false;
+      const tick = () => {
+        if (!alive || !typed.isConnected) return;
+        const cur = phrases[pi];
+        if (!deleting) {
+          typed.textContent = cur.slice(0, ci + 1);
+          ci++;
+          if (ci === cur.length) {
+            deleting = true;
+            timers.push(window.setTimeout(tick, 1400));
+            return;
+          }
+        } else {
+          typed.textContent = cur.slice(0, ci - 1);
+          ci--;
+          if (ci === 0) {
+            deleting = false;
+            pi = (pi + 1) % phrases.length;
+          }
+        }
+        timers.push(window.setTimeout(tick, deleting ? 28 : 46 + Math.random() * 55));
+      };
+      tick();
+    }
+
+    // caret blink
+    const carets = q('[data-caret]');
+    if (carets.length)
+      loops.push(
+        gsap.to(carets, {
+          opacity: 0,
+          duration: 0.5,
+          ease: 'steps(1)',
+          repeat: -1,
+          yoyo: true,
+        }),
+      );
+
+    // "plan ready" pop notification, recurring with overshoot
+    const notif = one('[data-notif]');
+    if (notif) {
+      const cycle = () => {
+        if (!alive || !notif.isConnected) return;
+        const tl2 = gsap.timeline({
+          onComplete: () => {
+            if (alive) timers.push(window.setTimeout(cycle, 4200));
+          },
+        });
+        tl2
+          .fromTo(
+            notif,
+            { opacity: 0, y: -10, scale: 0.9 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(2.2)' },
+          )
+          .to(notif, { opacity: 0, y: -8, duration: 0.4, ease: 'power2.in', delay: 2.6 });
+        loops.push(tl2);
+      };
+      timers.push(window.setTimeout(cycle, 1600));
+    }
+
     // keep trigger positions honest as fonts/images settle
     const onLoad = () => ScrollTrigger.refresh();
     window.addEventListener('load', onLoad);
@@ -195,12 +331,14 @@ export function LandingMotion() {
     ScrollTrigger.refresh();
 
     return () => {
+      alive = false;
       window.removeEventListener('load', onLoad);
       window.clearTimeout(refreshTmr);
       window.clearTimeout(safetyTmr);
+      timers.forEach((id) => window.clearTimeout(id));
       tl.kill();
       loops.forEach((t) => {
-        const st = (t as gsap.core.Tween & { scrollTrigger?: ScrollTrigger }).scrollTrigger;
+        const st = (t as gsap.core.Animation & { scrollTrigger?: ScrollTrigger }).scrollTrigger;
         st?.kill();
         t.kill();
       });

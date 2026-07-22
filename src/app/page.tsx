@@ -127,6 +127,15 @@ const TEAM_POINTS = [
   "You pay; the people you invite don't",
 ];
 
+const STREAM_TASKS = [
+  { title: "fix the kitchen leak", effort: "20m", color: "#C77F17" },
+  { title: "reply to the Karlsson brief", effort: "10m", color: "#7B57E0" },
+  { title: "draft Q3 planning doc", effort: "90m", color: "#3B6FD4" },
+  { title: "book the dentist", effort: "5m", color: "#D23E6E" },
+  { title: "review 3 pull requests", effort: "35m", color: "#3B6FD4" },
+  { title: "pick up dry cleaning", effort: "15m", color: "#1E9E6E" },
+];
+
 const FAQ = [
   {
     q: "Do I have to organise anything?",
@@ -251,6 +260,118 @@ export default async function LandingPage({
           against effort, and protects your day from itself — so you{" "}
           <span className={styles.accent}>finish</span>, instead of scrolling.
         </p>
+      </section>
+
+      {/* -------------------------------------------- watch it think (live) */}
+      <section id="watch" className={styles.bento}>
+        <div className={styles.sectionHead}>
+          <h2 className={styles.h2}>watch it think.</h2>
+        </div>
+
+        <div className={styles.bentoGrid}>
+          {/* the reprioritizing task stream */}
+          <div
+            className={`${styles.bentoCard} ${styles.bentoCardTall}`}
+            data-reveal
+          >
+            <div className={styles.bentoRowHead}>
+              <span className={styles.bentoLabel}>today, reprioritized</span>
+              <span className={styles.thinking}>
+                <span className={styles.thinkDot} data-think-dot aria-hidden="true" />
+                cerno is planning
+              </span>
+            </div>
+            <div className={styles.streamViewport}>
+              <div className={styles.streamMask}>
+                <div className={styles.anchorSlot} aria-hidden="true" />
+                <div className={styles.stream} data-stream>
+                  {STREAM_TASKS.map((t) => (
+                    <div key={t.title} className={styles.task} data-task>
+                      <span
+                        className={styles.taskDot}
+                        style={{ background: t.color }}
+                        aria-hidden="true"
+                      />
+                      <span className={styles.taskTitle}>{t.title}</span>
+                      <span className={styles.taskEffort}>{t.effort}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <span className={styles.anchorTag} aria-hidden="true">
+                anchor
+              </span>
+            </div>
+            <p className={styles.bentoNote}>
+              urgency against effort, recomputed as things land.
+            </p>
+          </div>
+
+          {/* the typewriter brain dump */}
+          <div
+            className={`${styles.bentoCard} ${styles.bentoCardDark}`}
+            data-reveal
+          >
+            <span className={styles.bentoLabelDark}>just start typing</span>
+            <div className={styles.cmdBox}>
+              <div className={styles.cmdBar}>
+                <span className={styles.cmdDot} data-cmd-dot aria-hidden="true" />
+                <span className={styles.cmdEyebrow}>brain dump</span>
+              </div>
+              <div className={styles.cmdText}>
+                <span data-typed />
+                <span className={styles.caret} data-caret aria-hidden="true" />
+              </div>
+            </div>
+            <p className={styles.bentoNoteDark}>
+              no fields, no tags. cerno reads the mess.
+            </p>
+          </div>
+
+          {/* the live status card */}
+          <div className={styles.bentoCard} data-reveal>
+            <span className={styles.notif} data-notif aria-hidden="true">
+              <span className={styles.notifDot} />
+              plan ready
+            </span>
+            <span className={styles.bentoLabel}>your day, at a glance</span>
+            <div className={styles.statusList}>
+              <div className={styles.statusRow}>
+                <span
+                  className={styles.statusDot}
+                  data-breathe
+                  style={{ background: "var(--l-accent)" }}
+                  aria-hidden="true"
+                />
+                <span className={styles.statusLabel}>deep work — planning doc</span>
+                <span className={styles.statusTime}>now</span>
+              </div>
+              <div className={styles.statusRow}>
+                <span
+                  className={styles.statusDot}
+                  data-breathe
+                  style={{ background: "#C77F17" }}
+                  aria-hidden="true"
+                />
+                <span className={`${styles.statusLabel} ${styles.statusLabelMuted}`}>
+                  quick wins — 3 tasks
+                </span>
+                <span className={styles.statusTime}>11:00</span>
+              </div>
+              <div className={styles.statusRow}>
+                <span
+                  className={styles.statusDot}
+                  style={{ background: "#D6D6D2" }}
+                  aria-hidden="true"
+                />
+                <span className={`${styles.statusLabel} ${styles.statusLabelParked}`}>
+                  parked — 4 deferred
+                </span>
+                <span className={styles.statusTime}>later</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* --------------------------------------------------- how it works */}
