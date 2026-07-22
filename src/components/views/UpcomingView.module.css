@@ -154,6 +154,18 @@
   gap: 1.375rem;
 }
 
+/* Trailing scroll room. The late days of the week have almost nothing after
+   them, so `selectDay`'s scrollIntoView(block:"start") couldn't lift their
+   section up to the top — the scroll had already bottomed out and selecting
+   Sun/Sat looked like it did nothing. This inert tail gives every day enough
+   room below to reach the same near-top resting place. Capped so it's a modest
+   gap, not a chasm, on tall screens. */
+.groups::after {
+  content: "";
+  flex: none;
+  min-height: min(60vh, 30rem);
+}
+
 .group {
   display: flex;
   flex-direction: column;

@@ -181,8 +181,12 @@ export function FiltersView() {
       <section className={view.section}>
         <div className={view.sectionHead}>
           <h2 className={view.sectionLabelMuted}>Edit labels</h2>
+          {/* Says "totals" out loud: the count here is every task carrying the
+              label, while the filter chips above count only open ones — so the
+              same label reading, say, 5 here and 1 there is two measures, not a
+              contradiction. */}
           <span className={view.sectionNote}>
-            Renaming updates every task using it
+            Totals per label · renaming updates every task using it
           </span>
         </div>
         <LabelEditor />
