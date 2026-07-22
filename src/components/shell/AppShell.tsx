@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 
 import { CaptureOverlay } from "@/components/capture/CaptureOverlay";
-import { TaskDndProvider, useDragActive } from "@/components/dnd/TaskDndProvider";
+import { TaskDndProvider } from "@/components/dnd/TaskDndProvider";
 import { CheckoutReturn } from "@/components/views/CheckoutReturn";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { LanguageOnboarding } from "@/components/onboarding/LanguageOnboarding";
@@ -49,7 +49,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className={styles.main}>
           <MobileTopBar />
-          <ScrollArea>{children}</ScrollArea>
+          <main className={styles.content} id="main">
+            <PageTransition>{children}</PageTransition>
+          </main>
           {!captureOpen && <Fab />}
           <MobileTabBar />
         </div>
@@ -82,28 +84,5 @@ export function AppShell({ children }: { children: ReactNode }) {
         <CheckoutReturn />
       </Suspense>
     </div>
-  );
-}
-
-/**
- * The scrolling content region.
- *
- * Split out from AppShell so it can read `useDragActive` — which is only valid
- * inside TaskDndProvider — and freeze itself while a task is in flight. With the
- * scroll locked, drop targets (and especially the sticky "postpone to tomorrow"
- * bar) hold still under the cursor instead of scrolling away as you aim. Pairs
- * with `autoScroll={false}` on the DndContext; `scrollbar-gutter: stable` keeps
- * the layout from jumping when the scrollbar hides.
- */
-function ScrollArea({ children }: { children: ReactNode }) {
-  const dragActive = useDragActive();
-  return (
-    <main
-      className={styles.content}
-      id="main"
-      data-drag-active={dragActive || undefined}
-    >
-      <PageTransition>{children}</PageTransition>
-    </main>
   );
 }

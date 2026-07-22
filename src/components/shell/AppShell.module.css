@@ -23,18 +23,6 @@
   overflow-x: hidden;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  /* Reserve the scrollbar gutter so freezing the scroll mid-drag (below) can't
-     shift the layout sideways when the scrollbar disappears. No-op under macOS
-     overlay scrollbars; prevents a jump under classic ones. */
-  scrollbar-gutter: stable;
-}
-
-/* Frozen while a task is being dragged. Auto-scroll is off on the DndContext,
-   so without this the page could still be scrolled (wheel/trackpad) mid-drag
-   and slide the drop target away. Locking overflow keeps every target — the
-   sticky postpone bar included — where the cursor can reach it. */
-.content[data-drag-active] {
-  overflow-y: hidden;
 }
 
 /* Below the sidebar breakpoint the tab bar sits under the scroll area, so the

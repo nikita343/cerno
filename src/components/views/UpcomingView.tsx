@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/components/icons";
 import { dropId } from "@/components/dnd/dropTarget";
+import { useDragActive } from "@/components/dnd/TaskDndProvider";
 import { useDropZone } from "@/components/dnd/useDrag";
 import { DayAddTask } from "@/components/task/DayAddTask";
 import { TaskRow } from "@/components/task/TaskRow";
@@ -35,6 +36,10 @@ export function UpcomingView() {
   const today = useAppStore((s) => s.today);
   const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
+  // While a task is in flight the week strip pins to the top of the scroll
+  // area, so every day stays a reachable drop target no matter how far down the
+  // agenda you've dragged — no hunting, no scrolling to find the right day.
+  const dragActive = useDragActive();
   const anchor = useAppStore((s) => s.upcomingAnchor);
   const tasks = useAppStore((s) => s.tasks);
   const stepWeek = useAppStore((s) => s.stepUpcomingWeek);
@@ -111,7 +116,12 @@ export function UpcomingView() {
         </div>
       </div>
 
-      <div className={styles.strip} role="group" aria-label={t.upcoming.week}>
+      <div
+        className={styles.strip}
+        data-dragging={dragActive || undefined}
+        role="group"
+        aria-label={t.upcoming.week}
+      >
         {week.map((date) => (
           <StripDay
             key={date}
