@@ -10,6 +10,7 @@ import {
 } from "@/components/landing/FeatureDemo";
 import { HeroSpline } from "@/components/landing/HeroSpline";
 import { LandingMotion } from "@/components/landing/LandingMotion";
+import { TeamPlanCard } from "@/components/landing/PricingToggle";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { getUser } from "@/lib/supabase/server";
 
@@ -461,7 +462,7 @@ export default async function LandingPage({
 
       {/* ---------------------------------------------------------- plans */}
       <section id="plans" className={styles.section}>
-        <div className={styles.sectionHead}>
+        <div className={`${styles.sectionHead} ${styles.featureSectionHead}`}>
           <h2 className={styles.h2}>simple, honest pricing.</h2>
           <p className={styles.sectionLede}>
             Everything personal is free, forever. Pay only when you want a
@@ -488,25 +489,7 @@ export default async function LandingPage({
             </Link>
           </div>
 
-          <div className={styles.plan} data-featured data-reveal>
-            <div className={styles.planHead}>
-              <span className={styles.planName}>Team</span>
-              <span className={styles.planTag}>up to 10 people</span>
-            </div>
-            <div className={styles.planPrice}>
-              <span className={styles.planAmount}>$12</span>
-              <span className={styles.planPer}>/ month</span>
-            </div>
-            <p className={styles.planPlus}>Everything in Free, plus</p>
-            <ul className={styles.planPoints} data-accent>
-              {TEAM_POINTS.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-            <Link href="/signup" className={styles.planCtaPrimary}>
-              Get started
-            </Link>
-          </div>
+          <TeamPlanCard />
         </div>
       </section>
 
