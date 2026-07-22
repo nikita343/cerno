@@ -475,13 +475,13 @@
   gap: clamp(1.75rem, 5vw, 4rem);
 }
 
-[data-reveal] {
+.page [data-reveal] {
   opacity: 0;
   transform: translate3d(0, 2rem, 0);
   transition: opacity 0.8s var(--l-ease), transform 0.8s var(--l-ease);
 }
 
-[data-reveal].isVisible {
+.page [data-reveal].isVisible {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
