@@ -264,7 +264,11 @@ export function CaptureOverlay() {
                   <span className={styles.streamDot} aria-hidden="true" />
                   <span className={styles.streamRowTitle}>{task.title}</span>
                   <span className={styles.streamRowMeta}>
-                    {task.status === "today" ? t.capture.streamToday : t.capture.streamLater}
+                    {task.status === "today"
+                      ? t.capture.streamToday
+                      : task.status === "inbox"
+                        ? t.capture.streamInbox
+                        : t.capture.streamLater}
                   </span>
                 </li>
               ))}

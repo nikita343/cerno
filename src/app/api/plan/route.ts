@@ -210,6 +210,10 @@ export async function POST(request: Request) {
 function toDisplayTask(item: PlannedTask, today: string, createdAt: string): Task {
   const minutes = clampMinutes(item.estimated_minutes);
   const pinned = futureDate(item.plan_date, today);
+  // Mirror assemble()'s "someday" rule so the streamed preview matches where the
+  // task actually lands (these events are new items only — no carry-in here).
+  const untimed =
+    !pinned && !item.deadline && !item.deadline_time && !item.suggested_start;
   return {
     id: newId(),
     dump_id: null,
@@ -220,8 +224,8 @@ function toDisplayTask(item: PlannedTask, today: string, createdAt: string): Tas
     deadline: item.deadline,
     deadline_time: item.deadline_time ?? null,
     suggested_start: item.suggested_start,
-    status: pinned || item.status === "today" ? "today" : "deferred",
-    plan_date: pinned ?? (item.status === "today" ? today : addDays(today, 1)),
+    status: untimed ? "inbox" : pinned || item.status === "today" ? "today" : "deferred",
+    plan_date: untimed ? null : pinned ?? (item.status === "today" ? today : addDays(today, 1)),
     tags: [item.tag as Tag],
     reasoning: item.reasoning,
     sort_order: 0,
@@ -293,10 +297,11 @@ function assemble({
   const scheduled: Task[] = [];
   const later: Task[] = [];
   const deferred: Task[] = [];
+  const inbox: Task[] = [];
   let used = 0;
   let newCount = 0;
 
-  parsed.tasks.forEach((item, index) => {
+  parsed.tasks.forEach((item) => {
     const prior = item.id ? existing.get(item.id) : undefined;
     if (!item.id) newCount += 1;
 
@@ -308,8 +313,20 @@ function assemble({
     // overriding the day they actually asked for.
     const pinned = futureDate(item.plan_date, today);
 
+    // "Someday" work: no deadline, no clock time, no suggested slot and no named
+    // day. There's nothing to schedule it against, so it goes to the inbox
+    // rather than being force-fit onto today. A carried-in task keeps its place
+    // — only genuinely untethered *new* items land here.
+    const untimed =
+      !prior &&
+      !pinned &&
+      !item.deadline &&
+      !item.deadline_time &&
+      !item.suggested_start;
+
     // A model-labelled 'today' only sticks if it actually fits.
-    const fits = !pinned && item.status === "today" && used + minutes <= capacityMinutes;
+    const fits =
+      !pinned && !untimed && item.status === "today" && used + minutes <= capacityMinutes;
 
     const base: Task = {
       // Reuse the id when carrying a task forward so completion state and
@@ -326,15 +343,17 @@ function assemble({
       deadline: item.deadline,
       deadline_time: item.deadline_time ?? null,
       suggested_start: item.suggested_start,
-      status: pinned || fits ? "today" : "deferred",
-      plan_date: pinned ?? (fits ? today : addDays(today, 1)),
+      status: untimed ? "inbox" : pinned || fits ? "today" : "deferred",
+      plan_date: untimed ? null : pinned ?? (fits ? today : addDays(today, 1)),
       tags: [item.tag as Tag],
       reasoning: item.reasoning,
       sort_order: 0,
       created_at: prior?.created_at ?? createdAt,
     };
 
-    if (pinned) {
+    if (untimed) {
+      inbox.push({ ...base, sort_order: inbox.length });
+    } else if (pinned) {
       later.push({ ...base, sort_order: later.length });
     } else if (fits) {
       used += minutes;
@@ -376,13 +395,14 @@ function assemble({
       scheduledCount: scheduled.length,
       laterCount: later.length,
       deferredCount: deferred.length,
+      inboxCount: inbox.length,
     }),
     created_at: createdAt,
   };
 
   return {
     dump,
-    tasks: [...scheduled, ...later, ...deferred, ...preserved],
+    tasks: [...scheduled, ...later, ...deferred, ...inbox, ...preserved],
     dayPlan,
   };
 }
@@ -419,6 +439,7 @@ function capacityNote({
   scheduledCount,
   laterCount,
   deferredCount,
+  inboxCount,
 }: {
   newCount: number;
   carriedCount: number;
@@ -426,6 +447,7 @@ function capacityNote({
   scheduledCount: number;
   laterCount: number;
   deferredCount: number;
+  inboxCount: number;
 }): string {
   const things =
     newCount === 1
@@ -439,10 +461,12 @@ function capacityNote({
   // Each clause is emitted only when it has a non-zero count behind it, so the
   // note can never claim a bucket the sections below don't render.
   const clauses: string[] = [];
-  if (deferredCount > 0 || laterCount > 0) {
+  if (deferredCount > 0 || laterCount > 0 || inboxCount > 0) {
     clauses.push(`I planned ${scheduledCount} that fit today`);
     if (laterCount > 0) clauses.push(`set ${laterCount} for the day you asked for`);
     if (deferredCount > 0) clauses.push(`parked ${deferredCount} for tomorrow`);
+    if (inboxCount > 0)
+      clauses.push(`set ${inboxCount} aside in your inbox to schedule when you like`);
   }
 
   if (clauses.length === 0) return `${opener} All of it fits today.`;
