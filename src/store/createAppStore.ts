@@ -89,6 +89,12 @@ export interface AppState {
   captureOpen: boolean;
   captureMode: CaptureMode;
   dumpText: string;
+  /**
+   * Tasks streaming in from the current plan, for the capture modal's fill-in
+   * animation. Throwaway display copies — the real tasks are committed to
+   * `tasks` from the plan's final result. Empty except while planning.
+   */
+  streamingTasks: Task[];
   planError: string | null;
   /** Set when a write reached the server and failed. */
   syncError: string | null;
@@ -380,6 +386,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
       captureOpen: false,
       captureMode: "ready",
       dumpText: "",
+      streamingTasks: [],
       planError: null,
       syncError: null,
       menuOpen: false,
@@ -404,6 +411,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           captureOpen: true,
           captureMode: "ready",
           planError: null,
+          streamingTasks: [],
           menuOpen: false,
         }),
 
@@ -412,6 +420,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           captureOpen: false,
           captureMode: "ready",
           dumpText: "",
+          streamingTasks: [],
           planError: null,
         }),
 
@@ -428,7 +437,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           return;
         }
 
-        set({ captureMode: "thinking", planError: null });
+        set({ captureMode: "thinking", planError: null, streamingTasks: [] });
 
         // Everything still outstanding is replanned together with the new
         // dump: today's open items and anything previously parked. Done
@@ -442,18 +451,24 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         const carriedIds = new Set(carryIn.map((t) => t.id));
 
         try {
-          // /api/plan persists the result server-side before returning, so the
-          // tasks below already carry their database ids. No write here.
-          const result = await planDump({
-            dumpText,
-            source,
-            today,
-            capacityMinutes: DAY_CAPACITY_MINUTES,
-            carryIn,
-            // Only consulted if the route is unreachable and planning falls
-            // back to the local heuristic; the server reads labels itself.
-            labelNames: get().labels.map((l) => l.name),
-          });
+          // /api/plan persists the result server-side before the stream ends,
+          // so the tasks below already carry their database ids. No write here.
+          // The onTask callback pushes throwaway display copies into
+          // `streamingTasks` so the modal fills in as the model produces items.
+          const result = await planDump(
+            {
+              dumpText,
+              source,
+              today,
+              capacityMinutes: DAY_CAPACITY_MINUTES,
+              carryIn,
+              // Only consulted if the route is unreachable and planning falls
+              // back to the local heuristic; the server reads labels itself.
+              labelNames: get().labels.map((l) => l.name),
+            },
+            (task) =>
+              set((state) => ({ streamingTasks: [...state.streamingTasks, task] })),
+          );
 
           set((state) => ({
             // The replanned tasks come back with the same ids, so this
@@ -470,11 +485,15 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             captureOpen: false,
             captureMode: "ready",
             dumpText: "",
+            streamingTasks: [],
           }));
         } catch {
+          // Nothing persisted mid-stream, so discarding the display buffer is a
+          // full rollback. The modal stays open with the error.
           set({
             captureMode: "ready",
             planError: "That didn't go through. Try again.",
+            streamingTasks: [],
           });
         }
       },

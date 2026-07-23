@@ -233,6 +233,71 @@
   text-wrap: pretty;
 }
 
+/* -------------------------------------------------------------- stream list */
+
+.streamList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+  max-height: 13.5rem;
+  overflow-y: auto;
+}
+
+.streamRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--r-button-lg);
+  animation: cernoStreamIn 0.32s var(--l-ease, ease) both;
+}
+
+.streamDot {
+  flex: none;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-0.05rem);
+}
+
+.streamRowTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.84375rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.streamRowMeta {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes cernoStreamIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streamRow {
+    animation: none;
+  }
+}
+
 .error {
   font-size: 0.84375rem;
   color: var(--accent);

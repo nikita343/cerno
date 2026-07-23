@@ -556,7 +556,21 @@ export function parseSingleTask(
  * A 4xx is *not* retried locally: that means the request was rejected, and
  * silently producing a different answer would hide a real bug.
  */
-export async function planDump(input: PlanInput): Promise<PlanResult> {
+/** One event on the newline-delimited plan stream. Mirrors the route. */
+type PlanEvent =
+  | { type: "task"; task: Task }
+  | { type: "done"; tasks: Task[]; dayPlan: DayPlan; dump: Dump }
+  | { type: "error"; message: string };
+
+export async function planDump(
+  input: PlanInput,
+  /**
+   * Fires once per task as it streams in, before the final result resolves —
+   * this is what lets the capture modal fill in rather than block on a loader.
+   * These are throwaway display tasks; the resolved `PlanResult` is the truth.
+   */
+  onTask?: (task: Task) => void,
+): Promise<PlanResult> {
   const {
     dumpText,
     source,
@@ -580,7 +594,7 @@ export async function planDump(input: PlanInput): Promise<PlanResult> {
       }),
     });
 
-    if (!response.ok) {
+    if (!response.ok || !response.body) {
       if (response.status >= 400 && response.status < 500) {
         const body = (await response.json().catch(() => null)) as
           | { error?: string }
@@ -590,7 +604,40 @@ export async function planDump(input: PlanInput): Promise<PlanResult> {
       throw new ServerUnavailableError();
     }
 
-    return (await response.json()) as PlanResult;
+    // Read the NDJSON stream: `task` events drive the fill-in animation, the
+    // single `done` event carries the authoritative result, and `error` means
+    // the server gave up mid-plan.
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let result: PlanResult | null = null;
+
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let newline: number;
+      while ((newline = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, newline).trim();
+        buffer = buffer.slice(newline + 1);
+        if (!line) continue;
+
+        const event = JSON.parse(line) as PlanEvent;
+        if (event.type === "task") {
+          onTask?.(event.task);
+        } else if (event.type === "done") {
+          result = { dump: event.dump, tasks: event.tasks, dayPlan: event.dayPlan };
+        } else if (event.type === "error") {
+          throw new Error(event.message);
+        }
+      }
+    }
+
+    // Stream closed without a `done` — treat as the route falling over so the
+    // loop still closes with a locally-planned day.
+    if (!result) throw new ServerUnavailableError();
+    return result;
   } catch (error) {
     if (error instanceof Error && !(error instanceof ServerUnavailableError)) {
       // A rejected request is a real error — surface it.

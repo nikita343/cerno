@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import * as z from "zod";
 
 import { describeError } from "@/lib/ai/client";
-import { generateStructured } from "@/lib/ai/generate";
+import { generatePlanStreaming } from "@/lib/ai/generate";
 import { planSystemPrompt, planUserPrompt } from "@/lib/ai/prompt";
 import { buildPlanResponseSchema, type PlannedTask } from "@/lib/ai/schema";
 import { addDays, todayISO, todayInZone } from "@/lib/date";
@@ -58,12 +58,25 @@ const requestSchema = z.object({
   carryIn: z.array(taskInputSchema).default([]),
 });
 
+/** One newline-delimited JSON event on the plan stream. */
+type PlanEvent =
+  | { type: "task"; task: Task }
+  | { type: "done"; tasks: Task[]; dayPlan: DayPlan; dump: Dump; planner: "ai" | "heuristic" }
+  | { type: "error"; message: string };
+
 /**
- * POST /api/plan — brain dump in, realistic day out.
+ * POST /api/plan — brain dump in, realistic day out, streamed.
+ *
+ * The response is a stream of newline-delimited JSON events rather than one
+ * buffered body: `task` events fire as the model produces each item so the
+ * capture modal fills in instead of blocking ~20s on a blank loader, then a
+ * single `done` event carries the authoritative result. Persistence still
+ * happens once, right before `done` — nothing is written mid-stream, so a
+ * failure part-way through leaves nothing to roll back.
  *
  * Falls back to the local heuristic planner when no API key is configured, so
- * the app is fully usable (and demoable) without one. The response shape is
- * identical either way; `planner` tells the caller which path ran.
+ * the app is fully usable (and demoable) without one; that path emits the same
+ * event shape (all tasks, then `done`).
  */
 export async function POST(request: Request) {
   let body: z.infer<typeof requestSchema>;
@@ -99,9 +112,6 @@ export async function POST(request: Request) {
     ? Math.min(capacityMinutes, Math.max(0, DAY_END_MINUTES - minutesNowInZone(timezone)))
     : capacityMinutes;
 
-  // Whether *any* vendor is configured is decided inside generateStructured,
-  // which falls back across providers before giving up. This local helper is
-  // what both that fallback and a hard failure land on.
   const heuristic = () =>
     buildPlan({
       dumpText: body.dumpText,
@@ -112,53 +122,111 @@ export async function POST(request: Request) {
       labelNames,
     });
 
-  try {
-    const generated = await generateStructured({
-      // The user's stored preference, read server-side — never sent by the
-      // browser, which would let a caller choose what we spend money on.
-      choice: modelChoice,
-      schema: buildPlanResponseSchema(labelNames),
-      schemaName: "plan_response",
-      maxTokens: MAX_TOKENS,
-      // Thinking off: adaptive thinking pushed planning to ~50s, and Sonnet 5
-      // handles this structured extraction well without it. The detailed prompt
-      // carries the judgement (effort, what to cut) that thinking used to add.
-      thinking: false,
-      system: planSystemPrompt({
-        now: today,
-        timezone,
-        capacityMinutes: effectiveCapacity,
-        labelNames,
-        language: language ?? "en",
-      }),
-      user: planUserPrompt({ dumpText: body.dumpText, carryIn }),
-    });
+  const encoder = new TextEncoder();
+  const displayStamp = new Date().toISOString();
 
-    // Neither vendor is configured — the heuristic planner is still a complete
-    // answer, so this is a fallback rather than a failure.
-    if (!generated) {
-      const result = heuristic();
-      await persistPlan(result, caller);
-      return NextResponse.json({ ...result, planner: "heuristic" });
-    }
-    const parsed = generated.parsed;
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: PlanEvent) =>
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
 
-    const result = assemble({
-      parsed,
-      carryIn,
-      today,
-      capacityMinutes: effectiveCapacity,
-      source: body.source,
-      dumpText: body.dumpText,
-    });
+      try {
+        // `onTask` is a progress signal only: it emits a lightweight display
+        // task per streamed item so the modal animates. The authoritative
+        // tasks come from `assemble()` over the final parse below, so a task
+        // the incremental scanner happens to miss is never lost.
+        const generated = await generatePlanStreaming(
+          {
+            // The user's stored preference, read server-side — never sent by the
+            // browser, which would let a caller choose what we spend money on.
+            choice: modelChoice,
+            labelNames,
+            schema: buildPlanResponseSchema(labelNames),
+            schemaName: "plan_response",
+            maxTokens: MAX_TOKENS,
+            // Thinking off: adaptive thinking pushed planning to ~50s, and the
+            // detailed prompt carries the judgement it used to add.
+            thinking: false,
+            system: planSystemPrompt({
+              now: today,
+              timezone,
+              capacityMinutes: effectiveCapacity,
+              labelNames,
+              language: language ?? "en",
+            }),
+            user: planUserPrompt({ dumpText: body.dumpText, carryIn }),
+          },
+          (item) => send({ type: "task", task: toDisplayTask(item, today, displayStamp) }),
+        );
 
-    await persistPlan(result, caller);
-    return NextResponse.json({ ...result, planner: "ai" });
-  } catch (error) {
-    const { status, message } = describeError(error);
-    console.error("[/api/plan]", error);
-    return NextResponse.json({ error: message }, { status });
-  }
+        // Neither vendor is configured — the heuristic planner is a complete
+        // answer, so this is a fallback rather than a failure. It doesn't stream,
+        // so replay its tasks through the same event shape before `done`.
+        if (!generated) {
+          const result = heuristic();
+          for (const task of result.tasks) send({ type: "task", task });
+          await persistPlan(result, caller);
+          send({ type: "done", ...result, planner: "heuristic" });
+          return;
+        }
+
+        const result = assemble({
+          parsed: generated.parsed,
+          carryIn,
+          today,
+          capacityMinutes: effectiveCapacity,
+          source: body.source,
+          dumpText: body.dumpText,
+        });
+
+        await persistPlan(result, caller);
+        send({ type: "done", ...result, planner: "ai" });
+      } catch (error) {
+        const { message } = describeError(error);
+        console.error("[/api/plan]", error);
+        send({ type: "error", message });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "no-store",
+      // Defensive: keep proxies from buffering the whole stream before flushing.
+      "x-accel-buffering": "no",
+    },
+  });
+}
+
+/**
+ * A throwaway task built from a streamed model item, for the modal's fill-in
+ * animation only. It never persists and is replaced by the `done` payload, so
+ * the placement here is a reasonable guess (the real capacity guard runs in
+ * `assemble`) and the id doesn't need to survive.
+ */
+function toDisplayTask(item: PlannedTask, today: string, createdAt: string): Task {
+  const minutes = clampMinutes(item.estimated_minutes);
+  const pinned = futureDate(item.plan_date, today);
+  return {
+    id: newId(),
+    dump_id: null,
+    title: item.title,
+    description: null,
+    priority: item.priority,
+    estimated_minutes: minutes,
+    deadline: item.deadline,
+    deadline_time: item.deadline_time ?? null,
+    suggested_start: item.suggested_start,
+    status: pinned || item.status === "today" ? "today" : "deferred",
+    plan_date: pinned ?? (item.status === "today" ? today : addDays(today, 1)),
+    tags: [item.tag as Tag],
+    reasoning: item.reasoning,
+    sort_order: 0,
+    created_at: createdAt,
+  };
 }
 
 /**

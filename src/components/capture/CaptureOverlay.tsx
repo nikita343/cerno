@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { CloseIcon, MicIcon } from "@/components/icons";
+import { DASHBOARD_ROOT } from "@/lib/nav";
 import {
   isRecordingSupported,
   startRecording,
@@ -30,8 +32,10 @@ export function CaptureOverlay() {
   const setCaptureMode = useAppStore((s) => s.setCaptureMode);
   const closeCapture = useAppStore((s) => s.closeCapture);
   const submitDump = useAppStore((s) => s.submitDump);
+  const streamingTasks = useAppStore((s) => s.streamingTasks);
   const t = useT();
   const language = useLanguage();
+  const router = useRouter();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recorderRef = useRef<RecorderHandle | null>(null);
@@ -105,12 +109,13 @@ export function CaptureOverlay() {
         closeCapture();
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !isThinking) {
+        router.push(DASHBOARD_ROOT);
         void submitDump(dictatedRef.current ? "voice" : "text");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, isThinking, closeCapture, submitDump]);
+  }, [open, isThinking, closeCapture, submitDump, router]);
 
   /**
    * First click records, second click stops and transcribes.
@@ -175,6 +180,9 @@ export function CaptureOverlay() {
 
   const handlePlan = () => {
     stopListening();
+    // Jump to Today so the plan visibly lands on the timeline the moment the
+    // modal closes; the modal covers the transition while items stream in.
+    router.push(DASHBOARD_ROOT);
     void submitDump(dictatedRef.current ? "voice" : "text");
   };
 
@@ -239,9 +247,28 @@ export function CaptureOverlay() {
                 <span className={styles.thinkDot} />
               </span>
               <span className={styles.thinkingText}>
-                {t.capture.thinkingSteps[thinkingStep] ?? t.capture.thinking}
+                {streamingTasks.length > 0
+                  ? t.capture.planningCount.replace(
+                      "{count}",
+                      String(streamingTasks.length),
+                    )
+                  : t.capture.thinkingSteps[thinkingStep] ?? t.capture.thinking}
               </span>
             </div>
+          )}
+
+          {isThinking && streamingTasks.length > 0 && (
+            <ul className={styles.streamList} aria-live="polite">
+              {streamingTasks.map((task) => (
+                <li key={task.id} className={styles.streamRow}>
+                  <span className={styles.streamDot} aria-hidden="true" />
+                  <span className={styles.streamRowTitle}>{task.title}</span>
+                  <span className={styles.streamRowMeta}>
+                    {task.status === "today" ? t.capture.streamToday : t.capture.streamLater}
+                  </span>
+                </li>
+              ))}
+            </ul>
           )}
 
           {planError && !isThinking && (

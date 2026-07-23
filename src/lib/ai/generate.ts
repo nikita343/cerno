@@ -7,6 +7,8 @@ import type { z } from "zod";
 
 import { getClient } from "./client";
 import { hasKeyFor, resolveModel, type ModelSpec } from "./models";
+import { createTaskArrayScanner } from "./partialJson";
+import { buildPlannedTaskSchema, type PlannedTask } from "./schema";
 import type { ModelChoice } from "@/lib/types";
 
 /**
@@ -78,6 +80,100 @@ export async function generateStructured<T extends z.ZodType>(
       : await viaOpenAI(spec, options);
 
   return { parsed, model: spec.id, provider: spec.provider };
+}
+
+export interface PlanStreamResult<T> {
+  parsed: T;
+  model: string;
+  provider: string;
+}
+
+/**
+ * Like {@link generateStructured}, but surfaces each planned task the moment it
+ * finishes streaming so the UI can show the day fill in rather than blocking on
+ * a ~20s buffered response.
+ *
+ * `onTask` fires per completed task, in order. The returned `parsed` is still
+ * the authoritative full parse (from the provider), so `onTask` is a progress
+ * signal, never the source of truth — a task the incremental scanner missed is
+ * present in `parsed.tasks` regardless.
+ *
+ * Only the Anthropic path streams token-by-token. OpenAI has no incremental
+ * hook here, so it buffers and then replays its tasks through `onTask` at once;
+ * the client stays identical either way. Returns null when no vendor is
+ * configured, the caller's cue to fall back to the offline heuristic.
+ */
+export async function generatePlanStreaming<T extends z.ZodType>(
+  options: GenerateOptions<T> & { labelNames: string[] },
+  onTask: (task: PlannedTask) => void,
+): Promise<PlanStreamResult<z.infer<T>> | null> {
+  const preferred = resolveModel(options.choice);
+  const spec = hasKeyFor(preferred.provider) ? preferred : fallbackFrom(preferred);
+  if (!spec) return null;
+
+  const parsed =
+    spec.provider === "anthropic"
+      ? await streamAnthropic(spec, options, onTask)
+      : await bufferOpenAI(spec, options, onTask);
+
+  return { parsed, model: spec.id, provider: spec.provider };
+}
+
+async function streamAnthropic<T extends z.ZodType>(
+  spec: ModelSpec,
+  options: GenerateOptions<T> & { labelNames: string[] },
+  onTask: (task: PlannedTask) => void,
+): Promise<z.infer<T>> {
+  const client = getClient();
+  if (!client) throw new Error("Anthropic client unavailable");
+
+  const taskSchema = buildPlannedTaskSchema(options.labelNames);
+  const scanner = createTaskArrayScanner();
+
+  const stream = client.messages.stream({
+    model: spec.id,
+    max_tokens: options.maxTokens,
+    thinking: options.thinking === false ? { type: "disabled" } : { type: "adaptive" },
+    output_config: { format: zodOutputFormat(options.schema) },
+    system: options.system,
+    messages: [{ role: "user", content: options.user }],
+  });
+
+  // The JSON arrives as text deltas; `snapshot` is the whole document so far.
+  stream.on("text", (_delta, snapshot) => {
+    for (const chunk of scanner.push(snapshot)) {
+      // Best-effort: a chunk that doesn't validate yet is skipped, not fatal —
+      // the final parse below is the guarantee.
+      let raw: unknown;
+      try {
+        raw = JSON.parse(chunk);
+      } catch {
+        continue;
+      }
+      const result = taskSchema.safeParse(raw);
+      if (result.success) onTask(result.data);
+    }
+  });
+
+  const message = await stream.finalMessage();
+  const parsed = message.parsed_output;
+  if (!parsed) throw new Error("empty parsed output");
+  return parsed as z.infer<T>;
+}
+
+async function bufferOpenAI<T extends z.ZodType>(
+  spec: ModelSpec,
+  options: GenerateOptions<T> & { labelNames: string[] },
+  onTask: (task: PlannedTask) => void,
+): Promise<z.infer<T>> {
+  const parsed = await viaOpenAI(spec, options);
+  // No incremental hook on this path — replay the finished tasks so the client
+  // animation and the done payload agree.
+  const tasks = (parsed as { tasks?: unknown }).tasks;
+  if (Array.isArray(tasks)) {
+    for (const task of tasks) onTask(task as PlannedTask);
+  }
+  return parsed;
 }
 
 /** The other vendor's default, if we have a key for it. */
