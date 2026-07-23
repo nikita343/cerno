@@ -163,7 +163,9 @@ export function LandingMotion() {
           statement.appendChild(node);
         }
       });
-      gsap.set(words, { opacity: 0, y: 14 });
+      // Each word starts dimmed (30%) and fills to full as it scrolls in —
+      // opacity preserves the accent word's red rather than recolouring it.
+      gsap.set(words, { opacity: 0.3 });
       const stTrigger = ScrollTrigger.create({
         trigger: statement,
         start: "top 78%",
@@ -171,10 +173,9 @@ export function LandingMotion() {
         onEnter: () =>
           gsap.to(words, {
             opacity: 1,
-            y: 0,
-            duration: 0.5,
-            ease: "power3.out",
-            stagger: 0.02,
+            duration: 0.4,
+            ease: "power1.out",
+            stagger: 0.045,
           }),
       });
       triggers.push(stTrigger);

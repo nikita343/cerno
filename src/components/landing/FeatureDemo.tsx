@@ -242,8 +242,9 @@ function RemindersDemo() {
             3
           </span>
         </div>
-        <div className={styles.demoReminderRows} data-f5-rows>
-          <div className={styles.demoReminderRow} data-f5-row>
+        <div className={styles.demoReminderViewport}>
+          <div className={styles.demoReminderRows} data-f5-rows>
+            <div className={styles.demoReminderRow} data-f5-row>
             <span
               className={styles.demoReminderCheck}
               data-f5-check
@@ -282,6 +283,7 @@ function RemindersDemo() {
               <div className={styles.demoReminderMeta}>09:25 · 1h 30m late</div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

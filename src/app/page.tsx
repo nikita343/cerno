@@ -10,6 +10,7 @@ import {
 } from "@/components/landing/FeatureDemo";
 import { HeroSpline } from "@/components/landing/HeroSpline";
 import { LandingMotion } from "@/components/landing/LandingMotion";
+import { MobileNav } from "@/components/landing/MobileNav";
 import { TeamPlanCard } from "@/components/landing/PricingToggle";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { getUser } from "@/lib/supabase/server";
@@ -208,6 +209,7 @@ export default async function LandingPage({
           <Link href="/signup" className={styles.navCta}>
             Get started
           </Link>
+          <MobileNav />
         </div>
       </header>
 
