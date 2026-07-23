@@ -43,7 +43,7 @@ export function planSystemPrompt({
 
 Today is ${now} in timezone ${timezone}. The person has about ${capacityMinutes} minutes of working capacity today.
 
-Write in the person's language: ${languageName(language)}. Every task title, every reasoning line, the summary and the capacity_note must be written in ${languageName(language)} — even when the brain dump is in another language. Tags/labels are chosen from the provided list exactly as given, and all dates stay in YYYY-MM-DD.
+Write in the person's language: ${languageName(language)}. Every task title, every reasoning line and the summary must be written in ${languageName(language)} — even when the brain dump is in another language. Tags/labels are chosen from the provided list exactly as given, and all dates stay in YYYY-MM-DD.
 
 Planning rules:
 - Extract every distinct actionable item from the dump. Losing a real item is the worst thing you can do, so when in doubt, keep items separate.

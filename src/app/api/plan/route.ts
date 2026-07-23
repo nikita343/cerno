@@ -204,7 +204,7 @@ function assemble({
   source,
   dumpText,
 }: {
-  parsed: { tasks: PlannedTask[]; summary: string; capacity_note: string };
+  parsed: { tasks: PlannedTask[]; summary: string };
   carryIn: Task[];
   today: string;
   capacityMinutes: number;

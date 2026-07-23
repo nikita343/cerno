@@ -104,11 +104,9 @@ export function buildPlanResponseSchema(labelNames: string[]) {
     summary: z
       .string()
       .describe("One calm sentence describing the shape of the day."),
-    capacity_note: z
-      .string()
-      .describe(
-        "One line reconciling what came in against what was planned and parked.",
-      ),
+    // No capacity_note here on purpose: it's reconciled from the final split in
+    // assemble(), so asking the model for one only burns output tokens (and thus
+    // latency) on a field that gets thrown away.
   });
 }
 
