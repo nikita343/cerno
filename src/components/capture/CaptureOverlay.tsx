@@ -66,8 +66,9 @@ export function CaptureOverlay() {
     }
     const steps = t.capture.thinkingSteps;
     const id = window.setInterval(() => {
-      // Hold on the last line rather than looping back — a loop reads as stuck.
-      setThinkingStep((s) => Math.min(s + 1, steps.length - 1));
+      // Keep cycling for as long as planning runs — a slow request should never
+      // look frozen, so the lines loop until the plan lands and the popup closes.
+      setThinkingStep((s) => (s + 1) % steps.length);
     }, 1800);
     return () => window.clearInterval(id);
   }, [isThinking, t.capture.thinkingSteps]);

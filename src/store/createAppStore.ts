@@ -173,6 +173,8 @@ export interface AppActions {
     workspaceId?: string | null,
     /** Assigns the task to a workspace member. Null / omitted is unassigned. */
     assigneeId?: string | null,
+    /** Lands the task in the inbox (unscheduled) rather than on a day. */
+    toInbox?: boolean,
   ) => Promise<void>;
   /** Roll unfinished tasks from past days onto today. */
   carryOver: () => Promise<void>;
@@ -592,9 +594,16 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         );
       },
 
-      addTaskSmart: async (text, date, workspaceId = null, assigneeId = null) => {
+      addTaskSmart: async (
+        text,
+        date,
+        workspaceId = null,
+        assigneeId = null,
+        toInbox = false,
+      ) => {
         const { today } = get();
-        const placeholderDate = date ?? today;
+        // Inbox items have no day at all; everything else lands on its date.
+        const placeholderDate = toInbox ? null : date ?? today;
 
         // The client mints the id, so the same row is what's shown, what's saved
         // now, and what the parse enriches later. Sharing the id is what makes
@@ -612,7 +621,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           deadline: null,
           deadline_time: null,
           suggested_start: null,
-          status: "today",
+          status: toInbox ? "inbox" : "today",
           plan_date: placeholderDate,
           tags: [],
           reasoning: null,
@@ -621,10 +630,14 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           pending: true,
         };
 
-        // Show it instantly, at the end of its day's list.
+        // Show it instantly, at the end of its list (its day, or the inbox).
         set((state) => {
           const lastOrder = state.tasks
-            .filter((t) => t.status === "today" && t.plan_date === placeholderDate)
+            .filter((t) =>
+              toInbox
+                ? t.status === "inbox"
+                : t.status === "today" && t.plan_date === placeholderDate,
+            )
             .reduce((max, t) => Math.max(max, t.sort_order), -1);
           return {
             tasks: [...state.tasks, { ...placeholder, sort_order: lastOrder + 1 }],
@@ -661,10 +674,12 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             taskId,
           );
 
-          // An explicit day wins over whatever the parser inferred. Added from
-          // Thursday's row, it goes on Thursday.
-          const task: Task =
-            date === undefined
+          // Where it was added wins over whatever the parser inferred. Added to
+          // the inbox, it stays in the inbox with no day; added from Thursday's
+          // row, it goes on Thursday.
+          const task: Task = toInbox
+            ? { ...parsed, status: "inbox", plan_date: null }
+            : date === undefined
               ? parsed
               : { ...parsed, plan_date: date, status: "today" };
 
@@ -677,9 +692,19 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             syncError: null,
           }));
 
-          // The route already persisted the parser's own date, so a pinned day
-          // needs a follow-up write. Skipped when the parser's answer stood.
-          if (db && date !== undefined && parsed.plan_date !== date) {
+          // The parse route always persists the row as a scheduled "today" task,
+          // so inbox adds and pinned days both need a follow-up write to correct
+          // it. Skipped when the parser's own answer already stood.
+          if (db && toInbox) {
+            try {
+              await updateTaskRow(db, task.id, {
+                plan_date: null,
+                status: "inbox",
+              });
+            } catch {
+              set({ syncError: SYNC_FAILED });
+            }
+          } else if (db && date !== undefined && parsed.plan_date !== date) {
             try {
               await updateTaskRow(db, task.id, {
                 plan_date: date,

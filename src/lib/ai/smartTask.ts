@@ -3,7 +3,7 @@ import { smartAddSystemPrompt } from "@/lib/ai/prompt";
 import { buildSmartTaskSchema } from "@/lib/ai/schema";
 import { newId } from "@/lib/id";
 import { parseSingleTask } from "@/lib/planner";
-import type { ModelChoice, Tag, Task } from "@/lib/types";
+import type { AppLanguage, ModelChoice, Tag, Task } from "@/lib/types";
 
 /** A well-formed plan_date strictly after today, else null. */
 function futureDate(value: string | null, today: string): string | null {
@@ -30,6 +30,7 @@ export async function buildSmartTask({
   timezone,
   labelNames,
   modelChoice,
+  language = "en",
   workspaceId = null,
   assigneeId = null,
 }: {
@@ -44,6 +45,7 @@ export async function buildSmartTask({
   timezone: string;
   labelNames: string[];
   modelChoice: ModelChoice | null;
+  language?: AppLanguage;
   workspaceId?: string | null;
   assigneeId?: string | null;
 }): Promise<Task> {
@@ -64,7 +66,7 @@ export async function buildSmartTask({
     // A single short phrase — no deliberation needed, and thinking here would
     // only add latency to what should feel instant.
     thinking: false,
-    system: smartAddSystemPrompt({ now: today, timezone, labelNames }),
+    system: smartAddSystemPrompt({ now: today, timezone, labelNames, language }),
     user: text,
   });
 

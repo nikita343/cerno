@@ -39,7 +39,7 @@ export function InboxView() {
         </span>
       </div>
 
-      <SmartAddBar placeholder={t.inbox.addToInbox} />
+      <SmartAddBar placeholder={t.inbox.addToInbox} toInbox />
 
       {tasks.length === 0 ? (
         <EmptyState

@@ -49,10 +49,16 @@ export function SmartAddBar({
    * omitted (the personal Today/Inbox bars) leaves it a plain add bar.
    */
   members = [],
+  /**
+   * When true, adds land in the inbox (unscheduled) rather than on today. Set
+   * by the Inbox view so "add to inbox" actually means it.
+   */
+  toInbox = false,
 }: {
   placeholder?: string;
   workspaceId?: string | null;
   members?: WorkspaceMember[];
+  toInbox?: boolean;
 }) {
   const t = useT();
   const [text, setText] = useState("");
@@ -116,7 +122,13 @@ export function SmartAddBar({
     setAssignee(null);
     setMention(null);
     try {
-      await addTaskSmart(trimmed, undefined, workspaceId, forAssignee?.user_id ?? null);
+      await addTaskSmart(
+        trimmed,
+        undefined,
+        workspaceId,
+        forAssignee?.user_id ?? null,
+        toInbox,
+      );
     } finally {
       setPending(false);
     }

@@ -7,6 +7,7 @@ import { todayISO } from "@/lib/date";
 import { upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
+  loadLanguage,
   loadModelChoice,
   loadTimezone,
   resolveRequestUser,
@@ -80,10 +81,11 @@ export async function POST(request: Request) {
 
   const today = body.today ?? todayISO();
   const caller = await resolveRequestUser();
-  const [labelNames, modelChoice, savedTimezone] = await Promise.all([
+  const [labelNames, modelChoice, savedTimezone, language] = await Promise.all([
     loadLabelNames(caller),
     loadModelChoice(caller),
     loadTimezone(caller),
+    loadLanguage(caller),
   ]);
   // The saved setting wins over the browser's timezone in the request body.
   const timezone = savedTimezone ?? body.timezone;
@@ -96,6 +98,7 @@ export async function POST(request: Request) {
       timezone,
       labelNames,
       modelChoice,
+      language: language ?? "en",
       // Set before persisting so the insert is checked against the workspace
       // policy, not written as personal and moved afterwards.
       workspaceId: body.workspaceId ?? null,

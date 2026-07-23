@@ -1,4 +1,9 @@
-import { DEFAULT_LABELS, type Task } from "@/lib/types";
+import { DEFAULT_LABELS, type AppLanguage, type Task } from "@/lib/types";
+
+/** The language to write titles, reasoning and summaries in. */
+function languageName(language: AppLanguage): string {
+  return language === "uk" ? "Ukrainian" : "English";
+}
 
 /**
  * The tag list is passed in per request rather than imported as a constant,
@@ -26,15 +31,19 @@ export function planSystemPrompt({
   timezone,
   capacityMinutes,
   labelNames,
+  language,
 }: {
   now: string;
   timezone: string;
   capacityMinutes: number;
   labelNames: string[];
+  language: AppLanguage;
 }): string {
   return `You are Cerno, a calm, competent daily planner. You take a person's unstructured brain dump and turn it into a realistic plan for their day. You do not just list tasks — you decide what matters, estimate effort, and protect the person from an overloaded day.
 
 Today is ${now} in timezone ${timezone}. The person has about ${capacityMinutes} minutes of working capacity today.
+
+Write in the person's language: ${languageName(language)}. Every task title, every reasoning line, the summary and the capacity_note must be written in ${languageName(language)} — even when the brain dump is in another language. Tags/labels are chosen from the provided list exactly as given, and all dates stay in YYYY-MM-DD.
 
 Planning rules:
 - Extract every distinct actionable item from the dump. Losing a real item is the worst thing you can do, so when in doubt, keep items separate.
@@ -61,15 +70,18 @@ export function smartAddSystemPrompt({
   now,
   timezone,
   labelNames,
+  language,
 }: {
   now: string;
   timezone: string;
   labelNames: string[];
+  language: AppLanguage;
 }): string {
   return `You are Cerno. Turn one short phrase into a single structured task.
 
 Today is ${now} in timezone ${timezone}.
 
+- Write the title and reasoning line in the person's language: ${languageName(language)}, even when the phrase is in another language. Tags come from the provided list as-is; dates stay in YYYY-MM-DD.
 - Rewrite the phrase as an imperative title of at most 8 words, inferring the verb if it is missing.
 - Estimate effort realistically in minutes.
 - Distinguish a deadline from a chosen day, resolving both against today. "by Friday" is a deadline — set deadline, leave plan_date null. "on Sunday", "Tuesday at 11" is a chosen day — set plan_date to that date and leave deadline null unless a due date was separately stated.

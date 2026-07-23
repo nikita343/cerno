@@ -14,6 +14,7 @@ import { DAY_END_MINUTES } from "@/lib/schedule";
 import { insertDump, upsertDayPlan, upsertTasks } from "@/lib/supabase/data";
 import {
   loadLabelNames,
+  loadLanguage,
   loadModelChoice,
   loadTimezone,
   resolveRequestUser,
@@ -79,10 +80,11 @@ export async function POST(request: Request) {
   // Resolved once and reused for persistence below: verifying the session is a
   // round trip to the auth server, and doing it twice per dump is wasteful.
   const caller = await resolveRequestUser();
-  const [labelNames, modelChoice, savedTimezone] = await Promise.all([
+  const [labelNames, modelChoice, savedTimezone, language] = await Promise.all([
     loadLabelNames(caller),
     loadModelChoice(caller),
     loadTimezone(caller),
+    loadLanguage(caller),
   ]);
   // The Settings → Language & region choice wins over the browser's timezone,
   // so the planner resolves "tomorrow"/"Friday" in the zone the user picked.
@@ -118,14 +120,16 @@ export async function POST(request: Request) {
       schema: buildPlanResponseSchema(labelNames),
       schemaName: "plan_response",
       maxTokens: MAX_TOKENS,
-      // Estimating effort and deciding what to cut is judgement work — let the
-      // model think about it rather than answering off the cuff.
-      thinking: true,
+      // Thinking off: adaptive thinking pushed planning to ~50s, and Sonnet 5
+      // handles this structured extraction well without it. The detailed prompt
+      // carries the judgement (effort, what to cut) that thinking used to add.
+      thinking: false,
       system: planSystemPrompt({
         now: today,
         timezone,
         capacityMinutes: effectiveCapacity,
         labelNames,
+        language: language ?? "en",
       }),
       user: planUserPrompt({ dumpText: body.dumpText, carryIn }),
     });

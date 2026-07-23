@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { DEFAULT_LABELS, isPaidModel, type ModelChoice } from "@/lib/types";
+import {
+  DEFAULT_LABELS,
+  isPaidModel,
+  type AppLanguage,
+  type ModelChoice,
+} from "@/lib/types";
 
 import { hasSupabaseConfig } from "./env";
 import { createClient } from "./server";
@@ -120,4 +125,26 @@ export async function loadTimezone(
 
   if (error || !data?.timezone) return null;
   return data.timezone as string;
+}
+
+/**
+ * The caller's saved app language ("en" | "uk").
+ *
+ * Read server-side so the planner writes titles, reasoning and the summary in
+ * the language the user actually chose in Settings, not whatever the model
+ * defaults to. Null when signed out or unset.
+ */
+export async function loadLanguage(
+  caller: RequestUser | null,
+): Promise<AppLanguage | null> {
+  if (!caller) return null;
+
+  const { data, error } = await caller.supabase
+    .from("user_settings")
+    .select("language")
+    .eq("user_id", caller.userId)
+    .maybeSingle();
+
+  if (error || !data?.language) return null;
+  return data.language as AppLanguage;
 }
