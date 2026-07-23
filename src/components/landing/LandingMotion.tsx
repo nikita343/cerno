@@ -480,87 +480,164 @@ export function LandingMotion() {
         const underline = one("[data-f4-underline]") as HTMLElement | null;
         const segs = q("[data-f4-seg]") as HTMLElement[];
         if (!chips.length || !underline || !segs.length) return;
-        const positions = [0, 1, 2];
-        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.3 });
-        positions.forEach((pos, index) => {
-          tl.to(chips[index % chips.length], {
-            opacity: 0.35,
-            scale: 0.98,
-            duration: 0.15,
-          })
-            .to(chips[index % chips.length], {
-              opacity: 1,
-              scale: 1,
-              duration: 0.15,
-            })
-            .to(
-              underline,
-              { x: pos * 100, duration: 0.4, ease: "power2.out" },
-              "<",
-            )
-            .to(segs, { color: "#9b9ba1", duration: 0.16 }, "<")
-            .to(segs[index], { color: "#0a0a0b", duration: 0.16 }, "<")
-            .to({}, { duration: 1.2 });
-        });
-        loops.push(tl);
+
+        // Highlight one chip at a time, cycling through them.
+        let ci = 0;
+        const chipStep = () => {
+          if (!alive) return;
+          chips.forEach((c, j) => {
+            const on = j === ci % chips.length;
+            gsap.to(c, {
+              duration: 0.35,
+              ease: "power2.out",
+              backgroundColor: on ? "rgba(230,0,55,0.07)" : "#ffffff",
+              borderColor: on ? "rgba(230,0,55,0.45)" : "#ecece8",
+              color: on ? "#0a0a0b" : "#6e6e75",
+              scale: on ? 1.04 : 1,
+            });
+          });
+          ci += 1;
+          timers.push(window.setTimeout(chipStep, 1150));
+        };
+        chipStep();
+
+        // Slide the segmented-control pill to the active segment, reading its
+        // real geometry each step so it always lines up (flex widths differ).
+        let si = 0;
+        const segStep = () => {
+          if (!alive) return;
+          const s = segs[si % segs.length];
+          gsap.to(underline, {
+            left: s.offsetLeft,
+            width: s.offsetWidth,
+            duration: 0.45,
+            ease: "power3.out",
+          });
+          segs.forEach((se, j) =>
+            gsap.to(se, {
+              color: j === si % segs.length ? "#0a0a0b" : "#9b9ba1",
+              duration: 0.3,
+            }),
+          );
+          si += 1;
+          timers.push(window.setTimeout(segStep, 1550));
+        };
+        segStep();
       },
       () => {
-        const rows = q("[data-f5-row]") as HTMLElement[];
+        const wrap = one("[data-f5-rows]") as HTMLElement | null;
         const badge = one("[data-f5-badge]") as HTMLElement | null;
-        if (!rows.length) return;
-        const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.2 });
-        tl.to(rows[0], { opacity: 0.2, duration: 0.3, ease: "power2.inOut" })
-          .to(
-            rows[0],
-            { opacity: 1, duration: 0.2, ease: "power2.inOut" },
-            "+=0.35",
-          )
-          .to(rows[0], { y: 56, duration: 0.4, ease: "power2.inOut" }, "<")
-          .to(rows[0], { y: 0, duration: 0.01 }, "+=0.01");
-        if (badge) tl.to(badge, { textContent: "2", duration: 0.01 }, "<");
-        loops.push(tl);
+        if (!wrap) return;
+        const total = wrap.children.length;
+        if (!total) return;
+        let pending = total;
+        if (badge) badge.textContent = String(pending);
+        const advance = () => {
+          if (!alive || !wrap.isConnected) return;
+          const first = wrap.children[0] as HTMLElement | undefined;
+          if (!first) {
+            timers.push(window.setTimeout(advance, 1500));
+            return;
+          }
+          const check = first.querySelector<HTMLElement>("[data-f5-check]");
+          const title = first.querySelector<HTMLElement>("[data-f5-title]");
+          const tl = gsap.timeline();
+          tl.to(check, {
+            color: "#1e9e6e",
+            scale: 1.18,
+            duration: 0.28,
+            ease: "back.out(2.5)",
+          })
+            .add(() => {
+              if (title) {
+                title.style.textDecoration = "line-through";
+                title.style.color = "#9b9ba1";
+              }
+              pending = pending > 1 ? pending - 1 : total;
+              if (badge) badge.textContent = String(pending);
+            })
+            .to({}, { duration: 0.7 })
+            .add(() => {
+              const gap = 0.55 * 16; // .demoReminderRow + margin-top: 0.55rem
+              const h = first.getBoundingClientRect().height + gap;
+              gsap.to(wrap, {
+                y: -h,
+                duration: 0.55,
+                ease: "power2.inOut",
+                onComplete: () => {
+                  if (!alive) return;
+                  gsap.set(wrap, { y: 0 });
+                  if (check) {
+                    check.style.color = "";
+                    gsap.set(check, { scale: 1 });
+                  }
+                  if (title) {
+                    title.style.textDecoration = "none";
+                    title.style.color = "#0a0a0b";
+                  }
+                  wrap.appendChild(first);
+                  timers.push(window.setTimeout(advance, 1500));
+                },
+              });
+            });
+          loops.push(tl);
+        };
+        timers.push(window.setTimeout(advance, 1400));
       },
       () => {
         const typed = one("[data-f6-typed]") as HTMLElement | null;
         const mention = one("[data-f6-mention]") as HTMLElement | null;
-        const avatar = q("[data-f6-avatar]") as HTMLElement[];
+        const avatars = q("[data-f6-avatar]") as HTMLElement[];
         const seats = one("[data-f6-seats]") as HTMLElement | null;
-        if (!typed || !mention || !avatar.length || !seats) return;
-        const phrase = "@mara schedule kickoff call";
-        let char = 0;
-        const tick = () => {
-          if (!alive || !typed.isConnected) return;
-          typed.textContent = phrase.slice(0, char + 1);
-          char += 1;
-          if (char === phrase.length) {
-            const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.6 });
-            tl.to(mention, {
-              opacity: 1,
-              y: 0,
-              duration: 0.25,
-              ease: "back.out(1.6)",
-            })
-              .to(
-                avatar,
-                {
-                  opacity: 1,
-                  duration: 0.2,
-                  ease: "power2.out",
-                  stagger: 0.12,
-                },
-                "-=0.05",
-              )
-              .to(
-                seats,
-                { textContent: "3 / 10 seats", duration: 0.01 },
-                "-=0.05",
-              );
-            loops.push(tl);
-            return;
-          }
-          timers.push(window.setTimeout(tick, 36 + Math.random() * 24));
+        if (!typed || !mention || !avatars.length || !seats) return;
+        const phrase = "schedule kickoff call @ma";
+        const run = () => {
+          if (!alive) return;
+          gsap.set(mention, { opacity: 0, y: 6, scale: 0.9 });
+          gsap.set(avatars, { opacity: 0, y: 6, scale: 0.85 });
+          seats.textContent = "2 / 10 seats";
+          typed.textContent = "";
+          let char = 0;
+          const type = () => {
+            if (!alive || !typed.isConnected) return;
+            typed.textContent = phrase.slice(0, char + 1);
+            char += 1;
+            if (char >= phrase.length) {
+              const tl = gsap.timeline();
+              tl.to(mention, {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                duration: 0.35,
+                ease: "back.out(2)",
+              })
+                .to(mention, { opacity: 0, y: -4, duration: 0.3 }, "+=1.0")
+                .to(
+                  avatars,
+                  {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    duration: 0.45,
+                    stagger: 0.1,
+                    ease: "back.out(2)",
+                  },
+                  "<",
+                )
+                .add(() => {
+                  seats.textContent = "3 / 10 seats";
+                }, "<")
+                .add(() => {
+                  timers.push(window.setTimeout(run, 2500));
+                });
+              loops.push(tl);
+              return;
+            }
+            timers.push(window.setTimeout(type, 42 + Math.random() * 30));
+          };
+          type();
         };
-        timers.push(window.setTimeout(tick, 300));
+        run();
       },
       () => {
         const card = one("[data-f7-card]") as HTMLElement | null;
