@@ -575,29 +575,22 @@
   transform: translateX(0.25em);
 }
 
-/* Text-link variant: the arrow slides in from nothing rather than nudging. */
+/* Text-link variant: the arrow shows by default and nudges on hover. */
 .hoverBtnText {
   display: inline-flex;
   align-items: center;
 }
 
 .hoverBtnText .btnArrow {
-  width: 0;
-  margin-left: 0;
-  opacity: 0;
-  transform: translateX(-0.3em);
-  transition:
-    width 0.4s var(--roll-ease),
-    margin-left 0.4s var(--roll-ease),
-    opacity 0.4s var(--roll-ease),
-    transform 0.4s var(--roll-ease);
-}
-
-.hoverBtnText:hover .btnArrow {
   width: 1em;
   margin-left: 0.3em;
   opacity: 1;
   transform: translateX(0);
+  transition: transform 0.4s var(--roll-ease);
+}
+
+.hoverBtnText:hover .btnArrow {
+  transform: translateX(0.25em);
 }
 
 /* Browser-chrome frame around the hero screenshot. */
@@ -1053,35 +1046,35 @@
 
 .howStep {
   display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-  padding: 1.15rem 1.35rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 16px solid transparent;
+  border-radius: 16px;
+  border-image: url("data:image/svg+xml,%3Csvg%20width%3D%22340%22%20height%3D%22218%22%20viewBox%3D%220%200%20340%20218%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20x%3D%220.5%22%20y%3D%220.5%22%20width%3D%22339%22%20height%3D%22217%22%20rx%3D%2215.5%22%20stroke%3D%22url(%23paint0_linear_3817_3771)%22%2F%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22paint0_linear_3817_3771%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%22340%22%20y2%3D%22218%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%238E8A8A%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3C%2Fsvg%3E")
+    16 stretch;
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.5;
   transition:
-    border-color 0.25s var(--l-ease),
-    background 0.25s var(--l-ease);
+    opacity 0.35s var(--l-ease),
+    background 0.35s var(--l-ease);
 }
 
 .howStep:hover {
-  border-color: rgba(255, 0, 61, 0.4);
-  background: rgba(255, 255, 255, 0.05);
+  opacity: 0.8;
 }
 
-.howStepN {
-  flex: none;
-  padding-top: 0.15rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--l-accent);
-  font-variant-numeric: tabular-nums;
-}
-
-.howStepText {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+.howStep[data-active] {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .howStepTitle {
@@ -1108,7 +1101,7 @@
    own overflow:hidden clips whatever spills past the viewport. */
 .howFrame {
   position: relative;
-  width: 132%;
+  width: 165%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-right: none;
   border-radius: 1rem 0 0 1rem;
@@ -1131,10 +1124,26 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
-.howShot {
-  display: block;
+/* Timed cross-fade between step screenshots. */
+.howShots {
+  position: relative;
   width: 100%;
-  height: auto;
+  aspect-ratio: 1.55 / 1;
+}
+
+.howShot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  opacity: 0;
+  transition: opacity 0.6s var(--l-ease);
+}
+
+.howShot[data-active] {
+  opacity: 1;
 }
 
 .howLine {
@@ -2086,18 +2095,16 @@
 /* ------------------------------------------------------------------ cta */
 
 .cta {
-  padding: clamp(1.25rem, 5vw, 3.5rem);
+  padding: 0;
 }
 
 .ctaInner {
   position: relative;
   overflow: hidden;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: clamp(3rem, 7vw, 5.5rem) clamp(1.5rem, 5vw, 4rem)
+  width: 100%;
+  padding: clamp(3.5rem, 8vw, 6.5rem) clamp(1.5rem, 5vw, 4rem)
     clamp(2rem, 4vw, 3rem);
-  border-radius: 2rem;
-  background: var(--l-ink);
+  background: #0a0a0b;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2169,14 +2176,14 @@
 /* --------------------------------------------------------------- footer */
 
 .footer {
-  max-width: 1240px;
-  margin: 0 auto;
   padding: clamp(2.5rem, 4vw, 3.5rem) clamp(1.25rem, 5vw, 3.5rem);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
+  background: #0a0a0b;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .footerBrand {
@@ -2186,7 +2193,7 @@
   font-size: 1.0625rem;
   font-weight: 700;
   letter-spacing: -0.045em;
-  color: var(--l-ink);
+  color: #f5f5f4;
 }
 
 .footerNote {
@@ -2195,7 +2202,7 @@
   min-width: 12rem;
   text-align: center;
   font-size: 0.8125rem;
-  color: var(--l-faint);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .footerLinks {
@@ -2206,7 +2213,7 @@
 
 .footerLinks a {
   font-size: 0.875rem;
-  color: var(--l-muted);
+  color: #a0a0a8;
   text-decoration: none;
   transition: color 0.2s var(--l-ease);
 }

@@ -11,6 +11,7 @@ import {
 import { CtaLogo } from "@/components/landing/CtaLogo";
 import { HeroBackground } from "@/components/landing/HeroBackground";
 import { HoverButton } from "@/components/landing/HoverButton";
+import { HowItWorks } from "@/components/landing/HowItWorks";
 import { LandingMotion } from "@/components/landing/LandingMotion";
 import { MobileNav } from "@/components/landing/MobileNav";
 import { TeamPlanCard } from "@/components/landing/PricingToggle";
@@ -43,23 +44,6 @@ export const dynamic = "force-dynamic";
 /* Content — the source of truth is FEATURES.md.                              */
 /* -------------------------------------------------------------------------- */
 
-const STEPS = [
-  {
-    n: "01",
-    title: "Dump it all",
-    body: "Type or speak everything on your mind. One long, messy sentence is fine — no fields, no tags, no formatting.",
-  },
-  {
-    n: "02",
-    title: "Cerno plans",
-    body: "It splits the pile into tasks, estimates effort, weighs deadlines, and lays a realistic day on the clock.",
-  },
-  {
-    n: "03",
-    title: "Do the day",
-    body: "What fits is scheduled by time. What doesn't is parked for tomorrow — always with a reason you can read.",
-  },
-];
 
 interface Feature {
   eyebrow: string;
@@ -428,42 +412,7 @@ export default async function LandingPage({
 
       {/* --------------------------------------------------- how it works */}
       <section id="how" className={styles.how}>
-        <div className={styles.howInner}>
-          <div className={styles.howLeft}>
-            <h2 className={styles.howTitle} data-reveal>
-              three moves.
-              <br />
-              one calm day.
-            </h2>
-            <div className={styles.howSteps}>
-              {STEPS.map((step) => (
-                <article key={step.n} className={styles.howStep} data-reveal>
-                  <span className={styles.howStepN}>{step.n}</span>
-                  <div className={styles.howStepText}>
-                    <h3 className={styles.howStepTitle}>{step.title}</h3>
-                    <p className={styles.howStepBody}>{step.body}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.howMedia} data-reveal>
-            <div className={styles.howFrame}>
-              <div className={styles.howFrameBar}>
-                <span />
-                <span />
-                <span />
-              </div>
-              <Image
-                src={upcomingImg}
-                alt="Cerno — your planned day, laid on a clock"
-                className={styles.howShot}
-                sizes="(max-width: 900px) 100vw, 760px"
-              />
-            </div>
-          </div>
-        </div>
+        <HowItWorks />
         <span className={styles.howLine} data-how-line aria-hidden="true" />
       </section>
 
