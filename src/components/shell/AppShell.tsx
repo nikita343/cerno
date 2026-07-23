@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 import { CaptureOverlay } from "@/components/capture/CaptureOverlay";
 import { TaskDndProvider } from "@/components/dnd/TaskDndProvider";
@@ -10,6 +10,7 @@ import { CheckoutReturn } from "@/components/views/CheckoutReturn";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { LanguageOnboarding } from "@/components/onboarding/LanguageOnboarding";
 import { SettingsMenuOverlay } from "@/components/settings/SettingsMenuOverlay";
+import { browserTimezone } from "@/lib/timezones";
 import { useNowTicker } from "@/lib/useNow";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -33,6 +34,23 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setNowMinutes = useAppStore((s) => s.setNowMinutes);
   const setToday = useAppStore((s) => s.setToday);
   const timezone = useAppStore((s) => s.settings.timezone);
+  const updateSettings = useAppStore((s) => s.updateSettings);
+
+  // "UTC" is the unset sentinel (see DEFAULT_SETTINGS), not a real preference —
+  // nobody's account starts with a chosen zone. Left uncorrected, every overdue
+  // check runs against the UTC clock instead of the device's, so a task can
+  // read as overdue hours before its actual deadline (or the reverse) for
+  // anyone outside UTC. This used to only self-heal if the person happened to
+  // open Settings → Language & region; doing it here, at the always-mounted
+  // root, means it corrects itself the first time the app loads at all.
+  useEffect(() => {
+    if (timezone !== "UTC") return;
+    const local = browserTimezone();
+    if (local !== "UTC") void updateSettings({ timezone: local });
+    // Runs once per unset value, not a continuous sync — see SettingsView's
+    // matching effect for the same reasoning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timezone]);
 
   // Mounted once here rather than per view, so navigating between Today and
   // Upcoming doesn't restart the clock. Reads the clock and the day boundary
