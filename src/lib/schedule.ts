@@ -3,14 +3,16 @@ import type { Task } from "./types";
 /**
  * Clock placement for a planned day.
  *
- * A task carries `suggested_start` (HH:MM) when something about it is genuinely
- * time-bound — a meeting, a call someone has to be awake for. Most tasks aren't,
- * and the model correctly returns null for them. So the schedule is *derived*:
- * anything with an explicit start keeps it, everything else is laid end-to-end
- * from the start of the working day in the order the planner chose.
+ * A task carries `suggested_start` (HH:MM) only when something about it is
+ * genuinely time-bound — a meeting, a call someone has to be awake for. Most
+ * tasks aren't, and the model correctly returns null for them.
  *
- * This is a projection, not a commitment. It answers "roughly when does this
- * land if I work down the list" — which is what the Today timeline shows.
+ * Those without one are never put on the clock. Cerno used to lay them out
+ * end-to-end from the start of the day as a "roughly when this lands"
+ * projection, but a fabricated time reads as a real commitment: a task due at
+ * 18:00 with no stated start would get stamped 09:00–11:00 and could show as
+ * overdue hours before its actual deadline. So the schedule only ever shows
+ * what the task itself claims — see `splitByTime`.
  */
 
 /** Working day starts at 09:00. */
@@ -18,28 +20,6 @@ export const DAY_START_MINUTES = 9 * 60;
 
 /** Anything spilling past this is clamped so the timeline can't run to 03:00. */
 export const DAY_END_MINUTES = 24 * 60 - 1;
-
-/**
- * Where the derived clock should start for a given day.
- *
- * Today lays unplanned work from *now* forward (clamped to no earlier than the
- * working-day start), so open tasks never land in the past and get flagged
- * overdue for no reason. Any other day starts from 09:00 — "now" is meaningless
- * for a day that isn't today.
- *
- * `nowMinutes` is 0 on the server (the clock is client-only), so this returns
- * the 09:00 baseline during SSR and the first client render, then re-derives to
- * the real time once the now-ticker updates — matching, so no hydration jump.
- */
-export function derivedDayStart(
-  date: string,
-  today: string,
-  nowMinutes: number,
-): number {
-  return date === today
-    ? Math.max(DAY_START_MINUTES, nowMinutes)
-    : DAY_START_MINUTES;
-}
 
 export type BlockKey = "morning" | "afternoon" | "evening";
 
@@ -93,30 +73,41 @@ export interface TimedTask {
   /** Minutes from midnight. */
   start: number;
   end: number;
-  /** True when the time came from the task itself rather than being derived. */
+  /** Always true — every `TimedTask` now carries a real, task-given time. Kept
+   *  so `data-fixed` styling and existing callers don't need to change. */
   fixed: boolean;
 }
 
 /**
- * Lays tasks onto a clock in list order.
+ * Splits tasks into those with a real clock time and those without.
  *
- * An explicit `suggested_start` is honoured even when it sits earlier than the
- * running cursor — a 10:00 call is at 10:00 whether or not the preceding work
- * has notionally finished. Moving it to keep the timeline tidy would be the
- * schedule lying about a commitment.
+ * `timed` is what belongs on a schedule; `untimed` — a deadline with no stated
+ * hour, "someday this week" — has nowhere on a clock to honestly go and is the
+ * caller's job to render as its own plain group, with no time shown.
  */
-export function withStartTimes(
-  tasks: Task[],
-  dayStart: number = DAY_START_MINUTES,
-): TimedTask[] {
-  let cursor = dayStart;
+export function splitByTime<T extends Task>(
+  tasks: T[],
+): { timed: T[]; untimed: T[] } {
+  const timed: T[] = [];
+  const untimed: T[] = [];
+  for (const task of tasks) {
+    (parseClock(task.suggested_start) !== null ? timed : untimed).push(task);
+  }
+  return { timed, untimed };
+}
 
-  return tasks.map((task) => {
-    const explicit = parseClock(task.suggested_start);
-    const start = explicit ?? cursor;
+/**
+ * Projects tasks that have an explicit `suggested_start` onto the clock.
+ *
+ * Callers pass `splitByTime(...).timed` — anything without a real start is
+ * filtered out defensively here too, so this can never fabricate one.
+ */
+export function withStartTimes(tasks: Task[]): TimedTask[] {
+  return tasks.flatMap((task) => {
+    const start = parseClock(task.suggested_start);
+    if (start === null) return [];
     const end = Math.min(DAY_END_MINUTES, start + task.estimated_minutes);
-    cursor = Math.max(cursor, end);
-    return { task, start, end, fixed: explicit !== null };
+    return [{ task, start, end, fixed: true }];
   });
 }
 

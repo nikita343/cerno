@@ -119,6 +119,9 @@ export const en = {
     morning: "Morning",
     afternoon: "Afternoon",
     evening: "Evening",
+    // Section for tasks with a deadline/day but no clock time — never shown
+    // with a fabricated time, so they get their own untimed group.
+    noTime: "No time",
     nothingToPlan: "Nothing to plan yet",
     nothingHelper:
       "Dump whatever is on your mind and Cerno will build the day around it.",
@@ -614,6 +617,7 @@ export const uk: Dictionary = {
     morning: "Ранок",
     afternoon: "День",
     evening: "Вечір",
+    noTime: "Без часу",
     nothingToPlan: "Ще нема чого планувати",
     nothingHelper:
       "Запишіть усе, що на думці, і Cerno побудує день навколо цього.",

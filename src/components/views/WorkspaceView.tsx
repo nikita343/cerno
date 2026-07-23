@@ -12,7 +12,7 @@ import { taskCount, useLocale, useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { memberProfile } from "@/lib/user";
 import { totalDuration } from "@/lib/format";
-import { derivedDayStart, formatClock, withStartTimes } from "@/lib/schedule";
+import { formatClock, parseClock } from "@/lib/schedule";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
 import { loadMembers } from "@/lib/supabase/workspaces";
@@ -37,7 +37,6 @@ import view from "./View.module.css";
  */
 export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   const today = useAppStore((s) => s.today);
-  const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
   const locale = useLocale();
   const userId = useAppStore((s) => s.userId);
@@ -94,10 +93,6 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
     [tasks, today],
   );
 
-  const timed = useMemo(
-    () => withStartTimes(todays, derivedDayStart(today, today, nowMinutes)),
-    [todays, today, nowMinutes],
-  );
   const openCount = todays.filter((t) => t.status !== "done").length;
 
   if (!workspace) {
@@ -184,14 +179,21 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
           </span>
         </div>
 
-        {timed.length === 0 ? (
+        {todays.length === 0 ? (
           <p className={view.emptyDashed}>{t.workspace.nothingToday}</p>
         ) : (
           <ol className={styles.timeline}>
-            {timed.map(({ task, start, fixed }, index) => {
-              const clock = formatClock(start);
+            {todays.map((task, index) => {
+              // Only a real, task-given start ever prints a clock — nothing
+              // here is stamped with a time nobody gave it.
+              const start = parseClock(task.suggested_start);
+              const clock = start !== null ? formatClock(start) : null;
+              const prevStart =
+                index > 0 ? parseClock(todays[index - 1].suggested_start) : null;
               const repeats =
-                index > 0 && formatClock(timed[index - 1].start) === clock;
+                clock !== null &&
+                prevStart !== null &&
+                formatClock(prevStart) === clock;
               const isDone = task.status === "done";
               return (
                 <TaskRow
@@ -199,7 +201,6 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
                   task={task}
                   today={today}
                   clock={repeats ? null : clock}
-                  fixed={fixed}
                   overdue={overdue.has(task.id)}
                   index={index}
                   onToggle={() =>

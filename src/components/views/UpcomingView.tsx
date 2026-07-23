@@ -18,12 +18,7 @@ import {
 } from "@/lib/date";
 import { totalDuration } from "@/lib/format";
 import type { Task } from "@/lib/types";
-import {
-  derivedDayStart,
-  formatClock,
-  groupIntoBlocks,
-  withStartTimes,
-} from "@/lib/schedule";
+import { formatClock, groupIntoBlocks, splitByTime, withStartTimes } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { tasksOn } from "@/store/createAppStore";
 import { taskCount, useLocale, useT } from "@/lib/i18n";
@@ -34,7 +29,6 @@ import view from "./View.module.css";
 
 export function UpcomingView() {
   const today = useAppStore((s) => s.today);
-  const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
   const locale = useLocale();
   // While a task is in flight the week strip pins to the top of the scroll
@@ -137,7 +131,9 @@ export function UpcomingView() {
       </div>
 
       <div className={styles.groups}>
-        {groups.map(({ date, tasks: dayTasks }) => (
+        {groups.map(({ date, tasks: dayTasks }) => {
+          const { timed, untimed } = splitByTime(dayTasks);
+          return (
           <DayGroup key={date} date={date}>
             <div className={styles.groupHead}>
               <h2 className={styles.groupTitle}>
@@ -150,9 +146,32 @@ export function UpcomingView() {
 
             {dayTasks.length > 0 ? (
               <div className={styles.blocks}>
-                {groupIntoBlocks(
-                  withStartTimes(dayTasks, derivedDayStart(date, today, nowMinutes)),
-                ).map(
+                {untimed.length > 0 && (
+                  <div className={styles.block}>
+                    <div className={styles.blockHead}>
+                      <span className={styles.blockLabel}>{t.today.noTime}</span>
+                    </div>
+                    <ul className={styles.blockRows}>
+                      {untimed.map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          today={today}
+                          clock={null}
+                          onToggle={() => toggle(task)}
+                          onDelete={(id) => void deleteTask(id)}
+                          menuOpen={menuTaskId === task.id}
+                          onMenuOpenChange={(next) =>
+                            setMenuTaskId(next ? task.id : null)
+                          }
+                          draggable
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {groupIntoBlocks(withStartTimes(timed)).map(
                   ({ block, items, minutes }) => (
                     <div key={block.key} className={styles.block}>
                       <div className={styles.blockHead}>
@@ -203,7 +222,8 @@ export function UpcomingView() {
               </>
             )}
           </DayGroup>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

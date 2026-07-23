@@ -12,9 +12,9 @@ import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
 import { taskDuration, totalDuration } from "@/lib/format";
 import {
-  derivedDayStart,
   formatClock,
   groupIntoBlocks,
+  splitByTime,
   withStartTimes,
 } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
@@ -119,15 +119,16 @@ export function TodayView() {
     pending.current.set(timer, id);
   }, []);
 
-  // Tasks are laid onto a clock in plan order, then bucketed into parts of the
-  // day. Grouping is derived rather than stored, so reordering or completing a
-  // task reshapes the timeline without any migration.
+  // Only tasks with a real, task-given start ever go on the clock — see
+  // `splitByTime`. Everything else renders in its own untimed group instead of
+  // being stamped with a time nobody gave it.
+  const { timed: timedScheduled, untimed: untimedScheduled } = useMemo(
+    () => splitByTime(scheduled),
+    [scheduled],
+  );
   const blocks = useMemo(
-    () =>
-      groupIntoBlocks(
-        withStartTimes(scheduled, derivedDayStart(today, today, nowMinutes)),
-      ),
-    [scheduled, today, nowMinutes],
+    () => groupIntoBlocks(withStartTimes(timedScheduled)),
+    [timedScheduled],
   );
 
   const open = scheduled.filter((t) => t.status !== "done");
@@ -239,6 +240,48 @@ export function TodayView() {
           </div>
 
           <div className={styles.blocks}>
+            {untimedScheduled.length > 0 && (
+              <section className={styles.block}>
+                <div className={styles.blockHead}>
+                  <span className={styles.blockLabel}>{t.today.noTime}</span>
+                  <span className={styles.blockTotal}>
+                    {totalDuration(
+                      untimedScheduled
+                        .filter((task) => task.status !== "done")
+                        .reduce((sum, task) => sum + task.estimated_minutes, 0),
+                    )}
+                  </span>
+                </div>
+
+                <ol className={styles.timeline}>
+                  {untimedScheduled.map((task, index) => {
+                    const isDone = task.status === "done";
+                    const toggle = () =>
+                      isDone ? uncompleteTask(task.id) : completeTask(task.id);
+
+                    return (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        today={today}
+                        clock={null}
+                        onToggle={toggle}
+                        onDelete={requestDelete}
+                        workspaceName={workspaceNames.get(task.workspace_id ?? "") ?? null}
+                        removing={removing.has(task.id)}
+                        index={index}
+                        menuOpen={menuTaskId === task.id}
+                        onMenuOpenChange={(next) =>
+                          setMenuTaskId(next ? task.id : null)
+                        }
+                        draggable
+                      />
+                    );
+                  })}
+                </ol>
+              </section>
+            )}
+
             {blocks.map(({ block, items, minutes }) => (
               <Droppable
                 key={block.key}

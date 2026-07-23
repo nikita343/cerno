@@ -1,4 +1,4 @@
-import { DAY_START_MINUTES, withStartTimes } from "./schedule";
+import { withStartTimes } from "./schedule";
 import type { Reminder, Task, UserSettings } from "./types";
 
 /**
@@ -67,10 +67,10 @@ export function buildReminders({
     .sort((a, b) => a.sort_order - b.sort_order);
 
   const leadMinutes = settings.reminder_lead_hours * 60;
-  // Lay the day from "now" (never the past), matching the Today timeline — so a
-  // task's overdue badge and the clock printed beside it always agree, and open
-  // work isn't flagged overdue just because the working day began hours ago.
-  const timed = withStartTimes(scheduled, Math.max(DAY_START_MINUTES, now));
+  // Only tasks with a real, task-given start ever go into this projection —
+  // see `withStartTimes`. A task with no stated time has nothing to be overdue
+  // *against* here; it can't fall behind a schedule it was never put on.
+  const timed = withStartTimes(scheduled);
   const reminders: Reminder[] = [];
 
   for (const { task, start, end } of timed) {
