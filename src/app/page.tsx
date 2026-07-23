@@ -155,7 +155,7 @@ const FAQ = [
   },
   {
     q: "Do I need a credit card?",
-    a: "No. Free is free forever. Team is $12 a month when you want a shared list — and the people you invite never pay.",
+    a: "No. Free is free forever. Team is $8 a month — or $80 a year — when you want a shared list, and the people you invite never pay.",
   },
   {
     q: "Can my team use it?",

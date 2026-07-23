@@ -10,6 +10,10 @@ export type DemoVariant =
   | "teams";
 
 export function FeatureDemo({ variant }: { variant: DemoVariant }) {
+  return <div className={styles.demoBox}>{renderDemo(variant)}</div>;
+}
+
+function renderDemo(variant: DemoVariant) {
   switch (variant) {
     case "plan":
       return <PlanDemo />;
@@ -31,10 +35,9 @@ export function FeatureDemo({ variant }: { variant: DemoVariant }) {
 
 function CaptureDemo() {
   return (
-    <div className={styles.demoBox}>
-      <div className={styles.demoPanel}>
-        <div className={styles.demoShell}>
-          <div className={styles.demoCaptureBar}>
+    <div className={styles.demoPanel}>
+      <div className={styles.demoShell}>
+        <div className={styles.demoCaptureBar}>
           <div className={styles.demoDotRow}>
             <span className={styles.demoDot} />
             <span className={styles.demoDot} />

@@ -835,7 +835,18 @@
   width: 100%;
 }
 
+.demoBox {
+  width: 100%;
+  height: 26rem;
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  background: #f4f4f2;
+  display: flex;
+  overflow: hidden;
+}
+
 .demoPanel {
+  width: 100%;
   border-radius: 1.25rem;
   border: 1px solid var(--l-line);
   background: var(--l-bg);
@@ -844,23 +855,14 @@
   transition: transform 0.75s var(--l-ease);
 }
 
-.demoBox {
-  border-radius: 1.5rem;
-  padding: 1.25rem;
-  background: #f4f4f2;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 24rem;
-}
-
 .demoShell {
   display: flex;
   flex-direction: column;
   gap: 0.875rem;
-  min-height: 22.5rem;
+  min-height: 100%;
   padding: 1.5rem;
   background: linear-gradient(180deg, #fcfcfb 0%, #f8f8f6 100%);
+  border-radius: inherit;
 }
 
 .feature[data-flip] .demoPanel {
@@ -869,15 +871,6 @@
 
 .demoPanel:hover {
   transform: translate3d(0, -4px, 0);
-}
-
-.demoShell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-  min-height: 22.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(180deg, #fcfcfb 0%, #f8f8f6 100%);
 }
 
 .demoCaptureBar,
