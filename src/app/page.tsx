@@ -8,7 +8,8 @@ import {
   FeatureDemo,
   type DemoVariant,
 } from "@/components/landing/FeatureDemo";
-import { HeroSpline } from "@/components/landing/HeroSpline";
+import { HeroBackground } from "@/components/landing/HeroBackground";
+import { HoverButton } from "@/components/landing/HoverButton";
 import { LandingMotion } from "@/components/landing/LandingMotion";
 import { MobileNav } from "@/components/landing/MobileNav";
 import { TeamPlanCard } from "@/components/landing/PricingToggle";
@@ -206,51 +207,61 @@ export default async function LandingPage({
           <Link href="/login" className={styles.navSignIn}>
             Sign in
           </Link>
-          <Link href="/signup" className={styles.navCta}>
+          <HoverButton href="/signup" className={styles.navCta} arrow>
             Get started
-          </Link>
+          </HoverButton>
           <MobileNav />
         </div>
       </header>
 
       {/* ----------------------------------------------------------- hero */}
-      <section id="top" className={styles.hero} data-hero>
-        <span className={styles.heroDot} aria-hidden="true" data-floating-dot />
-        <span
-          className={styles.heroDotSecondary}
-          aria-hidden="true"
-          data-floating-dot
-        />
-        <span
-          className={styles.heroDotTertiary}
-          aria-hidden="true"
-          data-floating-dot
-        />
-        <div className={styles.heroCopy} data-hero-copy>
-          <p className={styles.eyebrow}>AI daily planner</p>
-          <h1 className={styles.title}>
-            plan the day.
-            <br />
-            <span className={styles.accent}>not</span> the list.
-          </h1>
-          <p className={styles.lede}>
-            Dump everything on your mind. Cerno decides what matters, estimates
-            the effort, and hands you one realistic day — in order, with the
-            rest quietly parked.
-          </p>
-          <div className={styles.heroActions}>
-            <Link href="/signup" className={styles.primary}>
-              Start planning
-            </Link>
-            <a href="#how" className={styles.textLink}>
-              see how it works →
-            </a>
+      <section id="top" className={styles.heroShell} data-hero>
+        <HeroBackground />
+        <div className={styles.hero}>
+          <span
+            className={styles.heroDot}
+            aria-hidden="true"
+            data-floating-dot
+          />
+          <span
+            className={styles.heroDotSecondary}
+            aria-hidden="true"
+            data-floating-dot
+          />
+          <span
+            className={styles.heroDotTertiary}
+            aria-hidden="true"
+            data-floating-dot
+          />
+          <div className={styles.heroCopy} data-hero-copy>
+            <p className={styles.eyebrow}>AI daily planner</p>
+            <h1 className={styles.title}>
+              plan the day.
+              <br />
+              <span className={styles.accent}>not</span> the list.
+            </h1>
+            <p className={styles.lede}>
+              Dump everything on your mind. Cerno decides what matters,
+              estimates the effort, and hands you one realistic day — in order,
+              with the rest quietly parked.
+            </p>
+            <div className={styles.heroActions}>
+              <HoverButton href="/signup" className={styles.primary} arrow>
+                Start planning
+              </HoverButton>
+              <HoverButton
+                href="#how"
+                className={styles.textLink}
+                variant="text"
+                arrow
+              >
+                see how it works
+              </HoverButton>
+            </div>
           </div>
-        </div>
 
-        <div className={styles.heroMedia} data-hero-media>
-          <HeroSpline />
-          <div className={styles.frame}>
+          <div className={styles.heroMedia} data-hero-media>
+            <div className={styles.frame}>
             <div className={styles.frameBar}>
               <span />
               <span />
@@ -264,6 +275,7 @@ export default async function LandingPage({
               priority
               sizes="(max-width: 900px) 100vw, 620px"
             />
+            </div>
           </div>
         </div>
       </section>
@@ -486,9 +498,9 @@ export default async function LandingPage({
                 <li key={p}>{p}</li>
               ))}
             </ul>
-            <Link href="/signup" className={styles.planCta}>
+            <HoverButton href="/signup" className={styles.planCta} arrow>
               Start free
-            </Link>
+            </HoverButton>
           </div>
 
           <TeamPlanCard />
@@ -531,9 +543,9 @@ export default async function LandingPage({
             Free to start, no credit card. Dump what&rsquo;s on your mind and
             see your day in under a minute.
           </p>
-          <Link href="/signup" className={styles.ctaButton}>
+          <HoverButton href="/signup" className={styles.ctaButton} arrow>
             Get started
-          </Link>
+          </HoverButton>
         </div>
       </section>
 

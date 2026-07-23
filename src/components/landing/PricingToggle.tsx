@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import gsap from "gsap";
 
+import { HoverButton } from "@/components/landing/HoverButton";
 import styles from "@/app/landing.module.css";
 
 const PRICES = {
@@ -80,9 +80,9 @@ export function TeamPlanCard() {
         <li>Assign tasks to teammates</li>
         <li>You pay; the people you invite don’t</li>
       </ul>
-      <Link href="/signup" className={styles.planCtaPrimary}>
+      <HoverButton href="/signup" className={styles.planCtaPrimary} arrow>
         Get started
-      </Link>
+      </HoverButton>
     </div>
   );
 }

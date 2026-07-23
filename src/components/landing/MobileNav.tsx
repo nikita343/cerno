@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { HoverButton } from "@/components/landing/HoverButton";
 import styles from "@/app/landing.module.css";
 
 /**
@@ -69,9 +70,14 @@ export function MobileNav() {
           <Link href="/login" className={styles.mobileSheetSignIn} onClick={close}>
             Sign in
           </Link>
-          <Link href="/signup" className={styles.mobileSheetCta} onClick={close}>
+          <HoverButton
+            href="/signup"
+            className={styles.mobileSheetCta}
+            arrow
+            onClick={close}
+          >
             Get started
-          </Link>
+          </HoverButton>
         </nav>
       </div>
     </div>
