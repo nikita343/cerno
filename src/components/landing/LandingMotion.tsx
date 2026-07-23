@@ -184,6 +184,20 @@ export function LandingMotion() {
     // ---- generic reveals (steps, feature copy/media, plans) --------------
     q("[data-reveal]").forEach((el) => appear(el, { y: 40, start: "top 86%" }));
 
+    // ---- "how it works" bottom line: draw across on enter ----------------
+    const howLine = one("[data-how-line]");
+    if (howLine) {
+      gsap.set(howLine, { scaleX: 0 });
+      const t = ScrollTrigger.create({
+        trigger: howLine,
+        start: "top 92%",
+        once: true,
+        onEnter: () =>
+          gsap.to(howLine, { scaleX: 1, duration: 1.1, ease: "power3.out" }),
+      });
+      triggers.push(t);
+    }
+
     // ---- feature media: subtle scrub parallax ----------------------------
     q("." + styles.feature).forEach((feat) => {
       const media = feat.querySelector("[data-reveal]:last-child");

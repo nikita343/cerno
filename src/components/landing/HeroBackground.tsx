@@ -6,9 +6,12 @@ import styles from "@/app/landing.module.css";
  * animated with CSS keyframes: a few large blurred brand-coloured orbs drift
  * slowly behind the hero. Reduced-motion viewers get the same layout, frozen.
  */
-export function HeroBackground() {
+export function HeroBackground({ dark = false }: { dark?: boolean }) {
   return (
-    <div className={styles.heroBg} aria-hidden="true">
+    <div
+      className={`${styles.heroBg}${dark ? ` ${styles.heroBgDark}` : ""}`}
+      aria-hidden="true"
+    >
       <span className={styles.heroOrb1} />
       <span className={styles.heroOrb2} />
       <span className={styles.heroOrb3} />

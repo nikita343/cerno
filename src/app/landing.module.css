@@ -10,6 +10,10 @@
  * query hook in the markup.
  */
 
+:global(html):has(.page) {
+  scroll-padding-top: 5rem;
+}
+
 .page {
   --l-bg: #fafaf9;
   --l-surface: #ffffff;
@@ -35,8 +39,10 @@
 /* ------------------------------------------------------------------- nav */
 
 .nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   display: flex;
   align-items: center;
@@ -338,7 +344,7 @@
 /* ---- full-bleed animated hero backdrop ---- */
 .heroShell {
   position: relative;
-  overflow: hidden;
+  padding-top: 3rem;
 }
 
 .heroBg {
@@ -400,6 +406,12 @@
   max-height: 22rem;
   background: radial-gradient(circle, rgba(123, 87, 224, 0.18), transparent 70%);
   animation: heroDrift4 29s var(--l-ease) infinite alternate;
+}
+
+.heroBgDark .heroGrid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
 }
 
 /* Faint grid so the colour has structure to move over. */
@@ -956,6 +968,16 @@
   .bentoCardTall {
     grid-row: auto;
   }
+
+  .howInner {
+    grid-template-columns: 1fr;
+  }
+
+  .howFrame {
+    width: 100%;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+  }
 }
 
 /* ------------------------------------------------------- generic section */
@@ -989,6 +1011,147 @@
 }
 
 /* --------------------------------------------------------- how it works */
+
+.how {
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0b;
+  padding: clamp(4rem, 8vw, 7rem) 0 clamp(5rem, 9vw, 8rem);
+}
+
+.howInner {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: center;
+}
+
+.howLeft {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.howTitle {
+  margin: 0;
+  font-size: clamp(1.875rem, 3.6vw, 3.125rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: #f5f5f4;
+}
+
+.howSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.howStep {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.15rem 1.35rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  transition:
+    border-color 0.25s var(--l-ease),
+    background 0.25s var(--l-ease);
+}
+
+.howStep:hover {
+  border-color: rgba(255, 0, 61, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.howStepN {
+  flex: none;
+  padding-top: 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--l-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.howStepText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.howStepTitle {
+  margin: 0;
+  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #f5f5f4;
+}
+
+.howStepBody {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #a0a0a8;
+  text-wrap: pretty;
+}
+
+.howMedia {
+  position: relative;
+}
+
+/* The screenshot runs off the right edge to the screen corner; the section's
+   own overflow:hidden clips whatever spills past the viewport. */
+.howFrame {
+  position: relative;
+  width: 132%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: none;
+  border-radius: 1rem 0 0 1rem;
+  background: #16161a;
+  box-shadow: 0 40px 90px -46px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.howFrameBar {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.howFrameBar span {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.howShot {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.howLine {
+  position: absolute;
+  left: clamp(1.25rem, 5vw, 3.5rem);
+  right: clamp(1.25rem, 5vw, 3.5rem);
+  bottom: clamp(2.25rem, 4vw, 3.75rem);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--l-accent),
+    rgba(255, 255, 255, 0.16) 55%,
+    transparent
+  );
+  transform: scaleX(0);
+  transform-origin: left center;
+}
 
 .steps {
   display: grid;
@@ -1927,16 +2090,39 @@
 }
 
 .ctaInner {
+  position: relative;
+  overflow: hidden;
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(3rem, 7vw, 5.5rem) clamp(1.5rem, 5vw, 4rem);
+  padding: clamp(3rem, 7vw, 5.5rem) clamp(1.5rem, 5vw, 4rem)
+    clamp(2rem, 4vw, 3rem);
   border-radius: 2rem;
   background: var(--l-ink);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  gap: clamp(2rem, 4vw, 3.25rem);
+}
+
+.ctaContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1.25rem;
+}
+
+.ctaLogo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(100%, 46rem);
+  height: auto;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.4);
+  overflow: visible;
 }
 
 .ctaTitle {

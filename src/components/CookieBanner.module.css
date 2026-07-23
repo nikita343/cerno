@@ -1,0 +1,74 @@
+.banner {
+  position: fixed;
+  z-index: 200;
+  left: 50%;
+  bottom: clamp(0.75rem, 2vw, 1.5rem);
+  transform: translateX(-50%);
+  width: min(46rem, calc(100vw - 1.5rem));
+  display: flex;
+  align-items: center;
+  gap: 1rem 1.25rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  background: #14141a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.6);
+  animation: cookieRise 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cookieRise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.text {
+  flex: 1 1 22rem;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #c7c7cf;
+}
+
+.link {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.accept {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: #ff003d;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.accept:hover {
+  background: #e60037;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+}

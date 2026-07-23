@@ -168,6 +168,14 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           {copy.switchLabel}
         </Link>
       </p>
+
+      {mode === "signup" && (
+        <p className={styles.legal}>
+          By creating an account you agree to our{" "}
+          <Link href="/terms">Terms of Use</Link> and{" "}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,0 +1,123 @@
+.page {
+  --ink: #0a0a0b;
+  --secondary: #3a3a40;
+  --muted: #6e6e75;
+  --line: #e7e5e2;
+  --accent: #ff003d;
+  --bg: #fafaf9;
+
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1.25rem, 5vw, 3.5rem);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 1.05rem;
+}
+
+.brand .dot {
+  color: var(--accent);
+}
+
+.back {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--accent);
+}
+
+.main {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 2rem)
+    clamp(4rem, 8vw, 6rem);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(1.875rem, 4vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.meta {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.intro {
+  margin: 1.5rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--secondary);
+  text-wrap: pretty;
+}
+
+.section {
+  margin-top: clamp(2rem, 4vw, 2.75rem);
+}
+
+.h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.section p {
+  margin: 0 0 0.85rem;
+  font-size: 0.975rem;
+  line-height: 1.65;
+  color: var(--secondary);
+  text-wrap: pretty;
+}
+
+.section ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.15rem;
+}
+
+.section li {
+  margin-bottom: 0.5rem;
+  font-size: 0.975rem;
+  line-height: 1.6;
+  color: var(--secondary);
+}
+
+.section a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.section strong {
+  color: var(--ink);
+  font-weight: 600;
+}

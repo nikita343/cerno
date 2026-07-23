@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Funnel_Sans } from "next/font/google";
 
+import { CookieBanner } from "@/components/CookieBanner";
 import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/lib/theme";
 
 import "./globals.css";
@@ -95,7 +96,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }

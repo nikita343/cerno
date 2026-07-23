@@ -8,6 +8,7 @@ import {
   FeatureDemo,
   type DemoVariant,
 } from "@/components/landing/FeatureDemo";
+import { CtaLogo } from "@/components/landing/CtaLogo";
 import { HeroBackground } from "@/components/landing/HeroBackground";
 import { HoverButton } from "@/components/landing/HoverButton";
 import { LandingMotion } from "@/components/landing/LandingMotion";
@@ -416,23 +417,44 @@ export default async function LandingPage({
       </section>
 
       {/* --------------------------------------------------- how it works */}
-      <section id="how" className={styles.section}>
-        <div className={styles.sectionHead}>
-          <h2 className={styles.h2}>
-            three moves.
-            <br />
-            one calm day.
-          </h2>
+      <section id="how" className={styles.how}>
+        <div className={styles.howInner}>
+          <div className={styles.howLeft}>
+            <h2 className={styles.howTitle} data-reveal>
+              three moves.
+              <br />
+              one calm day.
+            </h2>
+            <div className={styles.howSteps}>
+              {STEPS.map((step) => (
+                <article key={step.n} className={styles.howStep} data-reveal>
+                  <span className={styles.howStepN}>{step.n}</span>
+                  <div className={styles.howStepText}>
+                    <h3 className={styles.howStepTitle}>{step.title}</h3>
+                    <p className={styles.howStepBody}>{step.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.howMedia} data-reveal>
+            <div className={styles.howFrame}>
+              <div className={styles.howFrameBar}>
+                <span />
+                <span />
+                <span />
+              </div>
+              <Image
+                src={upcomingImg}
+                alt="Cerno — your planned day, laid on a clock"
+                className={styles.howShot}
+                sizes="(max-width: 900px) 100vw, 760px"
+              />
+            </div>
+          </div>
         </div>
-        <div className={styles.steps}>
-          {STEPS.map((step) => (
-            <article key={step.n} className={styles.step} data-reveal>
-              <span className={styles.stepN}>{step.n}</span>
-              <h3 className={styles.stepTitle}>{step.title}</h3>
-              <p className={styles.stepBody}>{step.body}</p>
-            </article>
-          ))}
-        </div>
+        <span className={styles.howLine} data-how-line aria-hidden="true" />
       </section>
 
       {/* ------------------------------------------------------- features */}
@@ -534,18 +556,22 @@ export default async function LandingPage({
       {/* ------------------------------------------------------------ cta */}
       <section className={styles.cta}>
         <div className={styles.ctaInner}>
-          <h2 className={styles.ctaTitle}>
-            start planning.
-            <br />
-            get your day back.
-          </h2>
-          <p className={styles.ctaLede}>
-            Free to start, no credit card. Dump what&rsquo;s on your mind and
-            see your day in under a minute.
-          </p>
-          <HoverButton href="/signup" className={styles.ctaButton} arrow>
-            Get started
-          </HoverButton>
+          <HeroBackground dark />
+          <div className={styles.ctaContent}>
+            <h2 className={styles.ctaTitle}>
+              start planning.
+              <br />
+              get your day back.
+            </h2>
+            <p className={styles.ctaLede}>
+              Free to start, no credit card. Dump what&rsquo;s on your mind and
+              see your day in under a minute.
+            </p>
+            <HoverButton href="/signup" className={styles.ctaButton} arrow>
+              Get started
+            </HoverButton>
+          </div>
+          <CtaLogo />
         </div>
       </section>
 
@@ -563,6 +589,8 @@ export default async function LandingPage({
         <div className={styles.footerLinks}>
           <Link href="/login">Sign in</Link>
           <Link href="/signup">Get started</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
           <a href="#top">Top</a>
         </div>
       </footer>
