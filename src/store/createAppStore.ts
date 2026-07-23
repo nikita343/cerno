@@ -25,6 +25,7 @@ import {
   removeMember,
   updateWorkspaceRow,
 } from "@/lib/supabase/workspaces";
+import { DICTIONARIES, en } from "@/lib/i18n/dictionary";
 import { applyTheme, DEFAULT_THEME } from "@/lib/theme";
 import {
   DEFAULT_LABELS,
@@ -294,8 +295,6 @@ export function buildInitialData(today: string): InitialData {
  */
 export type DbGetter = () => SupabaseClient | null;
 
-const SYNC_FAILED = "That didn't save. Check your connection and try again.";
-
 /**
  * The fields a reschedule touches.
  *
@@ -321,6 +320,14 @@ function reschedulePatch(date: string | null): TaskPatch {
 export function createAppStore(initial: InitialData, getDb: DbGetter = () => null) {
   return createStore<AppStore>()((set, get) => {
     /**
+     * Error strings the store surfaces directly (not through `useT`, which is a
+     * hook and the store isn't a component) — read from the account's stored
+     * language so a sync/plan failure speaks the language the rest of the app
+     * does.
+     */
+    const commonT = () => DICTIONARIES[get().settings.language]?.common ?? en.common;
+
+    /**
      * Applies an optimistic change, then writes it.
      *
      * On failure the previous task list is restored. Leaving the optimistic
@@ -340,7 +347,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
       try {
         await persist(db);
       } catch {
-        set({ tasks: previous, syncError: SYNC_FAILED });
+        set({ tasks: previous, syncError: commonT().syncFailed });
       }
     };
 
@@ -375,7 +382,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         set({
           labels: previousLabels,
           tasks: previousTasks,
-          syncError: SYNC_FAILED,
+          syncError: commonT().syncFailed,
         });
       }
     };
@@ -433,7 +440,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
 
         // Empty/junk dump: no API call, just surface the message inline.
         if (!isPlannableDump(dumpText)) {
-          set({ planError: "Add a few words and I'll plan them." });
+          set({ planError: commonT().planEmpty });
           return;
         }
 
@@ -494,7 +501,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           // full rollback. The modal stays open with the error.
           set({
             captureMode: "ready",
-            planError: "That didn't go through. Try again.",
+            planError: commonT().planFailed,
             streamingTasks: [],
           });
         }
@@ -679,7 +686,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           try {
             await upsertTasks(db, [placeholder], userId);
           } catch {
-            set({ syncError: SYNC_FAILED });
+            set({ syncError: commonT().syncFailed });
           }
         }
 
@@ -723,7 +730,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
                 status: "inbox",
               });
             } catch {
-              set({ syncError: SYNC_FAILED });
+              set({ syncError: commonT().syncFailed });
             }
           } else if (db && date !== undefined && parsed.plan_date !== date) {
             try {
@@ -732,7 +739,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
                 status: "today",
               });
             } catch {
-              set({ syncError: SYNC_FAILED });
+              set({ syncError: commonT().syncFailed });
             }
           }
         } catch {
@@ -807,7 +814,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           await updateWorkspaceRow(db, id, patch);
         } catch (error) {
           console.error("[store] workspace update failed", error);
-          set({ workspaces: previous, syncError: SYNC_FAILED });
+          set({ workspaces: previous, syncError: commonT().syncFailed });
         }
       },
 
@@ -828,7 +835,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           await deleteWorkspaceRow(db, id);
         } catch (error) {
           console.error("[store] workspace delete failed", error);
-          set({ workspaces: previous, tasks: previousTasks, syncError: SYNC_FAILED });
+          set({ workspaces: previous, tasks: previousTasks, syncError: commonT().syncFailed });
         }
       },
 
@@ -847,7 +854,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           await removeMember(db, id, userId);
         } catch (error) {
           console.error("[store] leave workspace failed", error);
-          set({ workspaces: previous, tasks: previousTasks, syncError: SYNC_FAILED });
+          set({ workspaces: previous, tasks: previousTasks, syncError: commonT().syncFailed });
         }
       },
 
@@ -909,7 +916,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
             labels: state.labels.map((l) => (l.id === optimisticId ? saved : l)),
           }));
         } catch {
-          set({ labels: previous, syncError: SYNC_FAILED });
+          set({ labels: previous, syncError: commonT().syncFailed });
         }
       },
 
@@ -975,7 +982,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         try {
           await saveSettings(db, patch, userId);
         } catch {
-          set({ settings: previous, syncError: SYNC_FAILED });
+          set({ settings: previous, syncError: commonT().syncFailed });
         }
       },
 
@@ -993,7 +1000,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         try {
           await saveSettings(db, { feed_token }, userId);
         } catch {
-          set({ settings: previous, syncError: SYNC_FAILED });
+          set({ settings: previous, syncError: commonT().syncFailed });
         }
       },
 
@@ -1030,7 +1037,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           const response = await fetch("/api/telegram/unlink", { method: "POST" });
           if (!response.ok) throw new Error("unlink failed");
         } catch {
-          set({ settings: previous, syncError: SYNC_FAILED });
+          set({ settings: previous, syncError: commonT().syncFailed });
         }
       },
 

@@ -4,6 +4,7 @@ import {
   fromISODate,
   monthDayShort,
   toISODate,
+  type DateLocale,
 } from "./date";
 
 /**
@@ -78,31 +79,37 @@ const EN_PRESET_LABELS: PresetLabels = {
 export function buildPresets(
   today: string,
   labels: PresetLabels = EN_PRESET_LABELS,
+  locale?: DateLocale,
 ): Preset[] {
   const tomorrow = addDays(today, 1);
   const weekend = thisWeekend(today);
   const week = nextWeek(today);
 
   return [
-    { key: "today", label: labels.today, date: today, hint: dayNameShort(today) },
+    {
+      key: "today",
+      label: labels.today,
+      date: today,
+      hint: dayNameShort(today, locale),
+    },
     {
       key: "tomorrow",
       label: labels.tomorrow,
       date: tomorrow,
-      hint: dayNameShort(tomorrow),
+      hint: dayNameShort(tomorrow, locale),
     },
     {
       key: "weekend",
       label: labels.weekend,
       date: weekend,
-      hint: dayNameShort(weekend),
+      hint: dayNameShort(weekend, locale),
     },
     {
       key: "nextWeek",
       label: labels.nextWeek,
       date: week,
       // Further out than the others, so a bare weekday would be ambiguous.
-      hint: `${dayNameShort(week)} ${monthDayShort(week)}`,
+      hint: `${dayNameShort(week, locale)} ${monthDayShort(week, locale)}`,
     },
     { key: "noDate", label: labels.noDate, date: null, hint: "" },
   ];

@@ -50,6 +50,25 @@ export function useLocale(): DateLocale {
 }
 
 /**
+ * "{n} task(s)" in the active language, with correct plural agreement.
+ *
+ * `Intl.PluralRules` picks the grammatical category for the locale — English
+ * only distinguishes one/other, Ukrainian needs one/few/many — and the matching
+ * word comes from the dictionary. Not a hook, so it can be called inside loops
+ * and callbacks; the caller passes the locale and dictionary it already has.
+ */
+export function taskCount(n: number, locale: DateLocale, t: Dictionary): string {
+  const category = new Intl.PluralRules(locale).select(n);
+  const word =
+    category === "one"
+      ? t.common.taskOne
+      : category === "few"
+        ? t.common.taskFew
+        : t.common.taskMany;
+  return `${n} ${word}`;
+}
+
+/**
  * The dictionary for the active language.
  *
  * Returns the whole thing rather than a `t("a.b.c")` function: dotted string

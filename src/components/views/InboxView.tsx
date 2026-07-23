@@ -4,9 +4,8 @@ import { useState } from "react";
 
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
-import { pluralize } from "@/lib/format";
 import { inboxTasks } from "@/store/createAppStore";
-import { useT } from "@/lib/i18n";
+import { taskCount, useLocale, useT } from "@/lib/i18n";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import { EmptyState } from "./EmptyState";
@@ -16,6 +15,7 @@ import view from "./View.module.css";
 export function InboxView() {
   const today = useAppStore((s) => s.today);
   const t = useT();
+  const locale = useLocale();
   const tasks = useAppStoreShallow((s) => inboxTasks(s.tasks));
   const lastDump = useAppStore((s) => s.dumps[0]);
   const completeTask = useAppStore((s) => s.completeTask);
@@ -35,7 +35,7 @@ export function InboxView() {
         <span className={view.titleMeta}>
           {fromLastDump > 0
             ? `${fromLastDump} ${t.inbox.parsedFromDump}`
-            : `${tasks.length} ${pluralize(tasks.length, "task")}`}
+            : taskCount(tasks.length, locale, t)}
         </span>
       </div>
 

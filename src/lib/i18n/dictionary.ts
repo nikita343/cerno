@@ -125,6 +125,8 @@ export const en = {
     whatsOnYourMind: "What's on your mind?",
     addOneThing: "Add one thing — Cerno fills in the rest",
     reschedule: "Reschedule",
+    rescheduleOverdue: "Reschedule overdue tasks",
+    moveOverdueTitle: "Move {count} overdue tasks",
     overdue: "Overdue",
     high: "High",
     medium: "Med",
@@ -208,6 +210,15 @@ export const en = {
     none: "None",
     saving: "Saving…",
     tryAgain: "Try again",
+    // Plural forms for "{n} task(s)". English uses one/other; the `few`/`many`
+    // slots exist so Ukrainian can fill all three grammatical forms.
+    taskOne: "task",
+    taskFew: "tasks",
+    taskMany: "tasks",
+    // Error states surfaced from the store, which has no hook access to `t`.
+    planEmpty: "Add a few words and I'll plan them.",
+    planFailed: "That didn't go through. Try again.",
+    syncFailed: "That didn't save. Check your connection and try again.",
   },
   workspace: {
     people: "People",
@@ -609,6 +620,8 @@ export const uk: Dictionary = {
     whatsOnYourMind: "Що у вас на думці?",
     addOneThing: "Додайте одну справу — решту допише Cerno",
     reschedule: "Перенести",
+    rescheduleOverdue: "Перепланувати протерміновані завдання",
+    moveOverdueTitle: "Перемістити {count} протермінованих завдань",
     overdue: "Протерміновано",
     high: "Висок.",
     medium: "Серед.",
@@ -692,6 +705,13 @@ export const uk: Dictionary = {
     none: "Немає",
     saving: "Зберігаємо…",
     tryAgain: "Спробувати ще раз",
+    // 1 завдання · 2–4 завдання · 5+ завдань
+    taskOne: "завдання",
+    taskFew: "завдання",
+    taskMany: "завдань",
+    planEmpty: "Додайте кілька слів, і я все спланую.",
+    planFailed: "Не вдалося. Спробуйте ще раз.",
+    syncFailed: "Не вдалося зберегти. Перевірте з’єднання та спробуйте ще раз.",
   },
   workspace: {
     people: "Учасники",

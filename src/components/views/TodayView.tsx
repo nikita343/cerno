@@ -10,7 +10,7 @@ import { PickerModal } from "@/components/task/PickerModal";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate } from "@/lib/date";
-import { taskDuration, totalDuration, pluralize } from "@/lib/format";
+import { taskDuration, totalDuration } from "@/lib/format";
 import {
   derivedDayStart,
   formatClock,
@@ -212,15 +212,15 @@ export function TodayView() {
 
                 {bulkOpen && (
                   <PickerModal
-                    label="Reschedule overdue tasks"
+                    label={t.today.rescheduleOverdue}
                     onClose={() => setBulkOpen(false)}
                   >
                     <DatePicker
                       today={today}
-                      title={`Move ${overdueIdList.length} overdue ${pluralize(
-                        overdueIdList.length,
-                        "task",
-                      )}`}
+                      title={t.today.moveOverdueTitle.replace(
+                        "{count}",
+                        String(overdueIdList.length),
+                      )}
                       flat={isPhone}
                       onClose={() => setBulkOpen(false)}
                       onPick={(date) => {

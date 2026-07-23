@@ -11,8 +11,8 @@ import {
   SparkIcon,
   SunIcon,
 } from "@/components/icons";
-import { monthYear } from "@/lib/date";
-import { useT } from "@/lib/i18n";
+import { monthYear, weekdayLetters } from "@/lib/date";
+import { useLocale, useT } from "@/lib/i18n";
 import {
   buildPresets,
   monthGrid,
@@ -23,8 +23,6 @@ import {
 } from "@/lib/reschedule";
 
 import styles from "./DatePicker.module.css";
-
-const WEEKDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
 const PRESET_ICONS: Record<PresetKey, typeof CalendarIcon> = {
   today: CalendarIcon,
@@ -80,16 +78,22 @@ export function DatePicker({
   const rootRef = useRef<HTMLDivElement>(null);
 
   const t = useT();
+  const locale = useLocale();
+  const weekLetters = useMemo(() => weekdayLetters(locale), [locale]);
   const presets = useMemo(
     () =>
-      buildPresets(today, {
-        today: t.date.today,
-        tomorrow: t.date.tomorrow,
-        weekend: t.task.thisWeekend,
-        nextWeek: t.task.nextWeek,
-        noDate: t.task.noDate,
-      }),
-    [today, t],
+      buildPresets(
+        today,
+        {
+          today: t.date.today,
+          tomorrow: t.date.tomorrow,
+          weekend: t.task.thisWeekend,
+          nextWeek: t.task.nextWeek,
+          noDate: t.task.noDate,
+        },
+        locale,
+      ),
+    [today, t, locale],
   );
   // Translated label for each time preset, keyed off its fixed value.
   const timeLabel: Record<string, string> = {
@@ -160,7 +164,7 @@ export function DatePicker({
 
       <div className={styles.calendar}>
         <div className={styles.monthHead}>
-          <span className={styles.month}>{monthYear(anchor)}</span>
+          <span className={styles.month}>{monthYear(anchor, locale)}</span>
           <button
             type="button"
             className={styles.monthNav}
@@ -189,7 +193,7 @@ export function DatePicker({
         </div>
 
         <div className={styles.weekdays} aria-hidden="true">
-          {WEEKDAY_LETTERS.map((letter, i) => (
+          {weekLetters.map((letter, i) => (
             <span key={i} className={styles.weekday}>
               {letter}
             </span>
