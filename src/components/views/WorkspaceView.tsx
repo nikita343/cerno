@@ -8,10 +8,10 @@ import { Avatar } from "@/components/auth/Avatar";
 import { SmartAddBar } from "@/components/task/SmartAddBar";
 import { TaskRow } from "@/components/task/TaskRow";
 import { eyebrowDate, relativeDayTitle } from "@/lib/date";
-import { useT } from "@/lib/i18n";
+import { taskCount, useLocale, useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT } from "@/lib/nav";
 import { memberProfile } from "@/lib/user";
-import { pluralize, totalDuration } from "@/lib/format";
+import { totalDuration } from "@/lib/format";
 import { derivedDayStart, formatClock, withStartTimes } from "@/lib/schedule";
 import { createClient } from "@/lib/supabase/client";
 import { hasSupabaseConfig } from "@/lib/supabase/env";
@@ -39,6 +39,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   const today = useAppStore((s) => s.today);
   const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
+  const locale = useLocale();
   const userId = useAppStore((s) => s.userId);
   const workspace = useAppStore((s) =>
     s.workspaces.find((w) => w.id === workspaceId),
@@ -115,7 +116,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
   return (
     <div className={`${view.view} ${view.viewWide}`}>
       <header className={styles.header}>
-        <span className={view.eyebrow}>{eyebrowDate(today)}</span>
+        <span className={view.eyebrow}>{eyebrowDate(today, locale)}</span>
         <div className={styles.titleRow}>
           <span className={styles.glyph} aria-hidden="true">
             {workspace.name.trim().charAt(0).toUpperCase() || "#"}
@@ -171,7 +172,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
         <div className={view.sectionHead}>
           <h2 className={view.sectionLabel}>{t.workspace.today}</h2>
           <span className={view.sectionMeta}>
-            {openCount} {pluralize(openCount, "task")}
+            {taskCount(openCount, locale, t)}
           </span>
           <span className={view.sectionMetaRight}>
             &asymp;{" "}
@@ -224,7 +225,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
           <div className={view.sectionHead}>
             <h2 className={view.sectionLabel}>{t.workspace.later}</h2>
             <span className={view.sectionMeta}>
-              {later.length} {pluralize(later.length, "task")}
+              {taskCount(later.length, locale, t)}
             </span>
           </div>
           <ol className={styles.timeline}>
@@ -241,7 +242,7 @@ export function WorkspaceView({ workspaceId }: { workspaceId: string }) {
                   // read as a database value leaking into the UI.
                   clock={
                     task.plan_date
-                      ? relativeDayTitle(task.plan_date, today, t.date)
+                      ? relativeDayTitle(task.plan_date, today, t.date, locale)
                       : null
                   }
                   onToggle={() =>

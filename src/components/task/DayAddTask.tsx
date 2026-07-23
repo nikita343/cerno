@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { PlusIcon } from "@/components/icons";
 import { relativeDayTitle } from "@/lib/date";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./DayAddTask.module.css";
@@ -22,6 +22,7 @@ import styles from "./DayAddTask.module.css";
 export function DayAddTask({ date, today }: { date: string; today: string }) {
   const addTaskSmart = useAppStore((s) => s.addTaskSmart);
   const t = useT();
+  const locale = useLocale();
 
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -74,7 +75,7 @@ export function DayAddTask({ date, today }: { date: string; today: string }) {
       }}
     >
       <label htmlFor={`add-${date}`} className="srOnly">
-        {t.task.addTask} · {relativeDayTitle(date, today, t.date)}
+        {t.task.addTask} · {relativeDayTitle(date, today, t.date, locale)}
       </label>
       <input
         id={`add-${date}`}

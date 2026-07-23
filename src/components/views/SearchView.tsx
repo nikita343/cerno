@@ -6,9 +6,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { ClockIcon, SearchIcon } from "@/components/icons";
 import { TaskChip } from "@/components/task/TaskChip";
 import { relativeDayTitle, relativeDaySub } from "@/lib/date";
-import { useT } from "@/lib/i18n";
+import { taskCount, useLocale, useT } from "@/lib/i18n";
 import { DASHBOARD_ROOT, NAV_ITEMS } from "@/lib/nav";
-import { pluralize } from "@/lib/format";
 import type { Task } from "@/lib/types";
 import { useAppStore } from "@/store/StoreProvider";
 
@@ -22,6 +21,7 @@ const JUMP_TARGETS = NAV_ITEMS.filter((n) =>
 export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
   const router = useRouter();
   const t = useT();
+  const locale = useLocale();
   const today = useAppStore((s) => s.today);
   const query = useAppStore((s) => s.searchQuery);
   const setQuery = useAppStore((s) => s.setSearchQuery);
@@ -104,7 +104,7 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
                 <h2 className={view.sectionLabelSmall}>
                   {date === "unplanned"
                     ? `${t.search.taskResults} · ${t.search.unplanned}`
-                    : `${t.search.taskResults} · ${relativeDayTitle(date, today, t.date)} · ${relativeDaySub(date, today)}`}
+                    : `${t.search.taskResults} · ${relativeDayTitle(date, today, t.date, locale)} · ${relativeDaySub(date, today, locale)}`}
                 </h2>
                 <div className={view.listTight}>
                   {dayTasks.map((task) => (
@@ -127,10 +127,12 @@ export function SearchView({ initialQuery }: { initialQuery?: string | null }) {
           <div className={styles.recentList}>
             <RecentRow
               title={t.search.todaysPlan}
-              meta={`${tasks.filter((t) => t.plan_date === today && t.status === "today").length} ${pluralize(
-                tasks.filter((t) => t.plan_date === today && t.status === "today").length,
-                "task",
-              )}`}
+              meta={taskCount(
+                tasks.filter((x) => x.plan_date === today && x.status === "today")
+                  .length,
+                locale,
+                t,
+              )}
               href={DASHBOARD_ROOT}
             />
             <RecentRow

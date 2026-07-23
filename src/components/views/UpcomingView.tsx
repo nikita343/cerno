@@ -26,7 +26,7 @@ import {
 } from "@/lib/schedule";
 import { useReminders } from "@/lib/useReminders";
 import { tasksOn } from "@/store/createAppStore";
-import { useT } from "@/lib/i18n";
+import { taskCount, useLocale, useT } from "@/lib/i18n";
 import { useAppStore } from "@/store/StoreProvider";
 
 import styles from "./UpcomingView.module.css";
@@ -36,6 +36,7 @@ export function UpcomingView() {
   const today = useAppStore((s) => s.today);
   const nowMinutes = useAppStore((s) => s.nowMinutes);
   const t = useT();
+  const locale = useLocale();
   // While a task is in flight the week strip pins to the top of the scroll
   // area, so every day stays a reachable drop target no matter how far down the
   // agenda you've dragged — no hunting, no scrolling to find the right day.
@@ -82,7 +83,7 @@ export function UpcomingView() {
     <div className={view.view}>
       <div className={styles.header}>
         <h1 className={view.h1}>{t.upcoming.title}</h1>
-        <span className={styles.monthLabel}>{monthYear(anchor)}</span>
+        <span className={styles.monthLabel}>{monthYear(anchor, locale)}</span>
 
         <div className={styles.stepper}>
           <button
@@ -129,7 +130,7 @@ export function UpcomingView() {
             today={today}
             count={groups.find((g) => g.date === date)?.tasks.length ?? 0}
             selected={selected === date}
-            label={relativeDayTitle(date, today, t.date)}
+            label={relativeDayTitle(date, today, t.date, locale)}
             onSelect={selectDay}
           />
         ))}
@@ -140,10 +141,10 @@ export function UpcomingView() {
           <DayGroup key={date} date={date}>
             <div className={styles.groupHead}>
               <h2 className={styles.groupTitle}>
-                {relativeDayTitle(date, today, t.date)}
+                {relativeDayTitle(date, today, t.date, locale)}
               </h2>
               <span className={view.sectionMeta}>
-                &middot; {relativeDaySub(date, today)}
+                &middot; {relativeDaySub(date, today, locale)}
               </span>
             </div>
 
@@ -231,6 +232,8 @@ function StripDay({
   onSelect: (date: string) => void;
 }) {
   const isToday = date === today;
+  const locale = useLocale();
+  const t = useT();
   const drop = useDropZone(dropId.stripDay(date), { kind: "day", date });
   return (
     <button
@@ -240,10 +243,10 @@ function StripDay({
       data-today={isToday || undefined}
       data-selected={selected || undefined}
       onClick={() => onSelect(date)}
-      aria-label={`${label}, ${count} ${count === 1 ? "task" : "tasks"}`}
+      aria-label={`${label}, ${taskCount(count, locale, t)}`}
       aria-current={isToday ? "date" : undefined}
     >
-      <span className={styles.dayLetter}>{dayLetter(date)}</span>
+      <span className={styles.dayLetter}>{dayLetter(date, locale)}</span>
       <span className={styles.dayNumber} data-today={isToday || undefined}>
         {dayOfMonth(date)}
       </span>

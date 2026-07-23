@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo } from "react";
 
 import type { AppLanguage } from "@/lib/types";
+import { localeFor, type DateLocale } from "@/lib/date";
 import { useAppStore } from "@/store/StoreProvider";
 
 import { DICTIONARIES, en, type Dictionary } from "./dictionary";
@@ -41,6 +42,11 @@ export function useLanguage(): AppLanguage {
   const override = useContext(LanguageContext);
   const stored = useAppStore((s) => s.settings.language);
   return override ?? stored;
+}
+
+/** BCP-47 locale for the active language — for `Intl`-based date formatting. */
+export function useLocale(): DateLocale {
+  return localeFor(useLanguage());
 }
 
 /**

@@ -4,7 +4,7 @@ import { Avatar } from "@/components/auth/Avatar";
 import { AlertIcon, CheckIcon } from "@/components/icons";
 import { deadlineLabel } from "@/lib/date";
 
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { labelColor, labelDisplay } from "@/lib/labels";
 import type { Task, UserProfile } from "@/lib/types";
 import { useAppStoreShallow } from "@/store/StoreProvider";
@@ -74,6 +74,7 @@ export function TaskChip({
   // repaint the dot, but an unrelated store change should not.
   const labels = useAppStoreShallow((s) => s.labels);
   const t = useT();
+  const locale = useLocale();
 
   // Built per render rather than as a module constant, because the labels are
   // translated and a constant would freeze whichever language loaded first.
@@ -151,7 +152,7 @@ export function TaskChip({
 
         {task.deadline && (
           <span className={styles.pill}>
-            {t.today.due} {deadlineLabel(task.deadline, today)}
+            {t.today.due} {deadlineLabel(task.deadline, today, t.date, locale)}
             {task.deadline_time ? ` · ${task.deadline_time}` : ""}
           </span>
         )}

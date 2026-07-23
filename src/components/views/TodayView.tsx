@@ -20,7 +20,7 @@ import {
 import { useReminders } from "@/lib/useReminders";
 import { PHONE_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { deferredFor, scheduledFor, totalMinutes } from "@/store/createAppStore";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { useAppStore, useAppStoreShallow } from "@/store/StoreProvider";
 
 import { EmptyState } from "./EmptyState";
@@ -33,6 +33,7 @@ const REMOVE_MS = 260;
 export function TodayView() {
   const today = useAppStore((s) => s.today);
   const t = useT();
+  const locale = useLocale();
   const nowMinutes = useAppStore((s) => s.nowMinutes);
   // The clock is client-only: `nowMinutes` is 0 on the server, so rendering it
   // during SSR would print 00:00 and mismatch the real time on hydration.
@@ -154,7 +155,7 @@ export function TodayView() {
     <div className={`${view.view} ${view.viewWide}`}>
       <header className={styles.header}>
         <span className={view.eyebrow}>
-          {eyebrowDate(today)}
+          {eyebrowDate(today, locale)}
           {mounted && (
             <time className={styles.clock} aria-live="off">
               {formatClock(nowMinutes)}

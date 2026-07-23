@@ -7,47 +7,30 @@
  * and shift the day for anyone west of Greenwich, so we never do that.
  */
 
-const DAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
+/**
+ * Weekday and month names are localised through `Intl.DateTimeFormat`. Every
+ * name-producing function below takes a BCP-47 `locale` (default `"en-US"`),
+ * so a Ukrainian account gets "понеділок" / "липня" where an English one gets
+ * "Monday" / "July". The `locale` is passed in rather than read from a hook
+ * because this module also runs outside React (the iCal serialiser, tests).
+ */
+export type DateLocale = string;
 
-const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DEFAULT_LOCALE: DateLocale = "en-US";
 
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+/** Maps the app language enum to a BCP-47 locale for `Intl`. */
+export function localeFor(language: string): DateLocale {
+  return language === "uk" ? "uk-UA" : "en-US";
+}
 
-const MONTH_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+/** Formats a local-midnight ISO date with the given Intl options. */
+function fmt(
+  iso: string,
+  locale: DateLocale,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat(locale, options).format(fromISODate(iso));
+}
 
 /** `YYYY-MM-DD` for a Date, in local time. */
 export function toISODate(d: Date): string {
@@ -111,44 +94,48 @@ export function weekDates(iso: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
-/** Single letter for the day strip: M T W T F S S. */
-export function dayLetter(iso: string): string {
-  return DAY_NAMES[fromISODate(iso).getDay()].charAt(0);
+/** Single letter for the day strip: M T W T F S S (localised). */
+export function dayLetter(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { weekday: "narrow" });
 }
 
 export function dayOfMonth(iso: string): number {
   return fromISODate(iso).getDate();
 }
 
-export function dayName(iso: string): string {
-  return DAY_NAMES[fromISODate(iso).getDay()];
+/** The seven Monday-first weekday narrow letters, localised — for grid headers. */
+export function weekdayLetters(locale: DateLocale = DEFAULT_LOCALE): string[] {
+  // 2024-01-01 was a Monday; format it and the six days that follow.
+  return Array.from({ length: 7 }, (_, i) =>
+    fmt(addDays("2024-01-01", i), locale, { weekday: "narrow" }),
+  );
 }
 
-export function dayNameShort(iso: string): string {
-  return DAY_SHORT[fromISODate(iso).getDay()];
+export function dayName(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { weekday: "long" });
 }
 
-export function monthYear(iso: string): string {
-  const d = fromISODate(iso);
-  return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+export function dayNameShort(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { weekday: "short" });
+}
+
+export function monthYear(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { month: "long", year: "numeric" });
 }
 
 /** "July 20" */
-export function monthDay(iso: string): string {
-  const d = fromISODate(iso);
-  return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
+export function monthDay(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { month: "long", day: "numeric" });
 }
 
 /** "Jul 20" — for rows too narrow for the full month name. */
-export function monthDayShort(iso: string): string {
-  const d = fromISODate(iso);
-  return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+export function monthDayShort(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { month: "short", day: "numeric" });
 }
 
 /** "Saturday, July 18" — the Today header eyebrow. */
-export function eyebrowDate(iso: string): string {
-  const d = fromISODate(iso);
-  return `${DAY_NAMES[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
+export function eyebrowDate(iso: string, locale: DateLocale = DEFAULT_LOCALE): string {
+  return fmt(iso, locale, { weekday: "long", month: "long", day: "numeric" });
 }
 
 /**
@@ -166,15 +153,14 @@ export function relativeDayTitle(
    * a component pass `t.date`; everything else gets English.
    */
   labels: RelativeDayLabels = EN_RELATIVE_DAYS,
+  locale: DateLocale = DEFAULT_LOCALE,
 ): string {
   const delta = daysBetween(today, iso);
   if (delta === 0) return labels.today;
   if (delta === 1) return labels.tomorrow;
   if (delta === -1) return labels.yesterday;
-  // Weekday and month names come from Intl and are already localised by the
-  // browser, so they need no dictionary of their own.
-  if (delta > 1 && delta < 7) return dayName(iso);
-  return monthDay(iso);
+  if (delta > 1 && delta < 7) return dayName(iso, locale);
+  return monthDay(iso, locale);
 }
 
 export interface RelativeDayLabels {
@@ -190,22 +176,31 @@ const EN_RELATIVE_DAYS: RelativeDayLabels = {
 };
 
 /** Sub-line beside the group heading — never repeats the title. */
-export function relativeDaySub(iso: string, today: string): string {
+export function relativeDaySub(
+  iso: string,
+  today: string,
+  locale: DateLocale = DEFAULT_LOCALE,
+): string {
   const delta = daysBetween(today, iso);
-  if (delta === 0 || delta === 1 || delta === -1) return dayName(iso);
-  if (delta > 1 && delta < 7) return monthDay(iso);
-  return dayName(iso);
+  if (delta === 0 || delta === 1 || delta === -1) return dayName(iso, locale);
+  if (delta > 1 && delta < 7) return monthDay(iso, locale);
+  return dayName(iso, locale);
 }
 
 /**
  * The deadline pill text: "due Tue" inside the coming week, "due Jul 28"
- * beyond it, "due today" / "due tomorrow" at the edges.
+ * beyond it, "due today" / "due tomorrow" at the edges. The "today"/"tomorrow"
+ * words come from the caller's dictionary; everything else from Intl.
  */
-export function deadlineLabel(iso: string, today: string): string {
+export function deadlineLabel(
+  iso: string,
+  today: string,
+  labels: RelativeDayLabels = EN_RELATIVE_DAYS,
+  locale: DateLocale = DEFAULT_LOCALE,
+): string {
   const delta = daysBetween(today, iso);
-  if (delta === 0) return "today";
-  if (delta === 1) return "tomorrow";
-  if (delta > 1 && delta < 7) return dayNameShort(iso);
-  const d = fromISODate(iso);
-  return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+  if (delta === 0) return labels.today.toLowerCase();
+  if (delta === 1) return labels.tomorrow.toLowerCase();
+  if (delta > 1 && delta < 7) return dayNameShort(iso, locale);
+  return monthDayShort(iso, locale);
 }
