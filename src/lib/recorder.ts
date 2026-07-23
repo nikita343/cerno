@@ -147,13 +147,17 @@ export class VoiceUnavailableError extends Error {}
  *
  * Throws with a user-safe message; the caller surfaces it inline.
  */
-export async function transcribe(recording: Recording): Promise<string> {
+export async function transcribe(
+  recording: Recording,
+  language?: string,
+): Promise<string> {
   if (recording.blob.size > MAX_AUDIO_BYTES) {
     throw new Error("That recording is too long.");
   }
 
   const form = new FormData();
   form.append("audio", recording.blob, `dump.${recording.extension}`);
+  if (language) form.append("language", language);
 
   const response = await fetch("/api/transcribe", {
     method: "POST",

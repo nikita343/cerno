@@ -78,6 +78,8 @@ export interface Task {
   estimated_minutes: number;
   /** ISO date `YYYY-MM-DD`, or null. */
   deadline: string | null;
+  /** `HH:MM` time of day the deadline falls at, or null for no set time. */
+  deadline_time: string | null;
   /** `HH:MM`, or null. */
   suggested_start: string | null;
   status: TaskStatus;

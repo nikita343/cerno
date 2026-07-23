@@ -36,6 +36,7 @@ export interface TaskRow {
   priority: Priority;
   estimated_minutes: number;
   deadline: string | null;
+  deadline_time: string | null;
   suggested_start: string | null;
   status: TaskStatus;
   plan_date: string | null;
@@ -84,6 +85,7 @@ export function toTask(row: TaskRow): Task {
     priority: row.priority,
     estimated_minutes: row.estimated_minutes,
     deadline: row.deadline,
+    deadline_time: trimClock(row.deadline_time),
     suggested_start: trimClock(row.suggested_start),
     status: row.status,
     plan_date: row.plan_date,
@@ -114,6 +116,7 @@ export function toTaskRow(task: Task, userId: string): TaskRow {
     priority: task.priority,
     estimated_minutes: task.estimated_minutes,
     deadline: task.deadline,
+    deadline_time: task.deadline_time,
     suggested_start: task.suggested_start,
     status: task.status,
     plan_date: task.plan_date,

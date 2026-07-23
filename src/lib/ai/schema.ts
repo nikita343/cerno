@@ -64,6 +64,12 @@ export function buildPlannedTaskSchema(labelNames: string[]) {
     .describe(
       "Hard due date as YYYY-MM-DD — the day this must be finished BY. Null when there isn't one.",
     ),
+  deadline_time: z
+    .string()
+    .nullable()
+    .describe(
+      "HH:MM (24h) the deadline falls at, when a clock time was given for it ('by 6pm', 'before 18:00'). Null when the deadline has no specific time or there's no deadline.",
+    ),
   plan_date: z
     .string()
     .nullable()
@@ -125,6 +131,12 @@ export function buildSmartTaskSchema(labelNames: string[]) {
       .string()
       .nullable()
       .describe("YYYY-MM-DD the task must be finished BY, or null."),
+    deadline_time: z
+      .string()
+      .nullable()
+      .describe(
+        "HH:MM (24h) the deadline falls at ('by 6pm', 'before 18:00'), or null when it has no set time.",
+      ),
     plan_date: z
       .string()
       .nullable()

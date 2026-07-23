@@ -47,6 +47,7 @@ Planning rules:
 - Resolve relative dates ("tomorrow", "by Friday", "next week") against today's date.
 - Distinguish a deadline from a chosen day. "finish the deck by Friday" is a deadline: set deadline, leave plan_date null, and schedule it whenever it fits. "massage on Sunday" or "dentist Tuesday at 11" is a chosen day: set plan_date to that date, and leave deadline null unless a separate due date was also stated. Getting this backwards puts the task on the wrong day, so read the preposition — "by"/"before" means deadline, "on"/"at"/a bare weekday means plan_date.
 - A task with a plan_date in the future does not compete for today's capacity and is not deferred. Mark it 'today' — it is scheduled work, just not for today.
+- Set deadline_time (HH:MM, 24-hour) when the deadline names a clock time — "submit by 6pm", "before 18:00", "email them by noon". It qualifies the deadline (the time it is due BY), not when to start. Leave it null when the deadline is a plain day, or when there is no deadline. Do not invent a time.
 - Set suggested_start (HH:MM, 24-hour) only for items that are genuinely time-bound: a meeting, a call at a stated hour, anything that must happen inside a window ("gym before work", "school pickup"). Leave it null otherwise — the day is laid out from 09:00 in the order you return, so a null start still gets a sensible slot. Do not invent clock times to make the day look full.
 - Assign exactly one tag per task from: ${tagList(labelNames)}. These are this person's own labels. Never invent a tag. If nothing fits well, pick the closest one rather than leaving it blank.
 - Every task needs a reasoning line: one short, calm sentence on why it sits where it does. For deferred items, say why it can wait.
@@ -72,6 +73,7 @@ Today is ${now} in timezone ${timezone}.
 - Rewrite the phrase as an imperative title of at most 8 words, inferring the verb if it is missing.
 - Estimate effort realistically in minutes.
 - Distinguish a deadline from a chosen day, resolving both against today. "by Friday" is a deadline — set deadline, leave plan_date null. "on Sunday", "Tuesday at 11" is a chosen day — set plan_date to that date and leave deadline null unless a due date was separately stated.
+- Set deadline_time (HH:MM, 24-hour) when the deadline names a clock time ("by 6pm", "before 18:00"); otherwise null. It is the time the task is due BY, not when to start it.
 - Set suggested_start (HH:MM, 24-hour) when a clock time is given, otherwise null.
 - Assign exactly one tag from this person's own labels: ${tagList(labelNames)}. Never invent one.
 - Give one short, calm reasoning line. No exclamation marks.`;
@@ -85,7 +87,11 @@ export function formatCarryIn(tasks: Task[]): string {
       (t) =>
         `- id=${t.id} | ${t.title} | ${t.estimated_minutes}min | ${t.priority} | ${
           t.tags[0] ?? "work"
-        }${t.deadline ? ` | due ${t.deadline}` : ""} | currently ${t.status}`,
+        }${
+          t.deadline
+            ? ` | due ${t.deadline}${t.deadline_time ? ` ${t.deadline_time}` : ""}`
+            : ""
+        } | currently ${t.status}`,
     )
     .join("\n");
 }

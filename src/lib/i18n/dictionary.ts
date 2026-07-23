@@ -178,6 +178,14 @@ export const en = {
     planIt: "Plan it",
     planning: "Planning…",
     thinking: "Planning your day — sorting priority, effort and deadlines…",
+    thinkingSteps: [
+      "Reading your brain dump…",
+      "Splitting it into clear tasks…",
+      "Estimating effort for each…",
+      "Weighing deadlines and priority…",
+      "Laying out a realistic day…",
+      "Parking what doesn’t fit…",
+    ],
     recording: "Recording — tap the mic to stop",
     transcribing: "Transcribing…",
     close: "Close",
@@ -489,7 +497,11 @@ export const en = {
 
 /** Shape of every dictionary, derived from English so gaps are type errors. */
 export type Dictionary = {
-  [Section in keyof typeof en]: { [Key in keyof (typeof en)[Section]]: string };
+  [Section in keyof typeof en]: {
+    [Key in keyof (typeof en)[Section]]: (typeof en)[Section][Key] extends readonly string[]
+      ? readonly string[]
+      : string;
+  };
 };
 
 export const uk: Dictionary = {
@@ -646,6 +658,14 @@ export const uk: Dictionary = {
     planIt: "Спланувати",
     planning: "Плануємо…",
     thinking: "Плануємо ваш день — сортуємо пріоритети, зусилля та дедлайни…",
+    thinkingSteps: [
+      "Читаємо ваші нотатки…",
+      "Розбиваємо на чіткі завдання…",
+      "Оцінюємо зусилля для кожного…",
+      "Зважуємо дедлайни та пріоритети…",
+      "Складаємо реалістичний день…",
+      "Відкладаємо те, що не вміщається…",
+    ],
     recording: "Запис — торкніться мікрофона, щоб зупинити",
     transcribing: "Розшифровуємо…",
     close: "Закрити",

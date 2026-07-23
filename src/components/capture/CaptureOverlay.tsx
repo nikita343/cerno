@@ -10,7 +10,7 @@ import {
   VoiceUnavailableError,
   type RecorderHandle,
 } from "@/lib/recorder";
-import { useT } from "@/lib/i18n";
+import { useLanguage, useT } from "@/lib/i18n";
 import { ensureMicAccess, type MicStatus } from "@/lib/speech";
 import { usePresence } from "@/lib/usePresence";
 import { useAppStore } from "@/store/StoreProvider";
@@ -31,6 +31,7 @@ export function CaptureOverlay() {
   const closeCapture = useAppStore((s) => s.closeCapture);
   const submitDump = useAppStore((s) => s.submitDump);
   const t = useT();
+  const language = useLanguage();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recorderRef = useRef<RecorderHandle | null>(null);
@@ -54,6 +55,22 @@ export function CaptureOverlay() {
 
   const isListening = mode === "listening";
   const isThinking = mode === "thinking";
+
+  // While planning, rotate through progress lines so a slow request still
+  // feels like it's moving. Resets to the first line each time it starts.
+  const [thinkingStep, setThinkingStep] = useState(0);
+  useEffect(() => {
+    if (!isThinking) {
+      setThinkingStep(0);
+      return;
+    }
+    const steps = t.capture.thinkingSteps;
+    const id = window.setInterval(() => {
+      // Hold on the last line rather than looping back — a loop reads as stuck.
+      setThinkingStep((s) => Math.min(s + 1, steps.length - 1));
+    }, 1800);
+    return () => window.clearInterval(id);
+  }, [isThinking, t.capture.thinkingSteps]);
 
   // Keeps the card mounted through its exit animation — see CAPTURE_EXIT_MS.
   const { present, leaving } = usePresence(open, CAPTURE_EXIT_MS);
@@ -117,7 +134,7 @@ export function CaptureOverlay() {
         const recording = await recorder.stop();
         if (!recording) return;
 
-        const text = await transcribe(recording);
+        const text = await transcribe(recording, language);
         // Appended, not replaced: a second recording should extend the dump
         // rather than wipe what was already typed or said.
         const existing = dumpText.trim();
@@ -221,7 +238,7 @@ export function CaptureOverlay() {
                 <span className={styles.thinkDot} />
               </span>
               <span className={styles.thinkingText}>
-                {t.capture.thinking}
+                {t.capture.thinkingSteps[thinkingStep] ?? t.capture.thinking}
               </span>
             </div>
           )}

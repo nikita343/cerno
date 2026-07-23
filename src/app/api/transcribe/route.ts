@@ -51,10 +51,15 @@ export async function POST(request: Request) {
   }
 
   let file: File | null = null;
+  let language: string | null = null;
   try {
     const form = await request.formData();
     const value = form.get("audio");
     if (value instanceof File) file = value;
+    // Cerno ships English and Ukrainian; pinning Whisper to the user's chosen
+    // language stops Ukrainian audio being misdetected as Polish or Russian.
+    const lang = form.get("language");
+    if (lang === "en" || lang === "uk") language = lang;
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
@@ -83,9 +88,10 @@ export async function POST(request: Request) {
     const upstream = new FormData();
     upstream.append("file", file, file.name || "audio.webm");
     upstream.append("model", WHISPER_MODEL);
-    // Deliberately not pinned to a language: the app ships English and
-    // Ukrainian, and Whisper's own detection handles code-switching better
-    // than forcing one.
+    // Pin to the user's language when we know it (en/uk) — Whisper's own
+    // detection otherwise mistakes Ukrainian for Polish or Russian. Falls back
+    // to auto-detect when the client didn't send a supported language.
+    if (language) upstream.append("language", language);
     upstream.append("response_format", "json");
 
     const response = await fetch(OPENAI_URL, {

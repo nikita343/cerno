@@ -610,6 +610,7 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
           priority: "medium",
           estimated_minutes: 30,
           deadline: null,
+          deadline_time: null,
           suggested_start: null,
           status: "today",
           plan_date: placeholderDate,

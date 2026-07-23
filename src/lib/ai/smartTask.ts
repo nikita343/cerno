@@ -81,6 +81,7 @@ export async function buildSmartTask({
     priority: parsed.priority,
     estimated_minutes: Math.min(480, Math.max(5, Math.round(parsed.estimated_minutes))),
     deadline: parsed.deadline,
+    deadline_time: parsed.deadline_time,
     suggested_start: parsed.suggested_start,
     status: "today",
     // A named future day wins over "drop it on today".

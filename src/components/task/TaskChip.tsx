@@ -152,6 +152,7 @@ export function TaskChip({
         {task.deadline && (
           <span className={styles.pill}>
             {t.today.due} {deadlineLabel(task.deadline, today)}
+            {task.deadline_time ? ` · ${task.deadline_time}` : ""}
           </span>
         )}
 
