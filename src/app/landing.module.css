@@ -961,16 +961,6 @@
   .bentoCardTall {
     grid-row: auto;
   }
-
-  .howInner {
-    grid-template-columns: 1fr;
-  }
-
-  .howFrame {
-    width: 100%;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 1rem;
-  }
 }
 
 /* ------------------------------------------------------- generic section */
@@ -1160,6 +1150,25 @@
   );
   transform: scaleX(0);
   transform-origin: left center;
+}
+
+/* Stack the band on narrow screens. Placed after the base .how* rules so it
+   actually wins — media queries add no specificity, so a mobile override that
+   sits before the base rule is silently overridden. */
+@media (max-width: 860px) {
+  .howInner {
+    grid-template-columns: 1fr;
+    gap: clamp(1.75rem, 6vw, 2.5rem);
+    align-items: stretch;
+  }
+
+  /* Full-width, both corners rounded, no more 165% overflow — the screenshot
+     sits under the cards instead of running off the right edge. */
+  .howFrame {
+    width: 100%;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+  }
 }
 
 .steps {
