@@ -33,7 +33,7 @@ export default function PrivacyPage() {
           <strong>Awake Agency</strong> (&ldquo;we&rdquo;, &ldquo;us&rdquo;),
           established in Poland, acting as the data controller. For any privacy
           question or request, contact us at{" "}
-          <a href="mailto:privacy@cerno.app">privacy@cerno.app</a>.
+          <a href="mailto:privacy@usecerno.xyz">privacy@usecerno.xyz</a>.
         </p>
 
         <section className={styles.section}>
@@ -181,7 +181,7 @@ export default function PrivacyPage() {
           </ul>
           <p>
             To exercise any of these, email{" "}
-            <a href="mailto:privacy@cerno.app">privacy@cerno.app</a>. You also
+            <a href="mailto:privacy@usecerno.xyz">privacy@usecerno.xyz</a>. You also
             have the right to lodge a complaint with your local supervisory
             authority — in Poland this is the President of the Personal Data
             Protection Office (Prezes Urzędu Ochrony Danych Osobowych, UODO).
@@ -231,7 +231,7 @@ export default function PrivacyPage() {
           <h2 className={styles.h2}>13. Contact</h2>
           <p>
             Awake Agency, Poland ·{" "}
-            <a href="mailto:privacy@cerno.app">privacy@cerno.app</a>
+            <a href="mailto:privacy@usecerno.xyz">privacy@usecerno.xyz</a>
           </p>
         </section>
       </main>

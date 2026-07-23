@@ -13,10 +13,21 @@ const funnelSans = Funnel_Sans({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://usecerno.xyz";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Cerno — AI daily planner",
   description:
     "Dump everything on your mind. Cerno turns it into a realistic day — scheduling what fits and parking the rest with a reason.",
+  openGraph: {
+    siteName: "Cerno",
+    type: "website",
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 /**

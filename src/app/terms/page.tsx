@@ -39,7 +39,7 @@ export default function TermsPage() {
             You must be at least 16 years old to use Cerno. You are responsible
             for the activity under your account and for keeping your login
             secure. Tell us promptly at{" "}
-            <a href="mailto:privacy@cerno.app">privacy@cerno.app</a> if you
+            <a href="mailto:privacy@usecerno.xyz">privacy@usecerno.xyz</a> if you
             suspect unauthorised access.
           </p>
         </section>
@@ -185,7 +185,7 @@ export default function TermsPage() {
           <h2 className={styles.h2}>13. Contact</h2>
           <p>
             Awake Agency, Poland ·{" "}
-            <a href="mailto:privacy@cerno.app">privacy@cerno.app</a>
+            <a href="mailto:privacy@usecerno.xyz">privacy@usecerno.xyz</a>
           </p>
         </section>
       </main>

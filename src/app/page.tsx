@@ -21,10 +21,20 @@ import upcomingImg from "@/assets/upcoming.png";
 
 import styles from "./landing.module.css";
 
+const DESCRIPTION =
+  "Dump everything on your mind. Cerno reads the mess, estimates what each thing costs, and hands you one realistic day — scheduling what fits and parking the rest with a reason.";
+
 export const metadata: Metadata = {
-  title: "Cerno — AI daily planner",
-  description:
-    "Dump everything on your mind. Cerno reads the mess, estimates what each thing costs, and hands you one realistic day — scheduling what fits and parking the rest with a reason.",
+  title: "Meet the Intelligent Planner.",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "Meet the Intelligent Planner.",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    title: "Meet the Intelligent Planner.",
+    description: DESCRIPTION,
+  },
 };
 
 export const dynamic = "force-dynamic";
