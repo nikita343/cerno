@@ -440,13 +440,15 @@ export function createAppStore(initial: InitialData, getDb: DbGetter = () => nul
         set({ captureMode: "thinking", planError: null, streamingTasks: [] });
 
         // Everything still outstanding is replanned together with the new
-        // dump: today's open items and anything previously parked. Done
-        // tasks and work dated further out are left alone.
+        // dump: today's open items and anything previously parked for tomorrow.
+        // Inbox items are deliberately left out — the inbox is a holding area
+        // the user schedules on their own terms, so a fresh dump must not yank
+        // "someday" tasks onto today. Done tasks and work dated further out are
+        // left alone too.
         const carryIn = get().tasks.filter(
           (t) =>
             (t.status === "today" && t.plan_date === today) ||
-            t.status === "deferred" ||
-            t.status === "inbox",
+            t.status === "deferred",
         );
         const carriedIds = new Set(carryIn.map((t) => t.id));
 
